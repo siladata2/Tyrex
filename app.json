@@ -1,29 +1,23 @@
 {
-  "name": "REDXBOT302",
-  "description": "🔥 REDXBOT302 — WhatsApp Bot. No SESSION_ID needed. Just pair your number.",
-  "logo": "https://files.catbox.moe/s36b12.jpg",
-  "keywords": ["whatsapp", "bot", "baileys", "redxbot302"],
+  "name": "REDXMINIBOT ULTRA",
+  "description": "🔥 REDXMINIBOT ULTRA v8.0 Beast Edition — WhatsApp Bot",
   "repository": "https://github.com/AbdulRehman19721986/REDXBOT-MD",
+  "keywords": ["whatsapp", "bot", "baileys"],
   "env": {
-    "BOT_NAME":       { "description": "Bot display name",                           "value": "🔥 REDXBOT302 🔥",       "required": false },
-    "OWNER_NUMBER":   { "description": "Owner WhatsApp number (no + or spaces)",      "value": "923009842133",           "required": true  },
-    "OWNER_NAME":     { "description": "Owner display name",                          "value": "Abdul Rehman Rajpoot",   "required": false },
-    "PREFIX":         { "description": "Command prefix",                              "value": ".",                      "required": false },
-    "BOT_MODE":       { "description": "public or private",                           "value": "public",                 "required": false },
-    "ADMIN_USERNAME": { "description": "Admin panel username — CHANGE THIS!",         "value": "redx",                   "required": false },
-    "ADMIN_PASSWORD": { "description": "Admin panel password — CHANGE THIS!",         "value": "redx",                   "required": false },
-    "DEPLOY_ID":      { "description": "Custom deploy ID (optional, auto-generated)", "required": false },
-    "APP_URL":        { "description": "Your Heroku app URL for keep-alive ping",     "required": false },
-    "CO_OWNER":       { "description": "Co-owner name",                               "value": "Muzamil Khan",           "required": false },
-    "CO_OWNER_NUM":   { "description": "Co-owner WhatsApp number",                    "value": "923183928892",           "required": false },
-    "MENU_IMAGE":     { "description": "Menu thumbnail image URL",                    "value": "https://files.catbox.moe/s36b12.jpg", "required": false },
-    "AUTO_STATUS_SEEN":  { "description": "Auto view statuses (true/false)",          "value": "true",                   "required": false },
-    "AUTO_STATUS_REACT": { "description": "Auto react to statuses (true/false)",      "value": "true",                   "required": false }
+    "BOT_NAME":       { "description": "Bot display name",              "value": "🔥 REDXMINIBOT ULTRA 🔥" },
+    "OWNER_NAME":     { "description": "Owner full name",               "value": "Abdul Rehman Rajpoot" },
+    "OWNER_NUMBER":   { "description": "Owner number (no + or spaces)", "value": "923009842133" },
+    "CO_OWNER_NAME":  { "description": "Co-owner name",                 "value": "Muzamil Khan" },
+    "CO_OWNER_NUM":   { "description": "Co-owner number",               "value": "923183928892" },
+    "PREFIX":         { "description": "Command prefix",                "value": "." },
+    "BOT_MODE":       { "description": "public or private",             "value": "public" },
+    "NEWSLETTER_JID": { "description": "Your WhatsApp channel JID",     "value": "120363405513439052@newsletter" },
+    "CHANNEL_LINK":   { "description": "Your WhatsApp channel link",    "value": "https://whatsapp.com/channel/0029VbCkm3rAe5VzCYLtNb2u" },
+    "WA_GROUP":       { "description": "Support group link",            "value": "https://chat.whatsapp.com/LhSmx2SeXX75r8I2bxsNDo" },
+    "ADMIN_USERNAME": { "description": "Admin panel username",          "value": "redx" },
+    "ADMIN_PASSWORD": { "description": "Admin panel password",          "required": true }
   },
-  "formation": { "web": { "quantity": 1, "size": "eco" } },
-  "buildpacks": [
-    { "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git" },
-    { "url": "heroku/nodejs" }
-  ],
+  "formation": { "web": { "quantity": 1, "size": "free" } },
+  "buildpacks": [{ "url": "heroku/nodejs" }],
   "stack": "heroku-22"
 }
