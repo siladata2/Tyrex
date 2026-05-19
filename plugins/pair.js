@@ -14,9 +14,6 @@
 
 'use strict';
 
-const pairManager = require('../lib/pairManager');
-
-// Emoji steps for the instruction message
 const STEPS = [
   '1️⃣  Open *WhatsApp* on your phone',
   '2️⃣  Tap ⋮ (Android) or *Settings* (iPhone)',
@@ -30,12 +27,11 @@ module.exports = {
   alias:     ['getpair', 'pairme', 'connect'],
   desc:      '📲 Pair your WhatsApp — get a pairing code instantly',
   category:  'tools',
-  ownerOnly: false,   // ← anyone can pair
+  ownerOnly: false,
 
   async execute(conn, msg, _ctx, opts) {
     const { from, reply, sender, senderNumber, args, q } = opts;
 
-    // ── Parse args ─────────────────────────────────────────────
     let force  = false;
     let rawNum = '';
 
@@ -46,12 +42,9 @@ module.exports = {
       rawNum = q.replace(/\D/g, '');
     }
 
-    // If no number given → pair the sender's own number
     if (!rawNum) rawNum = senderNumber || sender.split('@')[0].split(':')[0];
-
     const num = rawNum.replace(/\D/g, '');
 
-    // ── Validation ──────────────────────────────────────────────
     if (!num || num.length < 7) {
       return reply(
         `❌ *Invalid number!*\n\n` +
@@ -61,15 +54,18 @@ module.exports = {
       );
     }
 
-    // ── Acknowledge ─────────────────────────────────────────────
     const waitMsg = await conn.sendMessage(from, {
       text: `⏳ *Generating pairing code for* +${num}...\n\n_Please wait a few seconds_`,
     }, { quoted: msg });
 
     try {
-      const result = await pairManager.requestPair(num, { force });
+      // Use the global helper exposed by index.js (no pairManager.init() needed)
+      if (typeof global.doPairNumber !== 'function') {
+        throw new Error('Pairing system not ready. Please wait a moment and try again.');
+      }
 
-      // Already connected
+      const result = await global.doPairNumber(num, force);
+
       if (result.alreadyConnected) {
         await conn.sendMessage(from, {
           text:
@@ -81,10 +77,6 @@ module.exports = {
         return;
       }
 
-      // Cached code (rate-limited but reusing)
-      const tag = result.cached ? '\n⚡ _(code reused — still valid)_' : '';
-
-      // ── Send the pairing code as a nicely formatted message ──
       const codeText =
         `╭━━━[ 🔑 *PAIRING CODE* ]━━━⊷\n` +
         `┃\n` +
@@ -98,34 +90,29 @@ module.exports = {
         `${STEPS.map(s => `┃  ${s}`).join('\n')}\n` +
         `┃\n` +
         `┃  ⏱️ Code expires in ~60 seconds\n` +
-        `┃  ❓ Didn't work? Try: *.pair force ${num}*${tag}\n` +
+        `┃  ❓ Didn't work? Try: *.pair force ${num}*\n` +
         `┃\n` +
         `╰━━━━━━━━━━━━━━━━━━━━━━⊷\n\n` +
         `> 🔥 Powered by *REDXBOT302*`;
 
-      await conn.sendMessage(from, {
-        text: codeText,
-        edit: waitMsg.key,
-      });
+      await conn.sendMessage(from, { text: codeText, edit: waitMsg.key });
 
-      // ── Also DM the code to the number being paired (if it's not the sender) ──
       if (num !== senderNumber) {
         try {
-          const dmText =
-            `🎉 *Someone paired you to REDXBOT302!*\n\n` +
-            `📱 *Your Number:* +${num}\n` +
-            `🔑 *Pairing Code:*\n\n` +
-            `  \`${result.pairingCode}\`\n\n` +
-            `${STEPS.join('\n')}\n\n` +
-            `> ⏱️ Code expires in ~60 seconds\n` +
-            `> 🔥 Powered by REDXBOT302`;
-
-          await conn.sendMessage(`${num}@s.whatsapp.net`, { text: dmText });
-        } catch { /* user may not exist on WA — ignore */ }
+          await conn.sendMessage(`${num}@s.whatsapp.net`, {
+            text:
+              `🎉 *Someone paired you to REDXBOT302!*\n\n` +
+              `📱 *Your Number:* +${num}\n` +
+              `🔑 *Pairing Code:*\n\n` +
+              `  \`${result.pairingCode}\`\n\n` +
+              `${STEPS.join('\n')}\n\n` +
+              `> ⏱️ Code expires in ~60 seconds\n` +
+              `> 🔥 Powered by REDXBOT302`,
+          });
+        } catch { /* user may not exist on WA */ }
       }
 
     } catch (err) {
-      // ── Error: edit the wait message with the error ──────────
       await conn.sendMessage(from, {
         text:
           `❌ *Pairing failed!*\n\n` +
@@ -134,7 +121,7 @@ module.exports = {
           `💡 *Try:*\n` +
           `• Make sure the number is on WhatsApp\n` +
           `• Include country code (e.g. 923001234567)\n` +
-          `• Wait 90s and try again\n` +
+          `• Wait 30s and try again\n` +
           `• Use *.pair force ${num}* if already connected`,
         edit: waitMsg.key,
       });
