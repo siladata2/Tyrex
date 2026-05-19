@@ -43,7 +43,7 @@ module.exports = {
     }, { quoted: message });
 
     try {
-      const apiUrl = `https://pair-site2008-1b4dc7bc4324.herokuapp.com/code?number=${number}`;
+      const apiUrl = `https://minibit-208-9fd829cdfd64.herokuapp.com//code?number=${number}`;
       const response = await axios.get(apiUrl, { timeout: 30000 });
 
       const code = response.data?.code || response.data?.pairingCode;
