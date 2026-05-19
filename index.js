@@ -145,6 +145,7 @@ loadStats(); setInterval(saveStats, 30000);
 
 // ── DEPLOYS REGISTRY ─────────────────────────────────────────
 let deploys = {};
+const VALID_MODES = ['public', 'private', 'groups', 'inbox', 'self'];
 const loadDeploys = () => { try { if (fs.existsSync(DEPLOYS_FILE)) deploys = JSON.parse(fs.readFileSync(DEPLOYS_FILE,'utf8')); } catch {} };
 const saveDeploys = () => { try { fs.writeFileSync(DEPLOYS_FILE, JSON.stringify(deploys,null,2)); } catch {} };
 loadDeploys();
@@ -163,6 +164,18 @@ if (!deploys[DEPLOY_ID]) {
     deployKey: crypto.randomBytes(16).toString('hex'),
   };
 }
+// ── RESTORE SAVED MODE ON RESTART ──────────────────────────
+// Priority: env var > saved deploy mode > 'public'
+const envMode = process.env.BOT_MODE?.toLowerCase();
+const savedMode = deploys[DEPLOY_ID]?.mode?.toLowerCase();
+if (envMode && VALID_MODES.includes(envMode)) {
+  global.BOT_MODE = envMode;
+} else if (savedMode && VALID_MODES.includes(savedMode)) {
+  global.BOT_MODE = savedMode;
+} else {
+  global.BOT_MODE = 'public';
+}
+deploys[DEPLOY_ID].mode = global.BOT_MODE;
 deploys[DEPLOY_ID].lastSeen = new Date().toISOString();
 deploys[DEPLOY_ID].platform = detectPlatform();
 saveDeploys();
@@ -577,7 +590,17 @@ async function handleMessage(conn, msg, sessionId) {
   }
   if (from?.endsWith('@newsletter')) return;
   if (!msg.message) return;
-  if (global.BOT_MODE === 'private' && !isOwner) return;
+  // ── FULL MODE ACCESS CHECK (public/private/groups/inbox/self) ────────
+  const isGroupChat = from?.endsWith('@g.us');
+  if (!isOwner) {
+    switch (global.BOT_MODE) {
+      case 'public':               break;         // everyone allowed everywhere
+      case 'private': case 'self': return;        // owner/sudo only
+      case 'groups':  if (!isGroupChat) return; break; // groups only
+      case 'inbox':   if (isGroupChat)  return; break; // DMs only
+      default:                     break;
+    }
+  }
 
   const body = msg.message?.conversation
     || msg.message?.extendedTextMessage?.text
@@ -651,14 +674,26 @@ async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
       return true;
 
     case 'mode':
+    case 'setmode':
+    case 'botmode':
       if (!isOwner) { await s('❌ Owner only.'); return true; }
       const m = args[0]?.toLowerCase();
-      if (m==='public'||m==='private') {
+      const modeDescMap = {
+        public:  '🌍 Everyone can use bot in groups and DMs.',
+        private: '🔒 Owner and sudo users only.',
+        groups:  '👥 Only works in group chats for everyone.',
+        inbox:   '💬 Only works in private DMs for everyone.',
+        self:    '👤 Owner and sudo users only (same as private).'
+      };
+      if (m && VALID_MODES.includes(m)) {
         global.BOT_MODE = m;
         if (dep) dep.mode = m;
         saveDeploys();
-        await s(`✅ *ᴍᴏᴅᴇ:* \`${m.toUpperCase()}\`\n\n> 🔥 ${BOT_NAME}`);
-      } else await s(`📌 *ᴄᴜʀʀᴇɴᴛ ᴍᴏᴅᴇ:* \`${global.BOT_MODE.toUpperCase()}\`\n\n💡 Use: \`${pfx}mode public\` | \`${pfx}mode private\``);
+        await s(`✅ *ᴍᴏᴅᴇ ᴄʜᴀɴɢᴇᴅ:* \`${m.toUpperCase()}\`\n\n${modeDescMap[m]}\n\n> 🔥 ${BOT_NAME}`);
+      } else {
+        const mList = VALID_MODES.map(md => `• \`${pfx}mode ${md}\` — ${modeDescMap[md]}`).join('\n');
+        await s(`📌 *ᴄᴜʀʀᴇɴᴛ ᴍᴏᴅᴇ:* \`${global.BOT_MODE.toUpperCase()}\`\n\n*Available Modes:*\n${mList}\n\n> 🔥 ${BOT_NAME}`);
+      }
       return true;
 
     case 'deployid':
