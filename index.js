@@ -359,7 +359,7 @@ function setupHandlers(conn, number, saveCreds) {
 
   conn.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect } = update;
-    console.log(`[${number}] ${connection}`);
+    if (connection) console.log(`[${number}] ${connection}`);
 
     if (connection === 'open') {
       entry.connected = true;
@@ -556,7 +556,8 @@ async function handleMessage(conn, msg, sessionId) {
   // Check base owner (number match OR any linked device of this session)
   const sNumClean = cleanNum(sender);
   const sessionNumClean = cleanNum(sessionId);
-  let isOwner = sNumClean === cleanNum(OWNER_NUM) || sNumClean === cleanNum(CO_OWNER_NUM) || sNumClean === sessionNumClean;
+  // fromMe = true means the bot itself or the linked owner device sent this
+  let isOwner = !!msg.key.fromMe || sNumClean === cleanNum(OWNER_NUM) || sNumClean === cleanNum(CO_OWNER_NUM) || sNumClean === sessionNumClean;
   // Also check @lid variants for linked devices in groups
   if (!isOwner && from?.endsWith('@g.us')) {
     try {
@@ -605,7 +606,16 @@ async function handleMessage(conn, msg, sessionId) {
   const body = msg.message?.conversation
     || msg.message?.extendedTextMessage?.text
     || msg.message?.imageMessage?.caption
-    || msg.message?.videoMessage?.caption || '';
+    || msg.message?.videoMessage?.caption
+    || msg.message?.documentMessage?.caption
+    || msg.message?.buttonsResponseMessage?.selectedButtonId
+    || msg.message?.listResponseMessage?.singleSelectReply?.selectedRowId
+    || msg.message?.templateButtonReplyMessage?.selectedId
+    || msg.message?.ephemeralMessage?.message?.conversation
+    || msg.message?.ephemeralMessage?.message?.extendedTextMessage?.text
+    || msg.message?.viewOnceMessage?.message?.imageMessage?.caption
+    || msg.message?.viewOnceMessage?.message?.videoMessage?.caption
+    || '';
 
   const dep    = deploys[DEPLOY_ID];
   const pfx    = dep?.prefix || PREFIX;
