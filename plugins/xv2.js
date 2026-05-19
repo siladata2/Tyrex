@@ -4,17 +4,10 @@
  *****************************************************************************/
 
 const axios = require('axios');
-const { isSudo } = require('../lib/index');
 
 const SEARCH_API   = 'https://api.deline.web.id/search/xvideos?q=';
 const DOWNLOAD_API = 'https://api.deline.web.id/downloader/xvideos?url=';
 const sessions = new Map();
-
-async function isAllowed(senderId, context) {
-  if (context.isOwner) return true;
-  try { if (await isSudo(senderId)) return true; } catch {}
-  return false;
-}
 
 function getBestVideoUrl(videos) {
   if (!videos) return null;
@@ -27,20 +20,14 @@ module.exports = {
   command: 'xv2',
   aliases: ['xv2dl', 'xv2search'],
   category: 'downloader',
-  description: 'Search & browse XVideos with thumbnails (owner/sudo + linked devices)',
+  description: 'Search & browse XVideos with thumbnails (all users)',
   usage: '.xv2 <search query>',
-  ownerOnly: true,
+  ownerOnly: false,
 
   async handler(sock, message, args, context = {}) {
     const chatId   = context.chatId || message.key.remoteJid;
     const channelInfo = context.channelInfo || {};
     const senderId = context.senderId || message.key.participant || message.key.remoteJid;
-
-    if (!(await isAllowed(senderId, context))) {
-      return sock.sendMessage(chatId, {
-        text: '🚫 *XV2 Downloader*\nRestricted to *Owner & Sudo users* only.\nAll linked devices of authorised users are permitted.'
-      }, { quoted: message });
-    }
 
     const query = args.join(' ').trim();
     if (!query) {

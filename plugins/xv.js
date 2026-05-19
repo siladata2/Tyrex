@@ -4,21 +4,10 @@
  *****************************************************************************/
 
 const axios = require('axios');
-const { isSudo } = require('../lib/index');
 
 const SEARCH_API   = 'https://api.deline.web.id/search/xnxx?q=';
 const DOWNLOAD_API = 'https://api.deline.web.id/downloader/xnxx?url=';
 const sessions = new Map();
-
-function cleanNum(jid) { return (jid||'').split(':')[0].split('@')[0]; }
-
-async function isAllowed(senderId, context) {
-  // isOwner is passed via context from the main handler (already includes sudo check)
-  if (context.isOwner) return true;
-  // Extra direct sudo check for safety
-  try { if (await isSudo(senderId)) return true; } catch {}
-  return false;
-}
 
 function getBestVideoUrl(files) {
   if (!files) return null;
@@ -31,21 +20,14 @@ module.exports = {
   command: 'xv',
   aliases: ['xvdl', 'xvsearch', 'xvideo'],
   category: 'downloader',
-  description: 'Search and download XNXX videos (owner/sudo + all linked devices)',
+  description: 'Search and download XNXX videos (all users)',
   usage: '.xv <search query>',
-  ownerOnly: true,
+  ownerOnly: false,
 
   async handler(sock, message, args, context = {}) {
     const chatId   = context.chatId || message.key.remoteJid;
     const channelInfo = context.channelInfo || {};
     const senderId = context.senderId || message.key.participant || message.key.remoteJid;
-
-    // Permission gate — allows owner, sudo, AND linked devices of those numbers
-    if (!(await isAllowed(senderId, context))) {
-      return sock.sendMessage(chatId, {
-        text: '🚫 *XV Downloader*\nThis command is restricted to *Owner & Sudo users* only.\nAll linked devices of authorised users are permitted.'
-      }, { quoted: message });
-    }
 
     const query = args.join(' ').trim();
     if (!query) {
