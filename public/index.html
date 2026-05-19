@@ -2,66 +2,444 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>REDXMINIBOT ULTRA — Backend Status</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REDXBOT302 — Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 <style>
-:root{--bg:#03040a;--red:#ff2d00;--red2:#ff5520;--cyan:#00d4ff;--green:#00ff88;--gold:#ffc300;--text:#e8eaf2;--muted:#555f80;--border:rgba(255,45,0,0.2)}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
-.card{background:#080c18;border:1px solid var(--border);border-radius:20px;padding:40px;max-width:500px;width:100%;text-align:center;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--red),var(--gold),var(--cyan))}
-.logo{font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:900;color:var(--red);margin-bottom:8px;text-shadow:0 0 20px rgba(255,45,0,0.4)}
-.version{font-size:.75rem;color:var(--muted);font-family:'Share Tech Mono',monospace;letter-spacing:.12em;margin-bottom:32px}
-.status-ring{width:80px;height:80px;border-radius:50%;border:3px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 24px;box-shadow:0 0 24px rgba(0,255,136,.4);animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{box-shadow:0 0 20px rgba(0,255,136,.3)}50%{box-shadow:0 0 40px rgba(0,255,136,.6)}}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0}
-.stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px 10px}
-.stat-val{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:700;color:var(--red);display:block}
-.stat-label{font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
-.endpoint{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--cyan);background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);border-radius:8px;padding:8px 14px;margin:4px 0;display:block;text-align:left}
-.footer-note{font-size:.78rem;color:var(--muted);margin-top:24px;font-family:'Share Tech Mono',monospace}
+/* ========== MODERN DARK FUSION ========== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020409;--s1:#060c16;--s2:#0a1628;--s3:#0f1f38;
+  --b1:rgba(255,255,255,.05);--b2:rgba(255,255,255,.1);
+  --fire:#ff4d1c;--fire2:#ff7a45;--fireglow:rgba(255,77,28,.3);
+  --neon:#00f5ff;--neon2:#00bcd4;
+  --green:#00e676;--gbg:rgba(0,230,118,.08);--gbdr:rgba(0,230,118,.25);
+  --red:#ff1744;--rbg:rgba(255,23,68,.08);--rbdr:rgba(255,23,68,.25);
+  --amber:#ffd740;--abg:rgba(255,215,64,.08);--abdr:rgba(255,215,64,.25);
+  --t1:#e8f4ff;--t2:#7a9ab5;--t3:#2a3d52;
+  --ff-head:'Orbitron',monospace;--ff-body:'Rajdhani',sans-serif;
+  --ff-sub:'Inter',sans-serif;--ff-mono:'JetBrains Mono',monospace;
+  --r:12px;--rs:8px;--transition:all .25s cubic-bezier(.4,0,.2,1);
+}
+body{
+  background:var(--bg);color:var(--t1);font-family:var(--ff-body);
+  min-height:100vh;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  opacity:.018;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:128px;
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(0,245,255,.04) 1px, transparent 1px),linear-gradient(90deg, rgba(0,245,255,.04) 1px, transparent 1px);
+  background-size:48px 48px;transform:perspective(800px) rotateX(12deg);transform-origin:50% 0;
+  mask-image:linear-gradient(to bottom, transparent 0%, black 20%, black 70%, transparent 100%);
+}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(120px);animation:drift 20s ease-in-out infinite}
+.orb1{width:700px;height:700px;top:-200px;right:-150px;background:radial-gradient(circle,rgba(255,77,28,.12) 0%,transparent 70%)}
+.orb2{width:600px;height:600px;bottom:-180px;left:-180px;background:radial-gradient(circle,rgba(0,245,255,.08) 0%,transparent 70%);animation-delay:-10s}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.05)}66%{transform:translate(-20px,30px) scale(.97)}}
+.scanlines{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.03;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.8) 2px,rgba(0,0,0,.8) 4px)}
+
+/* navbar */
+.navbar{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(2,4,9,.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,245,255,.1);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px;}
+.nav-logo{display:flex;align-items:center;gap:12px;cursor:pointer}
+.nav-flame{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--fire),var(--ember));display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 20px var(--fireglow);}
+.nav-brand{font-family:var(--ff-head);font-size:.9rem;font-weight:700;letter-spacing:.12em;background:linear-gradient(135deg,var(--fire),var(--ember));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.nav-brand span{display:block;font-size:.6rem;color:var(--t3);}
+.nav-links{display:flex;gap:4px}
+.nav-link{padding:7px 14px;border-radius:var(--rs);font-size:.82rem;font-weight:600;color:var(--t2);cursor:pointer;border:none;background:transparent;text-transform:uppercase;}
+.nav-link.active{color:var(--neon);background:rgba(0,245,255,.1)}
+.nav-right{display:flex;gap:10px;align-items:center}
+.nav-status{display:flex;align-items:center;gap:6px;font-size:.7rem;background:var(--gbg);border:1px solid var(--gbdr);border-radius:50px;padding:4px 12px;color:var(--green);}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:statusblink 2s ease-in-out infinite}
+@keyframes statusblink{0%,100%{opacity:1}50%{opacity:.4}}
+.burger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:transparent;border:none}
+.burger span{display:block;width:22px;height:2px;background:var(--t2);border-radius:2px;}
+.mobile-drawer{position:fixed;top:60px;left:0;right:0;bottom:0;z-index:999;background:rgba(2,4,9,.98);backdrop-filter:blur(30px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transform:translateX(100%);transition:transform .35s;border-top:1px solid rgba(0,245,255,.1);}
+.mobile-drawer.open{transform:translateX(0)}
+.drawer-link{font-family:var(--ff-head);font-size:1.2rem;font-weight:600;text-transform:uppercase;color:var(--t2);cursor:pointer;padding:14px 28px;border-radius:var(--r);text-align:center;width:260px;}
+.drawer-link.active{color:var(--neon);border:1px solid rgba(0,245,255,.25);background:rgba(0,245,255,.05);}
+
+/* pages */
+.page{display:none;min-height:100vh;padding-top:60px;position:relative;z-index:1;}
+.page.active{display:block}
+.container{max-width:1200px;margin:0 auto;padding:40px 24px 80px}
+.container-sm{max-width:640px;margin:0 auto;padding:40px 24px 80px}
+
+/* cards, forms, buttons */
+.card{background:linear-gradient(135deg,var(--s1),var(--s2));border:1px solid var(--b1);border-radius:var(--r);padding:22px;transition:var(--transition);}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border:none;border-radius:var(--rs);font-family:var(--ff-head);font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:var(--transition);}
+.btn-neon{background:transparent;border:1px solid var(--neon);color:var(--neon);}
+.btn-fire{background:linear-gradient(135deg,var(--fire),var(--fire2));color:#fff;box-shadow:0 4px 20px var(--fireglow);}
+.btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--t2);}
+.btn-full{width:100%;justify-content:center;}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:.67rem;letter-spacing:.12em;text-transform:uppercase;color:var(--t2);margin-bottom:7px;}
+input,select,textarea{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--b2);border-radius:var(--rs);padding:12px 15px;color:var(--t1);font-family:var(--ff-sub);font-size:.88rem;outline:none;}
+input:focus{border-color:var(--neon);box-shadow:0 0 0 3px rgba(0,245,255,.12);}
+.flash{padding:11px 15px;border-radius:var(--rs);font-size:.82rem;display:none;margin-bottom:14px;align-items:center;gap:8px;}
+.flash.show{display:flex;}
+.f-ok{background:var(--gbg);border:1px solid var(--gbdr);color:var(--green);}
+.f-err{background:var(--rbg);border:1px solid var(--rbdr);color:var(--red);}
+.f-info{background:rgba(0,245,255,.06);border:1px solid rgba(0,245,255,.2);color:var(--neon);}
+.badge{display:inline-flex;padding:3px 10px;border-radius:50px;font-size:.64rem;font-weight:600;text-transform:uppercase;}
+.b-on{background:var(--gbg);border:1px solid var(--gbdr);color:var(--green);}
+.b-off{background:rgba(150,150,150,.08);border:1px solid rgba(150,150,150,.15);color:#708090;}
+.b-ban{background:var(--rbg);border:1px solid var(--rbdr);color:var(--red);}
+.code-box{background:rgba(0,10,20,.9);border:1px solid rgba(0,245,255,.2);border-radius:var(--r);padding:28px;text-align:center;margin-top:20px;display:none;}
+.code-box.show{display:block;}
+.code-digits{font-family:var(--ff-head);font-size:2.8rem;font-weight:900;letter-spacing:.3em;color:var(--t1);}
+.tbl-wrap{overflow-x:auto;border-radius:var(--rs);border:1px solid var(--b1);}
+table{width:100%;border-collapse:collapse;font-size:.78rem;}
+th{padding:10px 14px;text-align:left;color:var(--t2);font-weight:600;font-size:.64rem;text-transform:uppercase;border-bottom:1px solid var(--b1);}
+td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
+.mono{font-family:var(--ff-mono);}
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+.stat-card{background:linear-gradient(135deg,var(--s2),var(--s3));border:1px solid var(--b1);border-radius:var(--r);padding:20px 16px;text-align:center;}
+.stat-val{font-family:var(--ff-head);font-size:2rem;font-weight:900;color:var(--neon);}
+.stat-lbl{font-size:.67rem;color:var(--t3);text-transform:uppercase;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,245,255,.15);border-top-color:rgba(0,245,255,.7);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:900px){.nav-links{display:none}.burger{display:flex}.stat-grid,.g2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="logo">🔥 REDXMINIBOT ULTRA</div>
-  <div class="version">v8.0 BEAST EDITION · BACKEND ACTIVE</div>
-  <div class="status-ring">✅</div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="scanlines"></div>
 
-  <div class="stat-grid">
-    <div class="stat"><span class="stat-val" id="sPairs">—</span><span class="stat-label">Total Pairs</span></div>
-    <div class="stat"><span class="stat-val" id="sCmds">100+</span><span class="stat-label">Commands</span></div>
-    <div class="stat"><span class="stat-val" id="sActive">—</span><span class="stat-label">Connected</span></div>
-    <div class="stat"><span class="stat-val" id="sUptime">—</span><span class="stat-label">Uptime</span></div>
+<nav class="navbar">
+  <div class="nav-logo" onclick="showPage('home')">
+    <div class="nav-flame">🔥</div>
+    <div class="nav-brand">REDXBOT302<span>v6 — Pair & Deploy</span></div>
+  </div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="showPage('home')">Home</button>
+    <button class="nav-link" onclick="showPage('user')">My Bot</button>
+    <button class="nav-link" onclick="showPage('admin')">Admin</button>
+  </div>
+  <div class="nav-right">
+    <div class="nav-status"><span class="status-dot"></span><span id="navStat">Online</span></div>
+    <button class="burger" id="burgerBtn" onclick="toggleDrawer()"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="mobile-drawer" id="drawer">
+  <button class="drawer-link active" onclick="showPage('home');toggleDrawer()">🏠 Home</button>
+  <button class="drawer-link" onclick="showPage('user');toggleDrawer()">🤖 My Bot</button>
+  <button class="drawer-link" onclick="showPage('admin');toggleDrawer()">👑 Admin</button>
+</div>
+
+<!-- ================= PAGE HOME ================= -->
+<div class="page active" id="page-home">
+  <div class="container-sm" style="text-align:center;padding-top:80px">
+    <div class="hero-eyebrow" style="display:inline-flex;gap:8px;background:rgba(0,245,255,.04);border:1px solid rgba(0,245,255,.2);border-radius:50px;padding:5px 16px;margin-bottom:20px">
+      <span class="status-dot"></span> WhatsApp MD Bot — Pair Code Only
+    </div>
+    <h1 style="font-family:var(--ff-head);font-size:clamp(2.2rem,7vw,4rem);font-weight:900;margin-bottom:12px">REDXBOT302<br><span style="background:linear-gradient(135deg,var(--neon),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Infinite Power</span></h1>
+    <p class="hero-sub" style="color:var(--t2);max-width:500px;margin:0 auto 32px">500+ commands, AI, group tools, and instant pairing — no QR, just code.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:48px">
+      <button class="btn btn-fire" onclick="document.getElementById('pair-section').scrollIntoView({behavior:'smooth'})">⚡ Pair My Bot</button>
+      <button class="btn btn-neon" onclick="showPage('user')">🔍 My Bot Status</button>
+    </div>
   </div>
 
-  <div style="text-align:left;margin-top:16px">
-    <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px;font-family:'Share Tech Mono',monospace">API ENDPOINTS:</div>
-    <span class="endpoint">POST /api/pair        — Get pairing code</span>
-    <span class="endpoint">POST /api/logout      — Disconnect session</span>
-    <span class="endpoint">GET  /api/status      — Bot stats</span>
-    <span class="endpoint">GET  /api/config      — Bot config</span>
-    <span class="endpoint">GET  /health          — Health check</span>
+  <div id="pair-section" class="container-sm">
+    <div style="background:linear-gradient(135deg,var(--s1),var(--s2));border:1px solid rgba(0,245,255,.2);border-radius:var(--rl);padding:32px;margin-bottom:40px">
+      <div class="pair-card-title" style="font-family:var(--ff-head);font-size:.8rem;letter-spacing:.15em;text-align:center;margin-bottom:24px">⚡ GENERATE PAIRING CODE</div>
+      <div class="field">
+        <label>WhatsApp Number (country code, no +)</label>
+        <input type="tel" id="pairPhone" placeholder="923001234567" style="font-size:1rem;font-family:var(--ff-mono)">
+      </div>
+      <div class="flash" id="pairFlash"></div>
+      <button class="btn btn-fire btn-full" onclick="doPair()">GET PAIRING CODE</button>
+      <div class="code-box" id="codeBox">
+        <div class="code-box-label" style="font-size:.63rem;letter-spacing:.2em;color:var(--neon);margin-bottom:14px">Your Pairing Code</div>
+        <div class="code-digits" id="codeDigits">— — — —</div>
+        <div class="code-hint" style="font-size:.78rem;margin-top:14px">Open WhatsApp → ⋮ → Linked Devices → Link a Device → Enter this code</div>
+      </div>
+      <div class="deploy-reveal" id="deployReveal" style="margin-top:20px;background:rgba(255,215,64,.04);border:1px solid rgba(255,215,64,.2);border-radius:var(--rs);padding:16px;text-align:center;display:none">
+        <div class="deploy-label" style="font-size:.62rem;text-transform:uppercase;color:var(--amber)">Your Deploy ID — Save This!</div>
+        <div class="deploy-val" id="deployIdVal" style="font-family:var(--ff-head);font-size:1.5rem;color:var(--amber);word-break:break-all">—</div>
+        <div class="deploy-sub" style="font-size:.72rem;color:var(--t2)">Also sent to your WhatsApp. Use in "My Bot" tab.</div>
+      </div>
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--b1);display:flex;gap:10px">
+        <button class="btn btn-neon btn-full" onclick="showPage('user')">👤 My Bot Portal →</button>
+        <button class="btn btn-ghost btn-full" onclick="showPage('admin')">👑 Admin Panel →</button>
+      </div>
+    </div>
   </div>
+</div>
 
-  <div class="footer-note">Backend is running · Deploy to Heroku / Railway / Render<br>Frontend → Vercel (set BACKEND_URL env var)</div>
+<!-- ================= PAGE USER (Deploy Key Dashboard) ================= -->
+<div class="page" id="page-user">
+  <div id="userGate" style="min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div class="card" style="max-width:460px;width:100%;padding:32px">
+      <div style="text-align:center;margin-bottom:20px">🤖 ACCESS YOUR BOT</div>
+      <div class="field"><label>Deploy Key</label><input type="password" id="deployKeyInput" placeholder="Your secret deploy key..."></div>
+      <div class="flash" id="userGateFlash"></div>
+      <button class="btn btn-fire btn-full" onclick="loadUserDashboard()">Open My Dashboard →</button>
+      <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="showPage('home')">← Back to Home</button>
+    </div>
+  </div>
+  <div id="userShell" style="display:none;padding:24px 24px 60px">
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card"><h3 style="margin-bottom:12px">📊 Bot Status</h3>
+        <div><span class="badge" id="userConnBadge">—</span> <span id="userPhone">—</span></div>
+        <div style="margin-top:8px"><span class="badge b-on" id="userPairsBadge">0 pairs</span></div>
+        <div style="margin-top:12px"><strong>Deploy ID:</strong> <span class="mono" id="userDeployId">—</span></div>
+        <div><strong>Platform:</strong> <span id="userPlatform">—</span></div>
+        <div><strong>Created:</strong> <span id="userCreated">—</span></div>
+      </div>
+      <div class="card"><h3 style="margin-bottom:12px">⚙️ Settings</h3>
+        <div class="field"><label>Bot Name</label><input type="text" id="userBotName"></div>
+        <div class="field"><label>Owner Name</label><input type="text" id="userOwnerName"></div>
+        <div class="field"><label>Prefix</label><input type="text" id="userPrefix" maxlength="3"></div>
+        <div class="field"><label>Mode</label><select id="userMode"><option>public</option><option>private</option></select></div>
+        <div class="flash" id="userSettingsFlash"></div>
+        <button class="btn btn-neon btn-full" onclick="saveUserSettings()">Save Settings</button>
+        <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="userLogoutSession()">Logout My Bot</button>
+      </div>
+    </div>
+    <div class="card"><h3>🔑 Your Deploy Key</h3><p style="margin-bottom:8px">Keep this private. Use it to access this dashboard.</p>
+      <div class="mono" style="background:rgba(0,0,0,.3);padding:10px;border-radius:8px;text-align:center;cursor:pointer" id="userKeyDisplay" onclick="copyToClipboard(this.innerText)">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= PAGE ADMIN (Full Working) ================= -->
+<div class="page" id="page-admin">
+  <div id="adminGate" style="min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div class="card" style="max-width:400px;width:100%">
+      <div style="text-align:center;margin-bottom:20px">🛡️ ADMIN PANEL</div>
+      <div class="field"><label>Username</label><input type="text" id="adminUser" placeholder="Username"></div>
+      <div class="field"><label>Password</label><input type="password" id="adminPass" placeholder="Password"></div>
+      <div class="flash" id="adminLoginFlash"></div>
+      <button class="btn btn-fire btn-full" onclick="adminLogin()">LOGIN</button>
+    </div>
+  </div>
+  <div id="adminShell" style="display:none;padding:24px 24px 60px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap">
+      <h2 style="font-family:var(--ff-head)">Admin Dashboard</h2>
+      <button class="btn btn-ghost btn-sm" onclick="adminLogout()">Logout</button>
+    </div>
+    <div class="stat-grid" id="adminStatsGrid">
+      <div class="stat-card"><div class="stat-val" id="statDeploys">0</div><div class="stat-lbl">Deploys</div></div>
+      <div class="stat-card"><div class="stat-val" id="statPairs">0</div><div class="stat-lbl">Pairs</div></div>
+      <div class="stat-card"><div class="stat-val" id="statUsers">0</div><div class="stat-lbl">Users</div></div>
+      <div class="stat-card"><div class="stat-val" id="statUptime">0s</div><div class="stat-lbl">Uptime</div></div>
+    </div>
+    <div class="g2" style="margin-bottom:24px">
+      <div class="card"><h3>🤖 Bot Info</h3><div id="botInfo">Loading...</div></div>
+      <div class="card"><h3>⚡ Quick Actions</h3>
+        <button class="btn btn-neon btn-full" onclick="reloadPlugins()">Reload Plugins</button>
+        <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="forceRestart()">Restart Bot</button>
+        <button class="btn btn-red btn-full" style="margin-top:8px" onclick="forceLogoutAll()">Force Logout All</button>
+      </div>
+    </div>
+    <div class="card"><h3>📋 All Deploys</h3><div class="flash" id="adminDeploysFlash"></div>
+      <div class="tbl-wrap"><table id="deploysTable"><thead><tr><th>Deploy ID</th><th>Phone</th><th>Pairs</th><th>Platform</th><th>Last Seen</th><th>Actions</th> </thead><tbody><tr><td colspan="6" style="text-align:center">Loading...</td></tr></tbody></table></div>
+    </div>
+    <div class="card" style="margin-top:20px"><h3>🌐 Servers</h3><div class="flash" id="serverFlash"></div>
+      <div class="g2" style="margin-bottom:16px"><div class="field"><label>Name</label><input id="srvName" placeholder="Heroku EU"></div><div class="field"><label>URL</label><input id="srvUrl" placeholder="https://app.heroku.com/..."></div><div class="field"><label>Platform</label><input id="srvPlatform" placeholder="Heroku"></div><div class="field"><label>Status</label><select id="srvStatus"><option>online</option><option>maintenance</option><option>offline</option></select></div></div>
+      <button class="btn btn-neon btn-full" onclick="addAdminServer()">Add Server</button>
+      <div id="serversList" style="margin-top:20px"></div>
+    </div>
+    <div class="card" style="margin-top:20px"><h3>🔐 Change Admin Credentials</h3><div class="flash" id="credFlash"></div>
+      <div class="g2"><div class="field"><label>Current Password</label><input type="password" id="curPass"></div><div class="field"><label>New Username</label><input type="text" id="newUser"></div><div class="field"><label>New Password</label><input type="password" id="newPass"></div></div>
+      <button class="btn btn-fire" onclick="updateAdminCreds()">Update Credentials</button>
+    </div>
+  </div>
 </div>
 
 <script>
-async function load() {
-  try {
-    const r = await fetch('/api/status');
-    const d = await r.json();
-    document.getElementById('sPairs').textContent  = d.pairCount || 0;
-    document.getElementById('sCmds').textContent   = (d.commands || 100) + '+';
-    document.getElementById('sActive').textContent = d.activeSockets || 0;
-    const up = d.uptime || 0;
-    const h = Math.floor(up/3600), m = Math.floor((up%3600)/60), s = up%60;
-    document.getElementById('sUptime').textContent = h ? `${h}h${m}m` : `${m}m${s}s`;
-  } catch {}
+const socket = io(); let currentDeployKey = ''; let adminToken = localStorage.getItem('at') || null; let deployIdGlobal = '';
+
+// helper
+function flash(id, msg, type, dur=4000) { let el=document.getElementById(id); if(!el) return; el.className=`flash f-${type} show`; el.innerHTML=msg; if(dur) setTimeout(()=>el.classList.remove('show'),dur); }
+function copyToClipboard(txt) { navigator.clipboard?.writeText(txt); toast('Copied!','ok'); }
+function toast(msg,type) { const t=document.createElement('div'); t.className=`flash f-${type}`; t.style.position='fixed'; t.style.bottom='20px'; t.style.left='50%'; t.style.transform='translateX(-50%)'; t.style.zIndex='9999'; t.innerHTML=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
+function showPage(name) { document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.getElementById(`page-${name}`).classList.add('active'); if(name==='user' && currentDeployKey) loadUserDashboard(); if(name==='admin' && adminToken) loadAdminData(); }
+function toggleDrawer() { document.getElementById('burgerBtn').classList.toggle('open'); document.getElementById('drawer').classList.toggle('open'); }
+
+// ========== PAIR ==========
+async function doPair() {
+  const num = document.getElementById('pairPhone').value.replace(/\D/g,'');
+  if(num.length<7) { flash('pairFlash','❌ Enter valid number with country code','err'); return; }
+  flash('pairFlash','<span class="spin"></span> Generating...','info',0);
+  try{
+    const res = await fetch('/api/pair',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:num})});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error||'Pair failed');
+    const code = d.pairingCode||'----';
+    document.getElementById('codeDigits').textContent = code.match(/.{1,4}/g)?.join('-') || code;
+    document.getElementById('codeBox').classList.add('show');
+    if(d.deployId) { document.getElementById('deployIdVal').textContent = d.deployId; document.getElementById('deployReveal').style.display='block'; deployIdGlobal=d.deployId; }
+    flash('pairFlash','✅ Code ready! Enter in WhatsApp → Linked Devices','ok');
+  } catch(e){ flash('pairFlash','❌ '+e.message,'err'); }
 }
-load(); setInterval(load, 10000);
+
+// ========== USER DASHBOARD (Deploy Key) ==========
+async function loadUserDashboard() {
+  const key = document.getElementById('deployKeyInput').value.trim();
+  if(!key) { flash('userGateFlash','❌ Enter your deploy key','err'); return; }
+  try{
+    const res = await fetch('/api/user/info',{method:'POST',headers:{'Content-Type':'application/json','x-deploy-key':key},body:JSON.stringify({deployKey:key})});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error||'Invalid key');
+    currentDeployKey = key;
+    document.getElementById('userGate').style.display='none';
+    document.getElementById('userShell').style.display='block';
+    document.getElementById('userConnBadge').innerHTML = d.connected ? '<span class="badge b-on">🟢 Online</span>' : '<span class="badge b-off">🔴 Offline</span>';
+    document.getElementById('userPhone').innerHTML = d.numbers?.length ? `+${d.numbers[0]}` : '—';
+    document.getElementById('userPairsBadge').innerHTML = `${d.pairCount||0} pairs`;
+    document.getElementById('userDeployId').innerText = d.deployId||'—';
+    document.getElementById('userPlatform').innerText = d.platform||'—';
+    document.getElementById('userCreated').innerText = d.createdAt ? new Date(d.createdAt).toLocaleString() : '—';
+    document.getElementById('userBotName').value = d.botName||'';
+    document.getElementById('userOwnerName').value = d.ownerName||'';
+    document.getElementById('userPrefix').value = d.prefix||'.';
+    document.getElementById('userMode').value = d.mode||'public';
+    document.getElementById('userKeyDisplay').innerText = key;
+  } catch(e){ flash('userGateFlash','❌ '+e.message,'err'); }
+}
+async function saveUserSettings() {
+  if(!currentDeployKey) return;
+  try{
+    const res = await fetch('/api/user/update',{method:'POST',headers:{'Content-Type':'application/json','x-deploy-key':currentDeployKey},body:JSON.stringify({
+      deployKey:currentDeployKey,
+      botName:document.getElementById('userBotName').value,
+      ownerName:document.getElementById('userOwnerName').value,
+      prefix:document.getElementById('userPrefix').value,
+      mode:document.getElementById('userMode').value,
+    })});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error);
+    flash('userSettingsFlash','✅ Settings saved','ok');
+  } catch(e){ flash('userSettingsFlash','❌ '+e.message,'err'); }
+}
+async function userLogoutSession() {
+  if(!confirm('Logout and delete session?')) return;
+  try{
+    await fetch('/api/user/logout',{method:'POST',headers:{'Content-Type':'application/json','x-deploy-key':currentDeployKey},body:JSON.stringify({deployKey:currentDeployKey})});
+    toast('Logged out','ok');
+    document.getElementById('userGate').style.display='flex';
+    document.getElementById('userShell').style.display='none';
+    currentDeployKey='';
+  } catch(e){ toast('Logout failed','err'); }
+}
+
+// ========== ADMIN ==========
+async function adminLogin() {
+  const u = document.getElementById('adminUser').value.trim();
+  const p = document.getElementById('adminPass').value;
+  if(!u||!p) { flash('adminLoginFlash','❌ Enter credentials','err'); return; }
+  try{
+    const res = await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error||'Invalid credentials');
+    adminToken = d.token; localStorage.setItem('at',adminToken);
+    document.getElementById('adminGate').style.display='none';
+    document.getElementById('adminShell').style.display='block';
+    loadAdminData();
+  } catch(e){ flash('adminLoginFlash','❌ '+e.message,'err'); }
+}
+function adminLogout() { adminToken=null; localStorage.removeItem('at'); document.getElementById('adminGate').style.display='flex'; document.getElementById('adminShell').style.display='none'; showPage('home'); }
+async function loadAdminData() {
+  if(!adminToken) return;
+  try{
+    const ov = await fetch('/api/admin/overview',{headers:{'x-admin-token':adminToken}});
+    const stats = await ov.json();
+    document.getElementById('statDeploys').innerText = stats.stats?.totalDeploys||0;
+    document.getElementById('statPairs').innerText = stats.stats?.totalPairs||0;
+    document.getElementById('statUsers').innerText = stats.stats?.totalUsers||0;
+    const up = stats.stats?.uptime||0; let uptxt = up<60?up+'s': up<3600?Math.floor(up/60)+'m': Math.floor(up/3600)+'h';
+    document.getElementById('statUptime').innerText = uptxt;
+    document.getElementById('botInfo').innerHTML = `<div>Bot: ${stats.botName||'REDXBOT'}</div><div>Mode: ${stats.mode||'public'}</div><div>Deploy ID: ${stats.deployId||'—'}</div>`;
+    // deploys table
+    const deploysRes = await fetch('/api/admin/deploys',{headers:{'x-admin-token':adminToken}});
+    const deploys = await deploysRes.json();
+    const tbody = document.querySelector('#deploysTable tbody');
+    if(!deploys.deploys?.length) tbody.innerHTML='<tr><td colspan="6" style="text-align:center">No deploys</td></tr>';
+    else tbody.innerHTML = deploys.deploys.map(d=>`<tr><td class="mono">${d.id}</td><td>${d.phone||'—'}</td><td>${d.pairCount||0}</td><td>${d.platform||'—'}</td><td>${d.lastSeen?new Date(d.lastSeen).toLocaleString():'—'}</td><td><button class="btn btn-red btn-sm" onclick="deleteDeploy('${d.id}')">Delete</button></td></tr>`).join('');
+    // servers
+    loadServersList();
+  } catch(e){ console.error(e); }
+}
+async function loadServersList() {
+  if(!adminToken) return;
+  try{
+    const res = await fetch('/api/admin/servers',{headers:{'x-admin-token':adminToken}});
+    const d = await res.json();
+    const srvDiv = document.getElementById('serversList');
+    if(!d.servers?.length) { srvDiv.innerHTML='<div style="color:var(--t2)">No servers added.</div>'; return; }
+    srvDiv.innerHTML = d.servers.map(s=>`<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--b1);padding:8px 0"><span><strong>${s.name}</strong> (${s.platform||'—'}) ${s.url?`<a href="${s.url}" target="_blank" style="color:var(--neon)">link</a>`:''}</span><button class="btn btn-red btn-xs" onclick="deleteServer('${s.id}')">Remove</button></div>`).join('');
+  } catch(e){}
+}
+async function addAdminServer() {
+  if(!adminToken) return;
+  const name=document.getElementById('srvName').value.trim(), url=document.getElementById('srvUrl').value.trim(), platform=document.getElementById('srvPlatform').value.trim(), status=document.getElementById('srvStatus').value;
+  if(!name||!url) { flash('serverFlash','❌ Name & URL required','err'); return; }
+  try{
+    const res = await fetch('/api/admin/servers',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':adminToken},body:JSON.stringify({name,url,platform,status,region:'Global'})});
+    const d = await res.json();
+    if(d.success) { flash('serverFlash','✅ Server added','ok'); document.getElementById('srvName').value=''; document.getElementById('srvUrl').value=''; loadServersList(); loadAdminData(); }
+    else flash('serverFlash','❌ Failed','err');
+  } catch(e){ flash('serverFlash','❌ Error','err'); }
+}
+async function deleteServer(id) {
+  if(!confirm('Remove server?')) return;
+  await fetch(`/api/admin/servers/${id}`,{method:'DELETE',headers:{'x-admin-token':adminToken}});
+  loadServersList(); loadAdminData();
+}
+async function deleteDeploy(id) {
+  if(!confirm(`Delete deploy ${id}?`)) return;
+  await fetch(`/api/admin/deploys/${id}`,{method:'DELETE',headers:{'x-admin-token':adminToken}});
+  loadAdminData();
+}
+async function reloadPlugins() {
+  if(!adminToken) return;
+  await fetch('/api/reload',{method:'POST',headers:{'x-admin-token':adminToken}});
+  toast('Plugins reloaded','ok');
+}
+async function forceRestart() {
+  if(!confirm('Restart bot process? May take a moment.')) return;
+  await fetch('/api/admin/bot/restart',{method:'POST',headers:{'x-admin-token':adminToken}});
+  toast('Restart triggered','ok');
+}
+async function forceLogoutAll() {
+  if(!confirm('Logout all WhatsApp sessions?')) return;
+  await fetch('/api/admin/bot/logout',{method:'POST',headers:{'x-admin-token':adminToken}});
+  toast('All sessions logged out','ok');
+}
+async function updateAdminCreds() {
+  const cur = document.getElementById('curPass').value;
+  const newUser = document.getElementById('newUser').value.trim();
+  const newPass = document.getElementById('newPass').value;
+  if(!cur) { flash('credFlash','❌ Current password required','err'); return; }
+  try{
+    const res = await fetch('/api/admin/settings/credentials',{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':adminToken},body:JSON.stringify({currentPassword:cur,newUsername:newUser||undefined,newPassword:newPass||undefined})});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error);
+    flash('credFlash','✅ Updated. You will be logged out.','ok');
+    setTimeout(()=>adminLogout(),2000);
+  } catch(e){ flash('credFlash','❌ '+e.message,'err'); }
+}
+
+// Socket live status & stats
+socket.on('botStatus', (d) => { if(d.connected) document.getElementById('navStat').innerHTML='Online'; else document.getElementById('navStat').innerHTML='Offline'; });
+socket.on('statsUpdate', (d) => { if(document.getElementById('statUsers')) document.getElementById('statUsers').innerText = d.totalUsers||0; });
+setInterval(async ()=>{ if(adminToken && document.getElementById('page-admin').classList.contains('active')) loadAdminData(); }, 15000);
+setInterval(async ()=>{ try{const r=await fetch('/api/status');const s=await r.json();if(s.connected)document.getElementById('navStat').innerHTML='Online';}catch{}},10000);
+
+// initial load
+window.onload = ()=>{ if(adminToken) { document.getElementById('adminGate').style.display='none'; document.getElementById('adminShell').style.display='block'; loadAdminData(); } };
 </script>
 </body>
 </html>
