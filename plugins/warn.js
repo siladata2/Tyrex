@@ -1,142 +1,151 @@
-/**
- * REDXBOT302 — Warning System Plugin
- * Commands: warn, warnings, clearwarn, setwarnlimit
- * Owner: Abdul Rehman Rajpoot
- */
+const fs = require('fs');
+const path = require('path');
+const store = require('../lib/lightweight_store');
 
-'use strict';
+const MONGO_URL = process.env.MONGO_URL;
+const POSTGRES_URL = process.env.POSTGRES_URL;
+const MYSQL_URL = process.env.MYSQL_URL;
+const SQLITE_URL = process.env.DB_URL;
+const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 
-const fs        = require('fs');
-const path      = require('path');
-const fakevCard = require('../lib/fakevcard');
+const databaseDir = path.join(process.cwd(), 'data');
+const warningsPath = path.join(databaseDir, 'warnings.json');
 
-const BOT_NAME = process.env.BOT_NAME || '🔥 REDXBOT302 🔥';
-const NL_JID   = process.env.NEWSLETTER_JID || '120363405513439052@newsletter';
-
-const ctxInfo = () => ({
-  forwardingScore: 999, isForwarded: true,
-  forwardedNewsletterMessageInfo: { newsletterJid: NL_JID, newsletterName: `🔥 ${BOT_NAME}`, serverMessageId: 200 },
-});
-
-const WARN_FILE = path.join(process.cwd(), 'data', 'warnings.json');
-function loadWarns() {
-  try { return JSON.parse(fs.readFileSync(WARN_FILE, 'utf8')); } catch { return {}; }
-}
-function saveWarns(data) {
-  try { fs.writeFileSync(WARN_FILE, JSON.stringify(data, null, 2)); } catch {}
+function initializeWarningsFile() {
+  if (!HAS_DB) {
+    if (!fs.existsSync(databaseDir)) {
+      fs.mkdirSync(databaseDir, { recursive: true });
+    }
+    
+    if (!fs.existsSync(warningsPath)) {
+      fs.writeFileSync(warningsPath, JSON.stringify({}), 'utf8');
+    }
+  }
 }
 
-const send = (conn, from, text, mentions = []) =>
-  conn.sendMessage(from, { text, mentions, contextInfo: ctxInfo() }, { quoted: fakevCard });
+async function getWarnings() {
+  if (HAS_DB) {
+    const warnings = await store.getSetting('global', 'warnings');
+    return warnings || {};
+  } else {
+    try {
+      return JSON.parse(fs.readFileSync(warningsPath, 'utf8'));
+    } catch (error) {
+      return {};
+    }
+  }
+}
 
-const checkAdmin = async (conn, from, sender) => {
-  const meta = await conn.groupMetadata(from);
-  const p    = meta.participants.find(x => x.id === sender);
-  const isAdm = p?.admin === 'admin' || p?.admin === 'superadmin';
-  const ownerNum = process.env.OWNER_NUMBER || '923009842133';
-  const isOwn    = sender.split('@')[0].split(':')[0] === ownerNum;
-  if (!isAdm && !isOwn) throw new Error('❌ Admin only command.');
-  return meta;
-};
+async function saveWarnings(warnings) {
+  if (HAS_DB) {
+    await store.saveSetting('global', 'warnings', warnings);
+  } else {
+    fs.writeFileSync(warningsPath, JSON.stringify(warnings, null, 2));
+  }
+}
 
-module.exports = [
+module.exports = {
+  command: 'warn',
+  aliases: ['warning'],
+  category: 'admin',
+  description: 'Warn a user (auto-kick after 3 warnings)',
+  usage: '.warn [@user] or reply to message',
+  groupOnly: true,
+  adminOnly: true,
+  
+  async handler(sock, message, args, context) {
+    const { chatId, senderId, channelInfo } = context;
+    
+    try {
+      initializeWarningsFile();
 
-  {
-    pattern: 'warn',
-    desc: 'Warn a user in the group',
-    category: 'Group',
-    react: '⚠️',
-    use: '.warn @user [reason]',
-    execute: async (conn, msg, m, { from, args, isGroup, sender, reply }) => {
-      if (!isGroup) return reply('❌ Group only command.');
+      let userToWarn;
+      const mentionedJids = message.message?.extendedTextMessage?.contextInfo?.mentionedJid;
+      
+      if (mentionedJids && mentionedJids.length > 0) {
+        userToWarn = mentionedJids[0];
+      }
+      else if (message.message?.extendedTextMessage?.contextInfo?.participant) {
+        userToWarn = message.message.extendedTextMessage.contextInfo.participant;
+      }
+      
+      if (!userToWarn) {
+        await sock.sendMessage(chatId, { 
+          text: '❌ Error: Please mention the user or reply to their message to warn!',
+          ...channelInfo
+        }, { quoted: message });
+        return;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       try {
-        await checkAdmin(conn, from, sender);
-        const target = m.mentionedJid?.[0] || m.quoted?.sender;
-        if (!target) return reply('❌ Mention or reply to a user to warn them.');
+        let warnings = await getWarnings();
+        
+        if (!warnings[chatId]) warnings[chatId] = {};
+        if (!warnings[chatId][userToWarn]) warnings[chatId][userToWarn] = 0;
+        
+        warnings[chatId][userToWarn]++;
+        await saveWarnings(warnings);
 
-        const reason  = m.mentionedJid?.[0] ? args.slice(1).join(' ') : args.join(' ');
-        const warns   = loadWarns();
-        const key     = `${from}::${target}`;
-        warns[key]    = (warns[key] || 0) + 1;
-        saveWarns(warns);
+        const warningMessage = `*『 WARNING ALERT 』*\n\n` +
+          `👤 *Warned User:* @${userToWarn.split('@')[0]}\n` +
+          `⚠️ *Warning Count:* ${warnings[chatId][userToWarn]}/3\n` +
+          `👑 *Warned By:* @${senderId.split('@')[0]}\n` +
+          `🗄️ *Storage:* ${HAS_DB ? 'Database' : 'File System'}\n\n` +
+          `📅 *Date:* ${new Date().toLocaleString()}`;
 
-        const MAX = 3;
-        const count = warns[key];
-        const num   = target.split('@')[0];
+        await sock.sendMessage(chatId, { 
+          text: warningMessage,
+          mentions: [userToWarn, senderId],
+          ...channelInfo
+        });
 
-        await conn.sendMessage(from, { react: { text: '⚠️', key: msg.key } });
-        await send(conn, from,
-`⚠️ *WARNING ISSUED*
+        if (warnings[chatId][userToWarn] >= 3) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
 
-👤 User: @${num}
-⚠️ Warnings: ${count}/${MAX}
-📝 Reason: ${reason || 'No reason provided'}
+          await sock.groupParticipantsUpdate(chatId, [userToWarn], "remove");
+          delete warnings[chatId][userToWarn];
+          await saveWarnings(warnings);
+          
+          const kickMessage = `*『 AUTO-KICK 』*\n\n` +
+            `@${userToWarn.split('@')[0]} has been removed from the group after receiving 3 warnings! ⚠️`;
 
-${count >= MAX ? '🚨 *MAX WARNINGS REACHED — Kicking user!*' : `🔔 ${MAX - count} more warning(s) before kick.`}
-
-> 🔥 ${BOT_NAME}`, [target]);
-
-        if (count >= MAX) {
-          try {
-            await new Promise(r => setTimeout(r, 1500));
-            await conn.groupParticipantsUpdate(from, [target], 'remove');
-            warns[key] = 0;
-            saveWarns(warns);
-          } catch (e) {
-            await send(conn, from, `❌ Couldn't kick @${num}: ${e.message}`, [target]);
-          }
+          await sock.sendMessage(chatId, { 
+            text: kickMessage,
+            mentions: [userToWarn],
+            ...channelInfo
+          });
         }
-      } catch (e) {
-        return reply(e.message);
+      } catch (error) {
+        console.error('Error in warn command:', error);
+        await sock.sendMessage(chatId, { 
+          text: '❌ Failed to warn user!',
+          ...channelInfo
+        }, { quoted: message });
       }
-    },
-  },
-
-  {
-    pattern: 'warnings',
-    alias: ['warncount', 'checkwarn'],
-    desc: 'Check warnings of a user',
-    category: 'Group',
-    react: '📋',
-    use: '.warnings @user',
-    execute: async (conn, msg, m, { from, isGroup, reply }) => {
-      if (!isGroup) return reply('❌ Group only command.');
-      const target = m.mentionedJid?.[0] || m.quoted?.sender;
-      if (!target) return reply('❌ Mention or reply to a user.');
-      const warns = loadWarns();
-      const count = warns[`${from}::${target}`] || 0;
-      await send(conn, from,
-`📋 *Warnings for @${target.split('@')[0]}*
-
-⚠️ Count: ${count}/3
-${count === 0 ? '✅ Clean record!' : count >= 3 ? '🚨 Eligible for kick!' : `🔔 ${3 - count} warning(s) remaining.`}
-
-> 🔥 ${BOT_NAME}`, [target]);
-      await conn.sendMessage(from, { react: { text: '✅', key: msg.key } });
-    },
-  },
-
-  {
-    pattern: 'clearwarn',
-    alias: ['resetwarn'],
-    desc: 'Clear warnings of a user',
-    category: 'Group',
-    react: '🗑️',
-    use: '.clearwarn @user',
-    execute: async (conn, msg, m, { from, isGroup, sender, reply }) => {
-      if (!isGroup) return reply('❌ Group only command.');
-      try {
-        await checkAdmin(conn, from, sender);
-        const target = m.mentionedJid?.[0] || m.quoted?.sender;
-        if (!target) return reply('❌ Mention or reply to a user.');
-        const warns = loadWarns();
-        delete warns[`${from}::${target}`];
-        saveWarns(warns);
-        await send(conn, from, `✅ Warnings cleared for @${target.split('@')[0]}!\n\n> 🔥 ${BOT_NAME}`, [target]);
-        await conn.sendMessage(from, { react: { text: '✅', key: msg.key } });
-      } catch (e) {
-        return reply(e.message);
+    } catch (error) {
+      console.error('Error in warn command:', error);
+      if (error.data === 429) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+          await sock.sendMessage(chatId, { 
+            text: '❌ Rate limit reached. Please try again in a few seconds.',
+            ...channelInfo
+          }, { quoted: message });
+        } catch (retryError) {
+          console.error('Error sending retry message:', retryError);
+        }
+      } else {
+        try {
+          await sock.sendMessage(chatId, { 
+            text: '❌ Failed to warn user. Make sure the bot is admin and has sufficient permissions.',
+            ...channelInfo
+          }, { quoted: message });
+        } catch (sendError) {
+          console.error('Error sending error message:', sendError);
+        }
       }
-    },
-  },
-];
+    }
+  }
+};
