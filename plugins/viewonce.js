@@ -550,7 +550,7 @@ const vv2Command = {
 /* ══════════════════════════════════════════════════════════════════
    COMMAND: .vvset
    Add a trigger word / emoji for auto-intercept.
-   ✅ Owner + Sudo can use this.
+   ✅ Owner + Sudo can use this (uses isSudoOrOwner check).
 ══════════════════════════════════════════════════════════════════ */
 const vvSetCommand = {
     command    : 'vvset',
@@ -561,14 +561,6 @@ const vvSetCommand = {
 
     async handler(sock, message, args, context = {}) {
         const chatId = context.chatId || message.key.remoteJid;
-        const sender = getSender(message, context);
-
-        // ── Permission check: owner OR sudo ──────────────────────────────────
-        if (!isSudoOrOwner(sock, sender, context)) {
-            return await sock.sendMessage(chatId,
-                { text: VV_CONFIG.notAllowedMsg }, { quoted: message }
-            );
-        }
 
         const trigger = safeArgs(args).join(' ').trim();
 
