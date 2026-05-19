@@ -1,7 +1,7 @@
 /*****************************************************************************
  *                                                                           *
  *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
+ *                                                            *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
  *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *

@@ -1,211 +1,87 @@
-/**
- * REDXBOT302 — Broadcast & Tag Plugin
- * Commands: tagall, hidetag, broadcast, poll
- * Owner: Abdul Rehman Rajpoot
- */
+/*****************************************************************************
+ *                                                                           *
+ *                     Developed By Abdul Rehman Rajpoot                     *
+ *                                                            *
+ *                                                                           *
+ *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
+ *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
+ *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
+ *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
+ *                                                                           *
+ *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
+ *                                                                           *
+ *****************************************************************************/
 
-'use strict';
+module.exports = {
+    command: 'broadcast',
+    aliases: ['bc', 'announce'],
+    category: 'owner',
+    description: 'Broadcast a message to all groups the bot is in',
+    usage: '.broadcast <message>',
+    ownerOnly: true,
 
-const fakevCard = require('../lib/fakevcard');
+    async handler(sock, message, args, context = {}) {
+        const chatId = context.chatId || message.key.remoteJid;
+        const channelInfo = context.channelInfo || {};
 
-const BOT_NAME   = process.env.BOT_NAME   || '🔥 REDXBOT302 🔥';
-const OWNER_NAME = process.env.OWNER_NAME || 'Abdul Rehman Rajpoot';
-const NL_JID     = process.env.NEWSLETTER_JID || '120363405513439052@newsletter';
+        const text = args.join(' ').trim();
 
-const ctxInfo = () => ({
-  forwardingScore: 999, isForwarded: true,
-  forwardedNewsletterMessageInfo: { newsletterJid: NL_JID, newsletterName: `🔥 ${BOT_NAME}`, serverMessageId: 200 },
-});
+        if (!text) {
+            return await sock.sendMessage(chatId, {
+                text: `*📢 BROADCAST*\n\n*Usage:* .broadcast <message>\n\n*Example:*\n.broadcast Hello everyone! Bot will be down for maintenance at 10 PM.\n\n_Sends to all groups the bot is in. Has a 1 second delay between each group to avoid ban._`,
+                ...channelInfo
+            }, { quoted: message });
+        }
 
-const checkAdmin = async (conn, from, sender) => {
-  const meta = await conn.groupMetadata(from);
-  const p    = meta.participants.find(x => x.id === sender);
-  const isAdm = p?.admin === 'admin' || p?.admin === 'superadmin';
-  const ownerNum = process.env.OWNER_NUMBER || '923009842133';
-  const isOwn    = sender.split('@')[0].split(':')[0] === ownerNum;
-  if (!isAdm && !isOwn) throw new Error('❌ Admin/Owner only.');
-  return meta;
+        let groups = [];
+        try {
+            const allChats = Object.keys(sock.store?.chats || {});
+            groups = allChats.filter(jid => jid.endsWith('@g.us'));
+        } catch (e) {
+            console.error('[BROADCAST] Error getting groups:', e.message);
+        }
+
+        if (groups.length === 0) {
+            return await sock.sendMessage(chatId, {
+                text: '❌ No groups found. Make sure the bot is in at least one group.',
+                ...channelInfo
+            }, { quoted: message });
+        }
+
+        await sock.sendMessage(chatId, {
+            text: `📢 *Broadcasting to ${groups.length} group(s)...*\n\nThis may take a moment.`,
+            ...channelInfo
+        }, { quoted: message });
+
+        const broadcastText = `📢 *BROADCAST MESSAGE*\n\n${text}`;
+        let sent = 0;
+        let failed = 0;
+
+        for (const groupJid of groups) {
+            try {
+                await sock.sendMessage(groupJid, {
+                    text: broadcastText,
+                    contextInfo: {
+                        forwardingScore: 1,
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: '120363405513439052@newsletter',
+                            newsletterName: 'REDXBOT302',
+                            serverMessageId: -1
+                        }
+                    }
+                });
+                sent++;
+            } catch (e) {
+                console.error(`[BROADCAST] Failed to send to ${groupJid}: ${e.message}`);
+                failed++;
+            }
+            await new Promise(r => setTimeout(r, 1000));
+        }
+
+        await sock.sendMessage(chatId, {
+            text: `✅ *Broadcast Complete!*\n\n📤 Sent: ${sent}\n❌ Failed: ${failed}\n📊 Total: ${groups.length}`,
+            ...channelInfo
+        }, { quoted: message });
+    }
 };
-
-module.exports = [
-
-  // ── TAG ALL ────────────────────────────────────────────
-  {
-    pattern: 'btagall',
-    alias: ['tag', 'everyone', 'all'],
-    desc: 'Tag all group members',
-    category: 'Group',
-    react: '📢',
-    use: '.tagall [message]',
-    execute: async (conn, msg, m, { from, q, isGroup, sender, reply }) => {
-      if (!isGroup) return reply('❌ Group only command.');
-      try {
-        const meta = await checkAdmin(conn, from, sender);
-        const members   = meta.participants.map(p => p.id);
-        const mentions  = members;
-        const chunkSize = 20;
-        const message   = q || '📢 Attention everyone!';
-
-        // Build mention text
-        const tags = members.map(id => `@${id.split('@')[0]}`).join(' ');
-        const text =
-`╔══════[ *TAG ALL* ]══════╗
-
-📢 ${message}
-
-${tags}
-
-> 🔥 ${BOT_NAME} | By ${OWNER_NAME}`;
-
-        await conn.sendMessage(from, { text, mentions, contextInfo: ctxInfo() }, { quoted: fakevCard });
-        await conn.sendMessage(from, { react: { text: '✅', key: msg.key } });
-      } catch (e) {
-        return reply(e.message);
-      }
-    },
-  },
-
-  // ── HIDETAG ────────────────────────────────────────────
-  {
-    pattern: 'hidetag',
-    alias: ['htag', 'silentping'],
-    desc: 'Tag all members silently (no visible mention)',
-    category: 'Group',
-    react: '🔕',
-    use: '.hidetag <message>',
-    execute: async (conn, msg, m, { from, q, isGroup, sender, reply }) => {
-      if (!isGroup) return reply('❌ Group only command.');
-      if (!q) return reply('❌ Provide a message.\n*Usage:* .hidetag <message>');
-      try {
-        const meta    = await checkAdmin(conn, from, sender);
-        const mentions = meta.participants.map(p => p.id);
-        await conn.sendMessage(from, { text: q, mentions, contextInfo: ctxInfo() }, { quoted: fakevCard });
-        await conn.sendMessage(from, { react: { text: '✅', key: msg.key } });
-      } catch (e) {
-        return reply(e.message);
-      }
-    },
-  },
-
-  // ── POLL ───────────────────────────────────────────────
-  {
-    pattern: 'poll',
-    desc: 'Create a poll in the group',
-    category: 'Group',
-    react: '📊',
-    use: '.poll Question | Option1 | Option2 | ...',
-    execute: async (conn, msg, m, { from, q, isGroup, reply }) => {
-      if (!isGroup) return reply('❌ Group only command.');
-      if (!q) return reply('❌ Usage: .poll Question | Option1 | Option2\nExample: .poll Best food? | Pizza | Burger | Sushi');
-      const parts = q.split('|').map(x => x.trim()).filter(Boolean);
-      if (parts.length < 3) return reply('❌ Provide a question and at least 2 options.\n*Usage:* .poll Question | Opt1 | Opt2');
-      const [question, ...opts] = parts;
-      try {
-        await conn.sendMessage(from, {
-          poll: {
-            name:              question,
-            values:            opts.slice(0, 12),
-            selectableCount:   1,
-          },
-        });
-        await conn.sendMessage(from, { react: { text: '📊', key: msg.key } });
-      } catch (e) {
-        return reply(`❌ Failed to create poll: ${e.message}`);
-      }
-    },
-  },
-
-  // ── MUTE/UNMUTE ────────────────────────────────────────
-  {
-    pattern: 'bmute',
-    desc: 'Mute the group (only admins can message)',
-    category: 'Group',
-    react: '🔇',
-    use: '.mute',
-    execute: async (conn, msg, m, { from, isGroup, sender, reply }) => {
-      if (!isGroup) return reply('❌ Group only command.');
-      try {
-        await checkAdmin(conn, from, sender);
-        await conn.groupSettingUpdate(from, 'announcement');
-        await conn.sendMessage(from, { text: '🔇 *Group Muted!*\nOnly admins can now send messages.\n\n> 🔥 ' + BOT_NAME, contextInfo: ctxInfo() }, { quoted: fakevCard });
-        await conn.sendMessage(from, { react: { text: '🔇', key: msg.key } });
-      } catch (e) { return reply(e.message); }
-    },
-  },
-
-  {
-    pattern: 'bunmute',
-    desc: 'Unmute the group (everyone can message)',
-    category: 'Group',
-    react: '🔊',
-    use: '.unmute',
-    execute: async (conn, msg, m, { from, isGroup, sender, reply }) => {
-      if (!isGroup) return reply('❌ Group only command.');
-      try {
-        await checkAdmin(conn, from, sender);
-        await conn.groupSettingUpdate(from, 'not_announcement');
-        await conn.sendMessage(from, { text: '🔊 *Group Unmuted!*\nEveryone can now send messages.\n\n> 🔥 ' + BOT_NAME, contextInfo: ctxInfo() }, { quoted: fakevCard });
-        await conn.sendMessage(from, { react: { text: '🔊', key: msg.key } });
-      } catch (e) { return reply(e.message); }
-    },
-  },
-
-  // ── GROUP INFO ────────────────────────────────────────
-  {
-    pattern: 'bgroupinfo',
-    alias: ['ginfo', 'grpinfo'],
-    desc: 'Show group info and stats',
-    category: 'Group',
-    react: 'ℹ️',
-    use: '.groupinfo',
-    execute: async (conn, msg, m, { from, isGroup, reply }) => {
-      if (!isGroup) return reply('❌ Group only command.');
-      try {
-        const meta    = await conn.groupMetadata(from);
-        const admins  = meta.participants.filter(p => p.admin).map(p => `@${p.id.split('@')[0]}`).join(', ');
-        const created = new Date(meta.creation * 1000).toLocaleDateString('en-US');
-        const text =
-`╔══════[ *Group Info* ]══════╗
-
-📌 *Name:* ${meta.subject}
-📝 *Desc:* ${(meta.desc || 'No description').substring(0, 100)}
-👥 *Members:* ${meta.participants.length}
-👑 *Admins:* ${admins || 'N/A'}
-📅 *Created:* ${created}
-🔗 *JID:* ${meta.id}
-
-> 🔥 ${BOT_NAME}`;
-        await conn.sendMessage(from, {
-          text,
-          mentions: meta.participants.filter(p => p.admin).map(p => p.id),
-          contextInfo: ctxInfo(),
-        }, { quoted: fakevCard });
-        await conn.sendMessage(from, { react: { text: '✅', key: msg.key } });
-      } catch (e) {
-        return reply(`❌ Failed to fetch group info: ${e.message}`);
-      }
-    },
-  },
-
-  // ── INVITE LINK ───────────────────────────────────────
-  {
-    pattern: 'binvitelink',
-    alias: ['invite', 'link'],
-    desc: 'Get group invite link',
-    category: 'Group',
-    react: '🔗',
-    use: '.invitelink',
-    execute: async (conn, msg, m, { from, isGroup, sender, reply }) => {
-      if (!isGroup) return reply('❌ Group only command.');
-      try {
-        await checkAdmin(conn, from, sender);
-        const code = await conn.groupInviteCode(from);
-        await conn.sendMessage(from, {
-          text: `🔗 *Group Invite Link:*\nhttps://chat.whatsapp.com/${code}\n\n> 🔥 ${BOT_NAME}`,
-          contextInfo: ctxInfo(),
-        }, { quoted: fakevCard });
-        await conn.sendMessage(from, { react: { text: '✅', key: msg.key } });
-      } catch (e) { return reply(e.message); }
-    },
-  },
-];
