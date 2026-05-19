@@ -1,118 +1,120 @@
-/**
- * REDXBOT302 — Notes Plugin
- * Commands: savenote, getnote, delnote, listnotes
- * Owner: Abdul Rehman Rajpoot
- */
+const store = require('../lib/lightweight_store');
 
-'use strict';
+const MONGO_URL = process.env.MONGO_URL;
+const POSTGRES_URL = process.env.POSTGRES_URL;
+const MYSQL_URL = process.env.MYSQL_URL;
+const SQLITE_URL = process.env.DB_URL;
+const HAS_DB = !!(MONGO_URL || POSTGRES_URL || MYSQL_URL || SQLITE_URL);
 
-const fs        = require('fs');
-const path      = require('path');
-const fakevCard = require('../lib/fakevcard');
+let notesDB = {};
 
-const BOT_NAME = process.env.BOT_NAME || '🔥 REDXBOT302 🔥';
-const NL_JID   = process.env.NEWSLETTER_JID || '120363405513439052@newsletter';
-
-const ctxInfo = () => ({
-  forwardingScore: 999, isForwarded: true,
-  forwardedNewsletterMessageInfo: { newsletterJid: NL_JID, newsletterName: `🔥 ${BOT_NAME}`, serverMessageId: 200 },
-});
-
-const NOTES_FILE = path.join(process.cwd(), 'data', 'notes.json');
-function loadNotes() {
-  try { return JSON.parse(fs.readFileSync(NOTES_FILE, 'utf8')); } catch { return {}; }
-}
-function saveNotes(data) {
-  try { fs.writeFileSync(NOTES_FILE, JSON.stringify(data, null, 2)); } catch {}
+async function getUserNotes(userId) {
+  if (HAS_DB) {
+    const notes = await store.getSetting(userId, 'notes');
+    return notes || [];
+  } else {
+    return notesDB[userId] || [];
+  }
 }
 
-const send = (conn, from, text) =>
-  conn.sendMessage(from, { text, contextInfo: ctxInfo() }, { quoted: fakevCard });
+async function saveUserNotes(userId, notes) {
+  if (HAS_DB) {
+    await store.saveSetting(userId, 'notes', notes);
+  } else {
+    notesDB[userId] = notes;
+  }
+}
 
-module.exports = [
+module.exports = {
+  command: 'notes',
+  aliases: ['note'],
+  category: 'menu',
+  description: 'Store, view, and delete your personal notes',
+  usage: '.notes <add|all|del|delall> [text|ID]',
+  async handler(sock, message, args, context = {}) {
+    const chatId = context.chatId || message.key.remoteJid;
+    const sender = message.key.participant || message.key.remoteJid;
+    try {
+      const action = args[0] ? args[0].toLowerCase() : null;
+      const content = args.slice(1).join(" ").trim();
 
-  {
-    pattern: 'savenote',
-    alias: ['note', 'addnote'],
-    desc: 'Save a note for the group/chat',
-    category: 'Utility',
-    react: '📝',
-    use: '.savenote <name> <content>',
-    execute: async (conn, msg, m, { from, args, reply }) => {
-      if (args.length < 2) return reply('❌ Usage: .savenote <name> <content>\nExample: .savenote rules No spam allowed!');
-      const name    = args[0].toLowerCase();
-      const content = args.slice(1).join(' ');
-      const notes   = loadNotes();
-      notes[from]   = notes[from] || {};
-      notes[from][name] = { content, savedBy: m.sender, date: new Date().toISOString() };
-      saveNotes(notes);
-      await send(conn, from, `📝 *Note Saved!*\n\n🏷️ *Name:* ${name}\n📄 *Content:* ${content}\n\n> 🔥 ${BOT_NAME}`);
-      await conn.sendMessage(from, { react: { text: '✅', key: msg.key } });
-    },
-  },
+      const menuText = `
+╭───── *『 NOTES 』* ───◆
+┃ Store notes for later use
+┃ Storage: ${HAS_DB ? 'Database 🗄️' : 'Memory 📁'}
+┃
+┃ ● Add Note
+┃    .notes add your text here
+┃
+┃ ● Get All Notes
+┃    .notes all
+┃
+┃ ● Delete Note
+┃    .notes del noteID
+┃
+┃ ● Delete All Notes
+┃    .notes delall
+╰━━━━━━━━━━━━━━━━━──⊷`;
 
-  {
-    pattern: 'getnote',
-    alias: ['get', '#'],
-    desc: 'Get a saved note',
-    category: 'Utility',
-    react: '📄',
-    use: '.getnote <name>',
-    execute: async (conn, msg, m, { from, q, reply }) => {
-      if (!q) return reply('❌ Provide a note name.\n*Usage:* .getnote <name>');
-      const notes = loadNotes();
-      const note  = notes[from]?.[q.toLowerCase()];
-      if (!note) return reply(`❌ No note named "${q}" found in this chat.`);
-      await send(conn, from, `📄 *Note: ${q}*\n\n${note.content}\n\n> 🔥 ${BOT_NAME}`);
-      await conn.sendMessage(from, { react: { text: '✅', key: msg.key } });
-    },
-  },
-
-  {
-    pattern: 'listnotes',
-    alias: ['notes'],
-    desc: 'List all saved notes',
-    category: 'Utility',
-    react: '📋',
-    use: '.listnotes',
-    execute: async (conn, msg, m, { from }) => {
-      const notes    = loadNotes();
-      const chatNotes = notes[from] || {};
-      const names    = Object.keys(chatNotes);
-      if (names.length === 0) {
-        await send(conn, from, `📋 *No notes saved yet.*\n\nUse .savenote <name> <content> to add one.\n\n> 🔥 ${BOT_NAME}`);
-        return;
+      if (!action) {
+        return await sock.sendMessage(chatId, { text: menuText }, { quoted: message });
       }
-      const list = names.map((n, i) => `  ${i+1}. *${n}*`).join('\n');
-      await send(conn, from,
-`╔══════[ *Notes* ]══════╗
+      if (action === 'add') {
+        if (!content) {
+          return await sock.sendMessage(chatId, {
+            text: "*Please write a note to save.*\nExample: .notes add buy milk"
+          }, { quoted: message });
+        }
+        
+        const userNotes = await getUserNotes(sender);
+        const newID = userNotes.length + 1;
+        userNotes.push({ id: newID, text: content, createdAt: Date.now() });
+        await saveUserNotes(sender, userNotes);
 
-📋 *${names.length} note(s) saved:*
+        return await sock.sendMessage(chatId, {
+          text: `✅ Note saved.\nID: ${newID}\nStorage: ${HAS_DB ? 'Database' : 'Memory'}`
+        }, { quoted: message });
+      }
+      if (action === 'all') {
+        const userNotes = await getUserNotes(sender);
+        if (userNotes.length === 0) {
+          return await sock.sendMessage(chatId, { text: "*You have no notes saved.*" }, { quoted: message });
+        }
 
-${list}
+        const list = userNotes.map(n => `${n.id}. ${n.text}`).join("\n");
+        return await sock.sendMessage(chatId, { 
+          text: `*📝 Your Notes:*\n\n${list}\n\n_Total: ${userNotes.length} notes_` 
+        }, { quoted: message });
+      }
+      if (action === 'del') {
+        const id = parseInt(args[1]);
+        const userNotes = await getUserNotes(sender);
+        
+        if (!id || !userNotes.find(n => n.id === id)) {
+          return await sock.sendMessage(chatId, {
+            text: "Invalid note ID.\nExample: .notes del 1"
+          }, { quoted: message });
+        }
+        
+        const filteredNotes = userNotes.filter(n => n.id !== id);
+        await saveUserNotes(sender, filteredNotes);
+        
+        return await sock.sendMessage(chatId, { text: `*✅ Note ID ${id} deleted.*` }, { quoted: message });
+      }
+      if (action === 'delall') {
+        const userNotes = await getUserNotes(sender);
+        if (userNotes.length === 0) {
+          return await sock.sendMessage(chatId, { text: "*You have no notes to delete.*" }, { quoted: message });
+        }
+        
+        await saveUserNotes(sender, []);
+        return await sock.sendMessage(chatId, { text: "*✅ All notes deleted successfully.*" }, { quoted: message });
+      }
+      return await sock.sendMessage(chatId, { text: menuText }, { quoted: message });
 
-💡 Use *.getnote <name>* to view
-
-> 🔥 ${BOT_NAME}`);
-      await conn.sendMessage(from, { react: { text: '✅', key: msg.key } });
-    },
-  },
-
-  {
-    pattern: 'delnote',
-    alias: ['deletenote', 'clearnote'],
-    desc: 'Delete a saved note',
-    category: 'Utility',
-    react: '🗑️',
-    use: '.delnote <name>',
-    execute: async (conn, msg, m, { from, q, reply }) => {
-      if (!q) return reply('❌ Provide the note name to delete.\n*Usage:* .delnote <name>');
-      const notes = loadNotes();
-      if (!notes[from]?.[q.toLowerCase()]) return reply(`❌ No note named "${q}" found.`);
-      delete notes[from][q.toLowerCase()];
-      saveNotes(notes);
-      await send(conn, from, `🗑️ *Note "${q}" deleted.*\n\n> 🔥 ${BOT_NAME}`);
-      await conn.sendMessage(from, { react: { text: '✅', key: msg.key } });
-    },
-  },
-];
+    } catch (err) {
+      console.error("Notes Command Error:", err);
+      await sock.sendMessage(chatId, { text: "❌ Error in notes module." }, { quoted: message });
+    }
+  }
+};
