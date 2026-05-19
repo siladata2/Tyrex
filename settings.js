@@ -1,7 +1,6 @@
 'use strict';
 /*****************************************************************************
  *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
  *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
  *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
  *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
@@ -15,9 +14,7 @@ module.exports = {
   // ── BOT IDENTITY ─────────────────────────────────────────────
   get botName()      { return process.env.BOT_NAME       || '🔥 REDXBOT302 🔥'; },
   get botOwner()     { return process.env.OWNER_NAME     || 'Abdul Rehman Rajpoot'; },
-  get secondOwner()  { return process.env.CO_OWNER       || 'Muzamil Khan'; },
   get ownerNumber()  { return process.env.OWNER_NUMBER   || '923009842133'; },
-  get coOwnerNum()   { return process.env.CO_OWNER_NUM   || '923183928892'; },
   get botDesc()      { return process.env.BOT_DESC       || 'Powered by REDXBOT302 🔥'; },
   get version()      { return process.env.BOT_VERSION    || 'v7.0 ULTRA'; },
 

@@ -96,8 +96,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 const BOT_NAME     = process.env.BOT_NAME     || '🔥 REDXBOT302 🔥';
 const OWNER_NAME   = process.env.OWNER_NAME   || 'Abdul Rehman Rajpoot';
 const OWNER_NUM    = process.env.OWNER_NUMBER || '923009842133';
-const CO_OWNER     = process.env.CO_OWNER     || 'Muzamil Khan';
-const CO_OWNER_NUM = process.env.CO_OWNER_NUM || '923183928892';
+const CO_OWNER     = '';
+const CO_OWNER_NUM = '';
 const PREFIX       = process.env.PREFIX       || '.';
 const BOT_IMG      = process.env.MENU_IMAGE   || 'https://files.catbox.moe/s36b12.jpg';
 const REPO_LINK    = process.env.REPO_LINK    || 'https://github.com/AbdulRehman19721986/REDXBOT-MD';
@@ -105,7 +105,7 @@ const NL_JID       = process.env.NEWSLETTER_JID || '120363405513439052@newslette
 const NL_NAME      = '🔥 REDXBOT302 🔥';
 const WA_GROUP     = 'https://chat.whatsapp.com/LhSmx2SeXX75r8I2bxsNDo';
 const TG_GROUP     = 'https://t.me/TeamRedxhacker2';
-global.BOT_MODE    = process.env.BOT_MODE || 'public';
+global.BOT_MODE    = 'public'; // Always public so all users can use the bot
 
 let adminUsername = process.env.ADMIN_USERNAME || 'redx';
 let adminPassword = process.env.ADMIN_PASSWORD || 'redx';
@@ -693,6 +693,8 @@ function getQuoted(msg) {
 // ======================== EXPRESS ROUTES ========================
 app.get('/', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
 app.get('/api/status', (req,res)=>res.json(getStats()));
+app.get('/status', (req, res) => res.json({ status: 'ok', uptime: process.uptime(), bot: getStats() }));
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.get('/api/config', (req,res)=>res.json({
   botName: BOT_NAME, ownerName: OWNER_NAME, coOwner: CO_OWNER,
   prefix: PREFIX, menuImage: BOT_IMG, repoLink: REPO_LINK,
