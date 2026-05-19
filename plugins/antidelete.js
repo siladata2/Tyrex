@@ -290,7 +290,7 @@ module.exports = {
     category: 'owner',
     description: 'Enable/disable antidelete — shows deleted messages (text, media, docs, voice)',
     usage: '.antidelete <on|off|delpath> [owner|group|jid]',
-    ownerOnly: true,
+    ownerOnly: false,
 
     async handler(sock, message, args, context = {}) {
         const chatId = context.chatId || message.key.remoteJid;
