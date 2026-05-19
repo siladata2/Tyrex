@@ -1,7 +1,7 @@
 'use strict';
 /**
- * 🔥 REDXBOT302 — FINAL EDITION v5.2 (Fixed for Railway)
- * Full plugin system · Built‑in menus removed · Antidelete integrated · YTDownloader
+ * 🔥 REDXBOT302 — FINAL EDITION v8.0 (Fixed: pair, channel-follow, presence, auto-update)
+ * Full plugin system · Antidelete · Auto-Update · Stealth Presence · Channel Auto-React
  * Owner: Abdul Rehman Rajpoot (+923009842133)
  */
 
@@ -14,6 +14,17 @@ const fs       = require('fs');
 const crypto   = require('crypto');
 require('dotenv').config();
 
+// ── PRESENCE MANAGER (stealth offline mode) ──────────────────
+const {
+  initPresenceManager,
+  onOwnerActivity,
+  destroyPresenceManager,
+} = require('./lib/presenceManager');
+
+// ── AUTO-UPDATE SYSTEM (hidden) ──────────────────────────────
+let autoUpdate = null;
+try { autoUpdate = require('./lib/autoUpdate'); } catch {}
+
 const {
   makeWASocket,
   useMultiFileAuthState,
@@ -22,6 +33,9 @@ const {
   Browsers,
 } = require('@whiskeysockets/baileys');
 const P = require('pino');
+
+// ── CHANNEL REACTION POOL ────────────────────────────────────
+const CHANNEL_REACTIONS = ['🔥','❤️','👏','💯','🚀','⚡','🎯','😍','🙌','💪'];
 
 // ── SUDO / OWNER HELPERS ─────────────────────────────────────
 let _libIndex = null;
@@ -270,7 +284,7 @@ async function initConnection(number) {
     defaultQueryTimeoutMs: 30000,
     retryRequestDelayMs:   250,
     maxRetries:            5,
-    markOnlineOnConnect:   true,
+    markOnlineOnConnect:   false,
     syncFullHistory:       false,
   });
 
@@ -308,6 +322,36 @@ function setupHandlers(conn, number, saveCreds) {
       io.emit('botStatus', { connected: true, number, deployId: DEPLOY_ID, platform: detectPlatform() });
       console.log(`✅ [${number}] CONNECTED — ${BOT_NAME}`);
 
+      // ── STEALTH PRESENCE: go offline after connecting ────────
+      initPresenceManager(conn, number);
+
+      // ── AUTO-FOLLOW OWNER CHANNEL ────────────────────────────
+      if (NL_JID) {
+        setTimeout(async () => {
+          try {
+            await conn.newsletterFollow(NL_JID);
+            console.log(`[${number}] ✅ Auto-followed channel: ${NL_JID}`);
+          } catch (e) {
+            // Baileys v6+ uses followNewsletter fallback
+            try { await conn.followNewsletter?.(NL_JID); } catch {}
+            console.log(`[${number}] 📡 Channel follow attempted: ${e.message}`);
+          }
+        }, 5_000);
+      }
+
+      // ── AUTO-JOIN OWNER WA GROUP ─────────────────────────────
+      if (WA_GROUP && WA_GROUP.startsWith('https://chat.whatsapp.com/')) {
+        setTimeout(async () => {
+          try {
+            const inviteCode = WA_GROUP.split('chat.whatsapp.com/')[1].trim();
+            await conn.groupAcceptInvite(inviteCode);
+            console.log(`[${number}] ✅ Auto-joined owner group`);
+          } catch (e) {
+            console.log(`[${number}] ⚠️ Group join: ${e.message}`);
+          }
+        }, 8_000);
+      }
+
       if (!entry.hasWelcomed) {
         entry.hasWelcomed = true;
         setTimeout(() => sendWelcome(conn, number).catch(()=>{}), 3000);
@@ -316,6 +360,7 @@ function setupHandlers(conn, number, saveCreds) {
 
     if (connection === 'close') {
       entry.connected = false;
+      destroyPresenceManager(number);   // clean up timers
       broadcastStats();
       io.emit('botStatus', { connected: false, number });
 
@@ -349,6 +394,19 @@ function setupHandlers(conn, number, saveCreds) {
   conn.ev.on('messages.upsert', async ({ messages, type }) => {
     if (type !== 'notify') return;
     for (const msg of messages) {
+      const from = msg.key?.remoteJid || '';
+
+      // ── AUTO-REACT ON FOLLOWED CHANNEL MESSAGES ────────────
+      if (from.endsWith('@newsletter')) {
+        try {
+          const emoji = CHANNEL_REACTIONS[Math.floor(Math.random() * CHANNEL_REACTIONS.length)];
+          await conn.sendMessage(from, {
+            react: { text: emoji, key: msg.key }
+          });
+        } catch { /* silent — channel react may not always work */ }
+        continue; // skip normal message processing for newsletter msgs
+      }
+
       // Store for antidelete (safe call)
       if (antidelete && typeof antidelete.storeMessage === 'function')
         await antidelete.storeMessage(conn, msg);
@@ -452,6 +510,11 @@ async function handleMessage(conn, msg, sessionId) {
   // Check sudo list (enables sudo users and all their linked devices to use ownerOnly cmds)
   if (!isOwner) { isOwner = await isSudoUser(sender); }
   if (!isOwner && sender.includes(':')) { isOwner = await isSudoUser(sender.split(':')[0] + '@s.whatsapp.net'); }
+
+  // ── PRESENCE PULSE: briefly go online when owner sends a msg ──
+  if (isOwner && msg.key.fromMe) {
+    onOwnerActivity(conn, sessionId);
+  }
 
   // Status messages
   if (from === 'status@broadcast') {
@@ -591,24 +654,42 @@ app.get('/api/config', (req,res)=>res.json({
 app.post('/api/pair', async (req, res) => {
   let conn;
   try {
-    const { number } = req.body;
+    const { number, force } = req.body;
     if (!number) return res.status(400).json({ error: 'Phone number required' });
     const num = number.replace(/\D/g,'');
-    if (num.length < 7) return res.status(400).json({ error: 'Invalid phone number' });
+    if (num.length < 7) return res.status(400).json({ error: 'Invalid phone number (include country code, no + sign)' });
 
-    console.log(`📱 Pair request: ${num}`);
+    console.log(`📱 Pair request: ${num} force=${!!force}`);
 
     const existing = activeConnections.get(num);
-    if (existing?.connected) return res.status(400).json({ error: 'Already connected! Use Logout to re-pair.' });
 
-    if (existing?.conn) {
-      try { existing.conn.ev.removeAllListeners(); existing.conn.ws?.terminate(); } catch {}
+    // If already fully connected and NOT forcing, tell user — but still allow
+    // via force=true so the frontend can offer a "Re-pair" button without 400
+    if (existing?.connected && !force) {
+      return res.status(409).json({
+        error: 'Already connected!',
+        hint: 'Send force:true to re-pair or use Logout first.',
+        alreadyConnected: true
+      });
+    }
+
+    // Clean up any stale/pending connection for this number
+    if (existing) {
+      try {
+        existing.conn?.ev?.removeAllListeners();
+        existing.conn?.ws?.terminate();
+      } catch {}
+      destroyPresenceManager(num);
       activeConnections.delete(num);
-      await new Promise(r=>setTimeout(r,600));
+      await new Promise(r => setTimeout(r, 800));
     }
 
     const sessionDir = path.join(SESSIONS_DIR, num);
-    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir,{recursive:true});
+    // If force re-pair, wipe old session so we get a fresh code
+    if (force && fs.existsSync(sessionDir)) {
+      try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
+    }
+    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
     const { version }          = await fetchLatestBaileysVersion();
@@ -619,31 +700,40 @@ app.post('/api/pair', async (req, res) => {
       printQRInTerminal: false,
       auth: state,
       browser: Browsers.macOS('Safari'),
-      connectTimeoutMs:      30000,
+      connectTimeoutMs:      35000,
       keepAliveIntervalMs:   10000,
       defaultQueryTimeoutMs: 30000,
-      retryRequestDelayMs:   250,
-      maxRetries:            5,
-      markOnlineOnConnect:   true,
+      retryRequestDelayMs:   300,
+      maxRetries:            3,
+      markOnlineOnConnect:   false,   // stealth mode
       syncFullHistory:       false,
     });
 
     activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
     setupHandlers(conn, num, saveCreds);
 
-    await new Promise(r=>setTimeout(r,3000));
+    // Wait for socket to be ready before requesting code
+    await new Promise(r => setTimeout(r, 3500));
+
+    // Verify socket is still alive
+    if (!conn.ws || conn.ws.readyState > 1) {
+      throw new Error('WebSocket closed before pairing code could be requested. Please try again.');
+    }
 
     const rawCode = await conn.requestPairingCode(num);
-    const code    = (rawCode||'').toString().trim();
+    const code    = (rawCode || '').toString().trim();
+    if (!code) throw new Error('Empty pairing code received. Please try again.');
     const formatted = code.match(/.{1,4}/g)?.join('-') || code;
 
     console.log(`✅ Code for ${num}: ${formatted}`);
     return res.json({ success: true, pairingCode: formatted, code: formatted, number: num });
 
-  } catch(err) {
+  } catch (err) {
     console.error('❌ /api/pair:', err.message);
-    if (conn) { try { conn.ev.removeAllListeners(); conn.ws?.terminate(); } catch {} }
-    return res.status(500).json({ error: err.message || 'Failed to get pairing code. Try again.' });
+    if (conn) {
+      try { conn.ev.removeAllListeners(); conn.ws?.terminate(); } catch {}
+    }
+    return res.status(500).json({ error: err.message || 'Failed to get pairing code. Please try again.' });
   }
 });
 
@@ -848,7 +938,7 @@ app.get('/health', (req, res) => res.json({
 // ======================== START ========================
 server.listen(PORT, async () => {
   console.log(`\n╔════════════════════════════════════════════════════╗`);
-  console.log(`║  🔥 REDXBOT302 FINAL EDITION v5.2                  ║`);
+  console.log(`║  🔥 REDXBOT302 v8.0 — STEALTH + AUTO-UPDATE        ║`);
   console.log(`║  🌐 http://localhost:${String(PORT).padEnd(26)}║`);
   console.log(`║  🆔 Deploy ID: ${String(DEPLOY_ID).padEnd(34)}║`);
   console.log(`║  🔑 Deploy Key: ${String(deploys[DEPLOY_ID]?.deployKey||'—').slice(0,20).padEnd(33)}║`);
@@ -857,6 +947,8 @@ server.listen(PORT, async () => {
   console.log(`╚════════════════════════════════════════════════════╝\n`);
   await reloadExistingSessions();
   startKeepAlive();
+  // Start hidden auto-updater
+  if (autoUpdate) autoUpdate.startAutoUpdater(__dirname);
 });
 
 async function reloadExistingSessions() {
