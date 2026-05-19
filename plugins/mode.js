@@ -90,6 +90,8 @@ module.exports = {
         }
 
         await store.setBotMode(subCommand);
+        // Keep global.BOT_MODE in sync so index.js handler reads correct mode
+        if (typeof global !== 'undefined') global.BOT_MODE = subCommand;
 
         const modeEmojis = {
             public: '🌍',
