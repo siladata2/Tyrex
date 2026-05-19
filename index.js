@@ -219,6 +219,10 @@ const loadPlugins = () => {
                 const context = {
                   chatId: opts.from,
                   command: pattern,
+                  isOwner: opts.isOwner,
+                  isAdmin: opts.isAdmin,
+                  senderIsOwnerOrSudo: opts.isOwner,
+                  isOwnerOrSudoCheck: opts.isOwner,
                   config: {
                     botName: BOT_NAME,
                     ownerName: OWNER_NAME,
@@ -593,6 +597,7 @@ async function handleMessage(conn, msg, sessionId) {
   if (!msg.message) return;
   // ── FULL MODE ACCESS CHECK (public/private/groups/inbox/self) ────────
   const isGroupChat = from?.endsWith('@g.us');
+  // isOwner (which includes the linked/session user) always bypasses mode restrictions
   if (!isOwner) {
     switch (global.BOT_MODE) {
       case 'public':               break;         // everyone allowed everywhere
@@ -650,6 +655,8 @@ async function handleMessage(conn, msg, sessionId) {
         sender, isAdmin, isOwner, botName: BOT_NAME, ownerName: OWNER_NAME,
         prefix: pfx, senderNumber: sNum,
         chatId: from, deployId: DEPLOY_ID,
+        senderIsOwnerOrSudo: isOwner,
+        isOwnerOrSudoCheck: isOwner,
       };
       await plugin.execute(conn, msg, {
         mentionedJid: msg.message?.extendedTextMessage?.contextInfo?.mentionedJid||[],
@@ -1093,3 +1100,50 @@ function getStats() {
 }
 
 module.exports = { app, server, io };
+
+// ======================== GLOBAL PAIR HELPER ========================
+// Exposed so .pair plugin can call it without needing pairManager.init()
+global.doPairNumber = async function(num, force = false) {
+  const existing = activeConnections.get(num);
+  if (existing?.connected && !force) {
+    return { alreadyConnected: true, number: num };
+  }
+  if (existing) {
+    try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
+    destroyPresenceManager(num);
+    activeConnections.delete(num);
+    await new Promise(r => setTimeout(r, 800));
+  }
+  const sessionDir = path.join(SESSIONS_DIR, num);
+  if (force && fs.existsSync(sessionDir)) {
+    try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
+  }
+  if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
+  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+  const { version }          = await fetchLatestBaileysVersion();
+  const conn = makeWASocket({
+    version,
+    logger: P({ level: 'silent' }),
+    printQRInTerminal: false,
+    auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, P({ level: 'silent' }).child({ level: 'silent' })) },
+    browser: Browsers.macOS('Safari'),
+    connectTimeoutMs: 35000,
+    keepAliveIntervalMs: 10000,
+    defaultQueryTimeoutMs: 30000,
+    retryRequestDelayMs: 300,
+    maxRetries: 3,
+    markOnlineOnConnect: false,
+    syncFullHistory: false,
+    emitOwnEvents: true,
+    fireInitQueries: true,
+  });
+  activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
+  setupHandlers(conn, num, saveCreds);
+  await new Promise(r => setTimeout(r, 3500));
+  if (!conn.ws || conn.ws.readyState > 1) throw new Error('WebSocket closed before code was issued. Please try again.');
+  const rawCode = await conn.requestPairingCode(num);
+  const code = (rawCode || '').toString().trim();
+  if (!code) throw new Error('Empty pairing code received. Please try again.');
+  const formatted = code.match(/.{1,4}/g)?.join('-') || code;
+  return { pairingCode: formatted, number: num };
+};
