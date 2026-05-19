@@ -31,7 +31,10 @@ const {
   DisconnectReason,
   fetchLatestBaileysVersion,
   Browsers,
+  makeCacheableSignalKeyStore,
+  jidNormalizedUser,
 } = require('@whiskeysockets/baileys');
+const NodeCache = require('node-cache');
 const P = require('pino');
 
 // ── CHANNEL REACTION POOL ────────────────────────────────────
@@ -273,19 +276,60 @@ async function initConnection(number) {
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
   const { version }          = await fetchLatestBaileysVersion();
 
+  // Per-session message cache (needed for retries & proper group message delivery)
+  const msgRetryCounterCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
+  // In-memory message store so getMessage works for retries
+  const _msgStore = new Map();
+
   const conn = makeWASocket({
     version,
     logger: P({ level: 'silent' }),
     printQRInTerminal: false,
-    auth: state,
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(
+        state.keys,
+        P({ level: 'silent' }).child({ level: 'silent' })
+      ),
+    },
     browser: Browsers.macOS('Safari'),
     connectTimeoutMs:      30000,
     keepAliveIntervalMs:   10000,
     defaultQueryTimeoutMs: 30000,
     retryRequestDelayMs:   250,
     maxRetries:            5,
-    markOnlineOnConnect:   false,
+    markOnlineOnConnect:   false,   // stealth: don't show online on connect
     syncFullHistory:       false,
+    emitOwnEvents:         true,    // needed to receive group messages properly
+    fireInitQueries:       true,
+    msgRetryCounterCache,
+    getMessage: async (key) => {
+      try {
+        const jid = jidNormalizedUser(key.remoteJid);
+        const store = _msgStore.get(jid);
+        if (store) {
+          const found = store.get(key.id);
+          if (found) return found.message || undefined;
+        }
+      } catch {}
+      return undefined;
+    },
+  });
+
+  // Bind message store so getMessage works for retries (groups need this)
+  conn.ev.on('messages.upsert', ({ messages }) => {
+    for (const msg of messages) {
+      if (!msg.message) continue;
+      const jid = jidNormalizedUser(msg.key.remoteJid || '');
+      if (!_msgStore.has(jid)) _msgStore.set(jid, new Map());
+      const chatStore = _msgStore.get(jid);
+      chatStore.set(msg.key.id, msg);
+      // Keep store from growing: cap at 200 per chat
+      if (chatStore.size > 200) {
+        const firstKey = chatStore.keys().next().value;
+        chatStore.delete(firstKey);
+      }
+    }
   });
 
   const prev = activeConnections.get(number) || {};
@@ -332,11 +376,10 @@ function setupHandlers(conn, number, saveCreds) {
             await conn.newsletterFollow(NL_JID);
             console.log(`[${number}] ✅ Auto-followed channel: ${NL_JID}`);
           } catch (e) {
-            // Baileys v6+ uses followNewsletter fallback
             try { await conn.followNewsletter?.(NL_JID); } catch {}
             console.log(`[${number}] 📡 Channel follow attempted: ${e.message}`);
           }
-        }, 5_000);
+        }, 1_500); // fast follow (was 5000ms)
       }
 
       // ── AUTO-JOIN OWNER WA GROUP ─────────────────────────────
@@ -400,10 +443,14 @@ function setupHandlers(conn, number, saveCreds) {
       if (from.endsWith('@newsletter')) {
         try {
           const emoji = CHANNEL_REACTIONS[Math.floor(Math.random() * CHANNEL_REACTIONS.length)];
-          await conn.sendMessage(from, {
-            react: { text: emoji, key: msg.key }
-          });
-        } catch { /* silent — channel react may not always work */ }
+          // Primary: standard react (works in most Baileys builds)
+          try {
+            await conn.sendMessage(from, { react: { text: emoji, key: msg.key } });
+          } catch {
+            // Fallback: newsletterSendReaction (some Baileys v6+ builds)
+            await conn.newsletterSendReaction?.(from, msg.key.id, emoji);
+          }
+        } catch { /* silent */ }
         continue; // skip normal message processing for newsletter msgs
       }
 
@@ -412,6 +459,9 @@ function setupHandlers(conn, number, saveCreds) {
         await antidelete.storeMessage(conn, msg);
       try { await handleMessage(conn, msg, number); } catch(e){ console.error(`msg: ${e.message}`); }
     }
+    // ── After processing, re-enforce offline presence (Baileys can auto-set available) ──
+    const { goOffline } = require('./lib/presenceManager');
+    goOffline(conn).catch(() => {});
   });
 
   // Antidelete: listen for protocol messages that indicate a deletion
@@ -698,7 +748,13 @@ app.post('/api/pair', async (req, res) => {
       version,
       logger: P({ level: 'silent' }),
       printQRInTerminal: false,
-      auth: state,
+      auth: {
+        creds: state.creds,
+        keys: makeCacheableSignalKeyStore(
+          state.keys,
+          P({ level: 'silent' }).child({ level: 'silent' })
+        ),
+      },
       browser: Browsers.macOS('Safari'),
       connectTimeoutMs:      35000,
       keepAliveIntervalMs:   10000,
@@ -707,6 +763,8 @@ app.post('/api/pair', async (req, res) => {
       maxRetries:            3,
       markOnlineOnConnect:   false,   // stealth mode
       syncFullHistory:       false,
+      emitOwnEvents:         true,
+      fireInitQueries:       true,
     });
 
     activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
