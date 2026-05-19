@@ -17,7 +17,7 @@ module.exports = {
     let repoText = `╭─〔 *REDXBOT302 REPOSITORY* 〕─⊷\n`;
     repoText += `│\n`;
     repoText += `├─ 📌 *Repository Name:* REDXBOT302\n`;
-    repoText += `├─ 👑 *Owner:* Abdul Rehman Rajpoot & Muzamil Khan\n`;
+    repoText += `├─ 👑 *Owner:* Abdul Rehman Rajpoot\n`;
     repoText += `├─ ⭐ *Stars:* 100+\n`;
     repoText += `├─ ⑂ *Forks:* 50+\n`;
     repoText += `├─ 📝 *Description:* Advanced WhatsApp Bot with 100+ features – group management, downloads, AI, stickers, and more.\n`;
@@ -31,7 +31,7 @@ module.exports = {
     repoText += `├─ 🌐 *Join Channel:*\n`;
     repoText += `│   https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10\n`;
     repoText += `╰───────────────────⊷\n\n`;
-    repoText += `✨ *Powered by Abdul Rehman Rajpoot & Muzamil Khan* ✨\n`;
+    repoText += `✨ *Powered by Abdul Rehman Rajpoot* ✨\n`;
     repoText += `🔗 *Join Channel:* https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10`;
 
     // Fetch image buffer

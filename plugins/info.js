@@ -11,9 +11,9 @@ const { runtime }    = require('../lib/functions');
 
 const BOT_NAME       = process.env.BOT_NAME       || '🔥 REDXBOT302 🔥';
 const OWNER_NAME     = process.env.OWNER_NAME     || 'Abdul Rehman Rajpoot';
-const CO_OWNER       = process.env.CO_OWNER       || 'Muzamil Khan';
+const CO_OWNER       = '';
 const OWNER_NUM      = process.env.OWNER_NUMBER   || '923009842133';
-const CO_OWNER_NUM   = process.env.CO_OWNER_NUM   || '923183928892';
+const CO_OWNER_NUM   = '';
 const REPO_LINK      = process.env.REPO_LINK      || 'https://github.com/AbdulRehman19721986/REDXBOT-MD';
 const MENU_IMAGE     = process.env.MENU_IMAGE     || 'https://files.catbox.moe/s36b12.jpg';
 const NEWSLETTER_JID = process.env.NEWSLETTER_JID || '120363405513439052@newsletter';

@@ -12,7 +12,7 @@ const path           = require('path');
 
 const BOT_NAME       = process.env.BOT_NAME       || '🔥 REDXBOT302 🔥';
 const OWNER_NUM      = process.env.OWNER_NUMBER    || '923009842133';
-const CO_OWNER_NUM   = process.env.CO_OWNER_NUM    || '923183928892';
+const CO_OWNER_NUM   = '';
 const NEWSLETTER_JID = process.env.NEWSLETTER_JID  || '120363405513439052@newsletter';
 
 const ctxInfo = () => ({

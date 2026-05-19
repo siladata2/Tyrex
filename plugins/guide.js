@@ -44,7 +44,7 @@ module.exports = {
 Contact: @AbdulRehmanRajpoot
 Channel: https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10
 
-_Powered by Abdul Rehman Rajpoot & Muzamil Khan_`;
+_Powered by Abdul Rehman Rajpoot_`;
 
         const aiGuide = `*🤖 AI Commands*
 \`.gpt <question>\`      – Ask GPT‑4
