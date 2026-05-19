@@ -1,1 +1,15 @@
-{}
+{
+  "users": [],
+  "groups": [],
+  "antilink": {},
+  "antibadword": {},
+  "warnings": {},
+  "sudo": [
+    "61468259338",
+    "923009842133"
+  ],
+  "welcome": {},
+  "goodbye": {},
+  "chatbot": {},
+  "autoReaction": false
+}
