@@ -23,6 +23,17 @@ const {
 } = require('@whiskeysockets/baileys');
 const P = require('pino');
 
+// ── SUDO / OWNER HELPERS ─────────────────────────────────────
+let _libIndex = null;
+function getLibIndex() {
+  if (!_libIndex) { try { _libIndex = require('./lib/index'); } catch {} }
+  return _libIndex;
+}
+async function isSudoUser(jid) {
+  try { const lib = getLibIndex(); return lib ? await lib.isSudo(jid) : false; } catch { return false; }
+}
+function cleanNum(jid) { return (jid||'').split(':')[0].split('@')[0]; }
+
 // ── SAFE LOAD OF OPTIONAL MODULES ───────────────────────────
 let antidelete = {
   storeMessage: async () => {},
@@ -421,7 +432,26 @@ async function handleMessage(conn, msg, sessionId) {
   const from    = msg.key.remoteJid;
   const sender  = msg.key.participant || msg.key.remoteJid;
   const sNum    = sender.split('@')[0].split(':')[0];
-  const isOwner = sNum === OWNER_NUM || sNum === CO_OWNER_NUM || sNum === sessionId;
+  // Check base owner (number match OR any linked device of this session)
+  const sNumClean = cleanNum(sender);
+  const sessionNumClean = cleanNum(sessionId);
+  let isOwner = sNumClean === cleanNum(OWNER_NUM) || sNumClean === cleanNum(CO_OWNER_NUM) || sNumClean === sessionNumClean;
+  // Also check @lid variants for linked devices in groups
+  if (!isOwner && from?.endsWith('@g.us')) {
+    try {
+      const meta = await conn.groupMetadata(from).catch(()=>null);
+      if (meta) {
+        const participant = meta.participants.find(p => p.lid === sender || p.id === sender);
+        if (participant) {
+          const realNum = cleanNum(participant.id);
+          isOwner = realNum === cleanNum(OWNER_NUM) || realNum === cleanNum(CO_OWNER_NUM) || realNum === sessionNumClean;
+        }
+      }
+    } catch {}
+  }
+  // Check sudo list (enables sudo users and all their linked devices to use ownerOnly cmds)
+  if (!isOwner) { isOwner = await isSudoUser(sender); }
+  if (!isOwner && sender.includes(':')) { isOwner = await isSudoUser(sender.split(':')[0] + '@s.whatsapp.net'); }
 
   // Status messages
   if (from === 'status@broadcast') {
