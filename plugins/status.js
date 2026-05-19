@@ -1,8 +1,6 @@
 /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
+ *                     Personal Status – Visible to All Contacts
+ *                     Developed By Abdul Rehman Rajpoot
  *****************************************************************************/
 
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
@@ -11,85 +9,108 @@ module.exports = {
     command: 'status',
     aliases: ['story', 'updatestatus'],
     category: 'owner',
-    description: 'Post a status update (text/photo/video)',
-    usage: '.status <text>  or  reply to an image/video with .status',
+    description: 'Post a personal WhatsApp status (visible to all your contacts)',
+    usage: '.status <text>  or  reply to an image/video/audio with .status',
     ownerOnly: true,
 
     async handler(sock, message, args, context) {
-        const chatId = context.chatId || message.key.remoteJid;
-        const channelInfo = context.channelInfo || {};
-
+        const { chatId, channelInfo } = context;
         const quotedMsg = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-        const isImage = quotedMsg?.imageMessage;
-        const isVideo = quotedMsg?.videoMessage;
+        const text = args.join(' ');
 
-        // ==================== TEXT STATUS ====================
-        if (!isImage && !isVideo) {
-            if (args.length === 0) {
-                return await sock.sendMessage(chatId, {
-                    text: '❌ Provide text or reply to an image/video.\n\nUsage:\n`.status Hello world!`\nor reply to an image/video with `.status`',
-                    ...channelInfo
-                }, { quoted: message });
-            }
-
-            const text = args.join(' ');
-            try {
-                console.log('[STATUS] Attempting to post text status...');
-                // Method 1: standard sendMessage
-                const sent = await sock.sendMessage('status@broadcast', { text });
-                console.log('[STATUS] sendMessage result:', sent ? 'OK' : 'FAILED');
-
-                // Confirm to user
-                await sock.sendMessage(chatId, { 
-                    text: '✅ Status posted!', 
-                    ...channelInfo 
-                }, { quoted: message });
-            } catch (e) {
-                console.error('[STATUS] Error posting text:', e);
-                await sock.sendMessage(chatId, { 
-                    text: `❌ Error: ${e.message}`, 
-                    ...channelInfo 
-                }, { quoted: message });
-            }
-            return;
+        // Show usage if no content
+        if (!quotedMsg && !text) {
+            return await sock.sendMessage(chatId, {
+                text: `⚠️ *Personal Status* – Post an update visible to all your contacts\n\n` +
+                      `Reply to an image/video/audio with:\n` +
+                      `.status [caption]\n\n` +
+                      `Or send text:\n` +
+                      `.status Hello everyone!`,
+                ...channelInfo
+            }, { quoted: message });
         }
 
-        // ==================== MEDIA STATUS ====================
         try {
-            const mediaType = isImage ? 'image' : 'video';
-            const msg = isImage ? quotedMsg.imageMessage : quotedMsg.videoMessage;
+            // Show loading reaction
+            await sock.sendMessage(chatId, { react: { text: '⏳', key: message.key } });
 
-            console.log(`[STATUS] Downloading ${mediaType}...`);
-            const stream = await downloadContentFromMessage(msg, mediaType);
-            const buffer = [];
-            for await (const chunk of stream) {
-                buffer.push(chunk);
+            let statusContent = {};
+
+            // Handle quoted media
+            if (quotedMsg) {
+                let mediaType = null;
+                let mediaMsg = null;
+
+                if (quotedMsg.imageMessage) {
+                    mediaType = 'image';
+                    mediaMsg = quotedMsg.imageMessage;
+                } else if (quotedMsg.videoMessage) {
+                    mediaType = 'video';
+                    mediaMsg = quotedMsg.videoMessage;
+                } else if (quotedMsg.audioMessage) {
+                    mediaType = 'audio';
+                    mediaMsg = quotedMsg.audioMessage;
+                } else {
+                    return await sock.sendMessage(chatId, {
+                        text: '❌ Unsupported media type. Reply to an image, video, or audio file.',
+                        ...channelInfo
+                    }, { quoted: message });
+                }
+
+                // Download media
+                const stream = await downloadContentFromMessage(mediaMsg, mediaType);
+                const buffer = [];
+                for await (const chunk of stream) buffer.push(chunk);
+                const mediaBuffer = Buffer.concat(buffer);
+
+                // Build status content
+                if (mediaType === 'image') {
+                    statusContent = {
+                        image: mediaBuffer,
+                        caption: text || '',
+                        status: true   // explicit status flag
+                    };
+                } else if (mediaType === 'video') {
+                    statusContent = {
+                        video: mediaBuffer,
+                        caption: text || '',
+                        status: true
+                    };
+                } else if (mediaType === 'audio') {
+                    const isPTT = mediaMsg.ptt || false;
+                    statusContent = {
+                        audio: mediaBuffer,
+                        mimetype: isPTT ? 'audio/ogg; codecs=opus' : 'audio/mpeg',
+                        ptt: isPTT,
+                        status: true
+                    };
+                }
             }
-            const mediaBuffer = Buffer.concat(buffer);
-            console.log(`[STATUS] Downloaded ${mediaBuffer.length} bytes`);
-
-            const statusContent = {};
-            if (isImage) {
-                statusContent.image = mediaBuffer;
-            } else {
-                statusContent.video = mediaBuffer;
+            // Text‑only status
+            else {
+                statusContent = {
+                    text: text,
+                    status: true
+                };
             }
-            if (msg.caption) statusContent.caption = msg.caption;
 
-            console.log('[STATUS] Sending to status@broadcast...');
-            const sent = await sock.sendMessage('status@broadcast', statusContent);
-            console.log('[STATUS] sendMessage result:', sent ? 'OK' : 'FAILED');
+            // Post to status@broadcast – visible to all contacts
+            await sock.sendMessage('status@broadcast', statusContent);
 
-            await sock.sendMessage(chatId, { 
-                text: '✅ Status posted successfully!', 
-                ...channelInfo 
+            // Success reaction and message
+            await sock.sendMessage(chatId, { react: { text: '✅', key: message.key } });
+            await sock.sendMessage(chatId, {
+                text: '✅ Status posted! All your contacts will see it.',
+                ...channelInfo
             }, { quoted: message });
-        } catch (e) {
-            console.error('[STATUS] Error posting media:', e);
-            await sock.sendMessage(chatId, { 
-                text: `❌ Failed to post status: ${e.message}`, 
-                ...channelInfo 
+
+        } catch (error) {
+            console.error('[STATUS] Error:', error);
+            await sock.sendMessage(chatId, {
+                text: `❌ Failed to post status: ${error.message}`,
+                ...channelInfo
             }, { quoted: message });
+            await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });
         }
     }
 };
