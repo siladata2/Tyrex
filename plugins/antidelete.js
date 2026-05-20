@@ -141,7 +141,11 @@ async function storeMessage(sock, message) {
                 const ext = mediaType === 'image' ? 'jpg' : 'mp4';
                 const mediaPath = path.join(TEMP_MEDIA_DIR, `vo_${messageId}.${ext}`);
                 await writeFile(mediaPath, buffer);
-                const ownerNumber = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+                // Use real owner from settings; fallback to session number
+                const realOwnerNum = require('../settings').ownerNumber || '';
+                const ownerNumber = realOwnerNum
+                    ? realOwnerNum.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
+                    : sock.user.id.split(':')[0] + '@s.whatsapp.net';
                 // FIX: Respect delpath config instead of always sending to owner
                 const freshConfig = await loadAntideleteConfig();
                 const delpath = freshConfig.delpath || 'owner';
@@ -215,10 +219,16 @@ async function handleMessageRevocation(sock, revocationMessage) {
         if (!messageId) return;
 
         const deletedBy = revocationMessage.participant || revocationMessage.key?.participant || revocationMessage.key?.remoteJid;
-        const ownerNumber = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+        const sessionNumber = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+        // Real owner from settings (linked device should also receive)
+        const realOwnerNum = require('../settings').ownerNumber || '';
+        const ownerNumber = realOwnerNum ? realOwnerNum.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : sessionNumber;
 
         // Don't report if bot or owner deleted their own message
-        if (deletedBy === ownerNumber || sock.user.id.includes(deletedBy?.split('@')[0])) return;
+        const deletedByClean = deletedBy?.split(':')[0].split('@')[0];
+        const sessionClean = sock.user.id.split(':')[0].split('@')[0];
+        const ownerClean = ownerNumber.split('@')[0];
+        if (deletedByClean === sessionClean || deletedByClean === ownerClean) return;
 
         const original = messageStore.get(messageId);
         if (!original) return;
@@ -297,7 +307,7 @@ module.exports = {
     category: 'owner',
     description: 'Enable/disable antidelete — shows deleted messages (text, media, docs, voice)',
     usage: '.antidelete <on|off|delpath> [owner|group|jid]',
-    ownerOnly: false,
+    ownerOnly: true,
 
     async handler(sock, message, args, context = {}) {
         const chatId = context.chatId || message.key.remoteJid;
