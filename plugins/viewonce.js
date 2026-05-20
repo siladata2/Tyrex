@@ -71,16 +71,20 @@ function saveTriggers(list) {
 
 /* ══════════════════════════════════════════════════════════════════
    PERMISSION HELPERS
-   Priority order for resolving owner / sudo:
-     1. context.isOwner / context.isSudo  — set by the bot framework
-     2. config.js  OWNER_NUMBER / ownerNumber / SUDO / sudo arrays
-     3. sock.user.id                      — bot's running JID
-     4. data/sudo.json                    — persistent sudo list on disk
-     5. context.sudo[]                    — sudo passed through context
+   Reads from the same userGroupData.json that lib/index.js uses.
 ══════════════════════════════════════════════════════════════════ */
+// Primary sudo source — same file used by lib/index.js
+const USER_GROUP_DATA_FILE = path.join(__dirname, '../data/userGroupData.json');
+// Fallback legacy sudo file
 const SUDO_FILE = path.join(__dirname, '../data/sudo.json');
 
 function loadSudoList() {
+    // Try userGroupData.json first (primary)
+    try {
+        const ugd = JSON.parse(fs.readFileSync(USER_GROUP_DATA_FILE, 'utf8'));
+        if (Array.isArray(ugd.sudo)) return ugd.sudo;
+    } catch (e) { /* fall through */ }
+    // Fallback: data/sudo.json
     try { return JSON.parse(fs.readFileSync(SUDO_FILE, 'utf8')); }
     catch (e) { return []; }
 }
@@ -177,14 +181,18 @@ function isOwner(sock, senderJid, context = {}) {
     if (typeof context.isOwner === 'boolean') return context.isOwner;
     if (typeof context.isOwner === 'function') return context.isOwner();
 
+    // 2. senderIsOwnerOrSudo passed from messageHandler (covers paired users via fromMe)
+    if (context.senderIsOwnerOrSudo === true) return true;
+    if (context.isOwnerOrSudoCheck === true) return true;
+
     const senderNum = normaliseNum(senderJid);
     if (!senderNum) return false;
 
-    // 2. config.js owner numbers (handles all linked/paired users)
+    // 3. config.js owner numbers (handles all linked/paired users)
     const { owners } = loadConfig();
     if (owners.length && owners.some(o => o === senderNum)) return true;
 
-    // 3. sock.user.id — the number the bot is actually running as
+    // 4. sock.user.id — the number the bot is actually running as (paired session)
     const botNum = normaliseNum(sock.user?.id || '');
     if (botNum && senderNum === botNum) return true;
 
@@ -474,7 +482,6 @@ const vvCommand = {
             const { mtype, msgObj, inner } = detected;
             // FIX: Use a fakeMsg that wraps the quoted message (inner), not the parent message.
             // downloadMediaMessage needs the key of the message that contains the media.
-            const contextInfo = message.message?.extendedTextMessage?.contextInfo;
             const quotedKey = contextInfo?.stanzaId
                 ? { id: contextInfo.stanzaId, remoteJid: chatId, fromMe: false, participant: contextInfo.participant }
                 : message.key;
