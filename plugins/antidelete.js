@@ -142,9 +142,16 @@ async function storeMessage(sock, message) {
                 const mediaPath = path.join(TEMP_MEDIA_DIR, `vo_${messageId}.${ext}`);
                 await writeFile(mediaPath, buffer);
                 const ownerNumber = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+                // FIX: Respect delpath config instead of always sending to owner
+                const freshConfig = await loadAntideleteConfig();
+                const delpath = freshConfig.delpath || 'owner';
+                const groupJid = message.key.remoteJid?.endsWith('@g.us') ? message.key.remoteJid : null;
+                let targetJid = ownerNumber;
+                if (delpath === 'group' && groupJid) targetJid = groupJid;
+                else if (delpath && !['owner', 'group'].includes(delpath) && delpath.includes('@')) targetJid = delpath;
                 const opts = { caption: `*👁️ View-Once ${mediaType}*\nFrom: @${sender.split('@')[0]}`, mentions: [sender] };
-                if (mediaType === 'image') await sock.sendMessage(ownerNumber, { image: { url: mediaPath }, ...opts });
-                else await sock.sendMessage(ownerNumber, { video: { url: mediaPath }, ...opts });
+                if (mediaType === 'image') await sock.sendMessage(targetJid, { image: { url: mediaPath }, ...opts });
+                else await sock.sendMessage(targetJid, { video: { url: mediaPath }, ...opts });
                 try { fs.unlinkSync(mediaPath); } catch {}
             } catch (e) { console.error('[ANTIDELETE] ViewOnce error:', e.message); }
         }
