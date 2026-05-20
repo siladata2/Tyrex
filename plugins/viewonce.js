@@ -160,8 +160,10 @@ function getSender(message, context = {}) {
     const isGroup   = remoteJid.endsWith('@g.us');
 
     if (isGroup) {
-        // In a group the real sender is always in participant
-        return message.key?.participant || '';
+        // In a group the real sender is always in participant.
+        // FIX 3: fall back to context.sender (set by index.js pluginOpts)
+        // so targetChat is never null when participant is missing.
+        return message.key?.participant || context.sender || '';
     }
 
     // DM — remoteJid IS the sender
@@ -472,11 +474,27 @@ const vvCommand = {
             }
 
             const { mtype, msgObj, inner } = detected;
-            const buffer  = await downloadBuffer(sock, message, inner);
+
+            // FIX 1: Build a fakeMsg whose key points at the QUOTED message
+            // (not the .vv command itself) so Baileys re-upload fallback works.
+            const fakeQuotedMsg = {
+                key: {
+                    remoteJid  : chatId,
+                    id         : contextInfo.stanzaId    || '',
+                    participant: contextInfo.participant  || '',
+                    fromMe     : false,
+                },
+                message: quotedMsg,
+            };
+            const buffer  = await downloadBuffer(sock, fakeQuotedMsg, inner);
             const content = buildContent(mtype, buffer, msgObj);
 
             if (content) {
-                await sock.sendMessage(targetChat, content, { quoted: message });
+                // FIX 2: Only use { quoted: message } when sending BACK to the
+                // same chat. Quoting a group message inside a DM causes Baileys
+                // to throw, killing the entire send.
+                const sendOpts = (targetChat === chatId) ? { quoted: message } : {};
+                await sock.sendMessage(targetChat, content, sendOpts);
             }
 
             await sock.sendMessage(chatId, {
