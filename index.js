@@ -14,6 +14,9 @@ const fs       = require('fs');
 const crypto   = require('crypto');
 require('dotenv').config();
 
+// ── SUPABASE STORE (session persistence) ─────────────────────
+const supabaseStore = require('./lib/supabaseStore');
+
 // ── PRESENCE MANAGER (stealth offline mode) ──────────────────
 const {
   initPresenceManager,
@@ -359,7 +362,22 @@ async function initConnection(number) {
 function setupHandlers(conn, number, saveCreds) {
   const entry = activeConnections.get(number);
 
-  conn.ev.on('creds.update', async () => { try { await saveCreds(); } catch {} });
+  conn.ev.on('creds.update', async () => {
+    try {
+      await saveCreds();
+      // Backup session to Supabase so it survives restarts/dyno cycling
+      if (supabaseStore.isEnabled()) {
+        try {
+          const sessionDir = path.join(SESSIONS_DIR, number);
+          const credsPath  = path.join(sessionDir, 'creds.json');
+          if (fs.existsSync(credsPath)) {
+            const creds = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
+            await supabaseStore.saveSession(number, creds);
+          }
+        } catch (e) { console.error('[SUPABASE] Creds backup error:', e.message); }
+      }
+    } catch {}
+  });
 
   conn.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect } = update;
@@ -557,12 +575,19 @@ async function handleMessage(conn, msg, sessionId) {
   const from    = msg.key.remoteJid;
   const sender  = msg.key.participant || msg.key.remoteJid;
   const sNum    = sender.split('@')[0].split(':')[0];
-  // Check base owner (number match OR any linked device of this session)
+  // ── PERMISSION FIX: Only OWNER_NUM and CO_OWNER_NUM are owners.
+  // Paired users (sessionId) are NOT automatically owners — they must be in sudo list.
   const sNumClean = cleanNum(sender);
   const sessionNumClean = cleanNum(sessionId);
-  // fromMe = true means the bot itself or the linked owner device sent this
-  let isOwner = !!msg.key.fromMe || sNumClean === cleanNum(OWNER_NUM) || sNumClean === cleanNum(CO_OWNER_NUM) || sNumClean === sessionNumClean;
-  // Also check @lid variants for linked devices in groups
+
+  // fromMe = true only if the OWNER's linked device sent (session owner)
+  // We treat fromMe as owner ONLY if the sessionId matches OWNER_NUM or CO_OWNER_NUM
+  const sessionIsOwner = sessionNumClean === cleanNum(OWNER_NUM) || sessionNumClean === cleanNum(CO_OWNER_NUM);
+  let isOwner = (!!msg.key.fromMe && sessionIsOwner)
+    || sNumClean === cleanNum(OWNER_NUM)
+    || sNumClean === cleanNum(CO_OWNER_NUM);
+
+  // Also check @lid variants for linked devices in groups (owner only)
   if (!isOwner && from?.endsWith('@g.us')) {
     try {
       const meta = await conn.groupMetadata(from).catch(()=>null);
@@ -570,14 +595,17 @@ async function handleMessage(conn, msg, sessionId) {
         const participant = meta.participants.find(p => p.lid === sender || p.id === sender);
         if (participant) {
           const realNum = cleanNum(participant.id);
-          isOwner = realNum === cleanNum(OWNER_NUM) || realNum === cleanNum(CO_OWNER_NUM) || realNum === sessionNumClean;
+          isOwner = realNum === cleanNum(OWNER_NUM) || realNum === cleanNum(CO_OWNER_NUM);
         }
       }
     } catch {}
   }
-  // Check sudo list (enables sudo users and all their linked devices to use ownerOnly cmds)
-  if (!isOwner) { isOwner = await isSudoUser(sender); }
-  if (!isOwner && sender.includes(':')) { isOwner = await isSudoUser(sender.split(':')[0] + '@s.whatsapp.net'); }
+  // Check sudo list (sudo users get owner-level command access, but are NOT the owner)
+  const isSudo = !isOwner ? await isSudoUser(sender) : false;
+  const isSudoLinked = (!isOwner && !isSudo && sender.includes(':'))
+    ? await isSudoUser(sender.split(':')[0] + '@s.whatsapp.net')
+    : false;
+  if (!isOwner) isOwner = isSudo || isSudoLinked;
 
   // ── PRESENCE PULSE: briefly go online when owner sends a msg ──
   if (isOwner && msg.key.fromMe) {
@@ -1065,11 +1093,35 @@ server.listen(PORT, async () => {
 
 async function reloadExistingSessions() {
   console.log('🔄 Checking existing sessions...');
+
+  // ── SUPABASE: Restore any sessions saved remotely that aren't on disk ──
+  if (supabaseStore.isEnabled()) {
+    try {
+      await supabaseStore.initTables();
+      const remoteSessions = await supabaseStore.listSessions();
+      console.log(`☁️  Supabase has ${remoteSessions.length} remote session(s)`);
+      for (const num of remoteSessions) {
+        const sessionDir = path.join(SESSIONS_DIR, num);
+        const credsPath  = path.join(sessionDir, 'creds.json');
+        if (!fs.existsSync(credsPath)) {
+          const creds = await supabaseStore.loadSession(num);
+          if (creds) {
+            fs.mkdirSync(sessionDir, { recursive: true });
+            fs.writeFileSync(credsPath, JSON.stringify(creds, null, 2));
+            console.log(`☁️  Restored session from Supabase: ${num}`);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[SUPABASE] Session restore error:', e.message);
+    }
+  }
+
   if (!fs.existsSync(SESSIONS_DIR)) return;
   const dirs = fs.readdirSync(SESSIONS_DIR).filter(d => {
     try { return fs.statSync(path.join(SESSIONS_DIR,d)).isDirectory(); } catch { return false; }
   });
-  console.log(`📂 Found ${dirs.length} session(s)`);
+  console.log(`📂 Found ${dirs.length} local session(s)`);
   for (const num of dirs) {
     if (fs.existsSync(path.join(SESSIONS_DIR,num,'creds.json'))) {
       console.log(`🔄 Reloading: ${num}`);
