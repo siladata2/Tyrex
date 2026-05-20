@@ -575,17 +575,31 @@ async function handleMessage(conn, msg, sessionId) {
   const from    = msg.key.remoteJid;
   const sender  = msg.key.participant || msg.key.remoteJid;
   const sNum    = sender.split('@')[0].split(':')[0];
-  // ── PERMISSION FIX: Only OWNER_NUM and CO_OWNER_NUM are owners.
-  // Paired users (sessionId) are NOT automatically owners — they must be in sudo list.
+
   const sNumClean = cleanNum(sender);
   const sessionNumClean = cleanNum(sessionId);
 
-  // fromMe = true only if the OWNER's linked device sent (session owner)
-  // We treat fromMe as owner ONLY if the sessionId matches OWNER_NUM or CO_OWNER_NUM
-  const sessionIsOwner = sessionNumClean === cleanNum(OWNER_NUM) || sessionNumClean === cleanNum(CO_OWNER_NUM);
-  let isOwner = (!!msg.key.fromMe && sessionIsOwner)
-    || sNumClean === cleanNum(OWNER_NUM)
-    || sNumClean === cleanNum(CO_OWNER_NUM);
+  // ── PERMISSION SYSTEM (Fixed v2.0) ──────────────────────────────────────
+  //
+  //  Tier 1 — REAL OWNER:  OWNER_NUM or CO_OWNER_NUM (set in .env)
+  //  Tier 2 — SUDO USER:   added via .sudo add (stored in userGroupData.json)
+  //  Tier 3 — PAIRED USER: anyone who paired their bot (fromMe=true for their session)
+  //            → gets FULL owner-level command access (they are the user of this bot)
+  //            → but NOT treated as "real owner" for strictOwnerOnly commands
+  //
+  // isOwner = can use ALL .ownerOnly commands
+  // isRealOwner = can use .strictOwnerOnly commands (only OWNER_NUM + CO_OWNER_NUM)
+
+  const isRealOwner = sNumClean === cleanNum(OWNER_NUM)
+    || (CO_OWNER_NUM && sNumClean === cleanNum(CO_OWNER_NUM));
+
+  let isOwner = isRealOwner;
+
+  // fromMe = true → message sent by the BOT's own account (linked device or same number)
+  // ANY paired session's fromMe = co-owner level access
+  if (!isOwner && msg.key.fromMe) {
+    isOwner = true; // Paired users sending from their own session get full owner access
+  }
 
   // Also check @lid variants for linked devices in groups (owner only)
   if (!isOwner && from?.endsWith('@g.us')) {
@@ -595,12 +609,15 @@ async function handleMessage(conn, msg, sessionId) {
         const participant = meta.participants.find(p => p.lid === sender || p.id === sender);
         if (participant) {
           const realNum = cleanNum(participant.id);
-          isOwner = realNum === cleanNum(OWNER_NUM) || realNum === cleanNum(CO_OWNER_NUM);
+          if (realNum === cleanNum(OWNER_NUM) || (CO_OWNER_NUM && realNum === cleanNum(CO_OWNER_NUM))) {
+            isOwner = true;
+          }
         }
       }
     } catch {}
   }
-  // Check sudo list (sudo users get owner-level command access, but are NOT the owner)
+
+  // Sudo users get owner-level access
   const isSudo = !isOwner ? await isSudoUser(sender) : false;
   const isSudoLinked = (!isOwner && !isSudo && sender.includes(':'))
     ? await isSudoUser(sender.split(':')[0] + '@s.whatsapp.net')
@@ -666,8 +683,14 @@ async function handleMessage(conn, msg, sessionId) {
   // Plugin commands
   if (commands.has(cmd)) {
     const plugin = commands.get(cmd);
+    // strictOwnerOnly: ONLY real owner or co-owner (NOT paired users or sudo)
+    if (plugin.strictOwnerOnly && !isRealOwner) {
+      await conn.sendMessage(from, { text: '❌ This command is restricted to the real owner only.' }, { quoted: msg });
+      return;
+    }
+    // ownerOnly: owner, co-owner, paired users, and sudo users
     if (plugin.ownerOnly && !isOwner) {
-      await conn.sendMessage(from, { text: '❌ This command is only for the bot owner.' }, { quoted: msg });
+      await conn.sendMessage(from, { text: '❌ This command is for the bot owner/co-owner only.' }, { quoted: msg });
       return;
     }
     try {
@@ -680,11 +703,12 @@ async function handleMessage(conn, msg, sessionId) {
       const quoted = getQuoted(msg);
       const pluginOpts = {
         args, q, reply, from, isGroup, groupMetadata: gMeta,
-        sender, isAdmin, isOwner, botName: BOT_NAME, ownerName: OWNER_NAME,
+        sender, isAdmin, isOwner, isRealOwner, botName: BOT_NAME, ownerName: OWNER_NAME,
         prefix: pfx, senderNumber: sNum,
         chatId: from, deployId: DEPLOY_ID,
         senderIsOwnerOrSudo: isOwner,
         isOwnerOrSudoCheck: isOwner,
+        sessionId: sessionNumClean,
       };
       await plugin.execute(conn, msg, {
         mentionedJid: msg.message?.extendedTextMessage?.contextInfo?.mentionedJid||[],
