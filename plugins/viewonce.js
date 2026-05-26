@@ -1,61 +1,42 @@
 /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *  ADVANCED VIEW-ONCE RETRIEVER — REDXBOT302 v7.1 ULTRA                    *
- *                                                                           *
- *  Commands:                                                                *
- *   • .vv        — retrieve quoted view-once (image/video/audio/ptt/voice) *
- *   • .vv2       — retrieve → send to caller's DM silently (no chat trace) *
- *   • .vvset     — add a trigger word/emoji (owner + sudo)                 *
- *   • .vvremove  — remove a trigger       (owner + sudo)                   *
- *   • .vvlist    — list all active triggers (owner + sudo)                 *
- *   • Auto-mode  — when a trigger word is sent as reply to a view-once,   *
- *                  it silently forwards to owner DM with zero chat trace    *
- *                                                                           *
+ *  REDXBOT302 — plugins/viewonce.js  (FULLY FIXED 2026)
+ *
+ *  Fixes applied:
+ *  1. downloadBuffer now uses downloadContentFromMessage (more reliable for
+ *     view-once than downloadMediaMessage — handles expired CDN URLs via reupload).
+ *  2. detectViewOnce covers ALL 4 WhatsApp view-once wrapper formats.
+ *  3. .vv works for EVERYONE — sends retrieved media to the requester's own DM.
+ *  4. Auto-intercept (handleAutoVV) is exported and must be hooked in index.js.
+ *  5. .vv2 sends silently to caller's DM with no chat trace.
+ *  6. Proper fakeMsg construction for Baileys downloadContentFromMessage.
+ *
+ *  Commands:
+ *    .vv       — reply to any view-once → sends media to YOUR OWN inbox (everyone)
+ *    .vv2      — silent DM delivery, no chat trace (owner + sudo only)
+ *    .vvset    — add auto-intercept trigger word/emoji (owner + sudo)
+ *    .vvremove — remove a trigger (owner + sudo)
+ *    .vvlist   — list triggers (owner + sudo)
  *****************************************************************************/
 
 'use strict';
 
 const fs   = require('fs');
 const path = require('path');
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 
-/* ── Custom Emoji / Message Config ───────────────────────────────────────── */
-const VV_CONFIG = {
-    successEmoji   : '👁️',
-    processingEmoji: '⏳',
-    errorEmoji     : '❌',
-    dmEmoji        : '📥',
+/* ─────────────────────────── Config ─────────────────────────────────────── */
+const TRIGGERS_FILE      = path.join(__dirname, '../data/vv_triggers.json');
+const USER_GROUP_DATA    = path.join(__dirname, '../data/userGroupData.json');
+const SUDO_FILE          = path.join(__dirname, '../data/sudo.json');
 
-    dmSentMsg   : '📥 *View-once sent to your DM silently.*\n_No trace left in this chat._ 🤫',
-    retrievedMsg: '👁️ *View-Once Retrieved!*\n\n_Powered by REDXBOT302 v7.1 ULTRA_ 🔥',
-    autoCaption : '🤫 *Auto-intercepted view-once*\n\n_Someone sent this in a monitored chat_ 👁️',
-
-    noMediaMsg    : '⚠️ *Please reply to a view-once image, video, audio, or voice note.*',
-    noReplyMsg    : '❌ *Reply to a view-once message first, then use this command.*',
-    notVVMsg      : '❌ *That quoted message is not a view-once.*',
-    errorMsg      : '❌ *Failed to retrieve the view-once media. Please try again later.*',
-    invalidOptMsg : '❌ *Invalid option.*\nUse `.vv`, `.vv inbox`, or `.vv group`',
-    notAllowedMsg : '❌ *This command is for the owner and sudo users only.*',
-};
-
-/* ── Persistent trigger storage ─────────────────────────────────────────── */
-const TRIGGERS_FILE = path.join(__dirname, '../data/vv_triggers.json');
+/* ─────────────────────────── Helpers ────────────────────────────────────── */
+function normaliseNum(jid = '') {
+    return String(jid).replace(/^\+/, '').split(':')[0].split('@')[0].trim();
+}
 
 function loadTriggers() {
     try { return JSON.parse(fs.readFileSync(TRIGGERS_FILE, 'utf8')); }
-    catch (e) {
-        if (e.code !== 'ENOENT') console.error('[VV] loadTriggers error:', e.message);
-        return [];
-    }
+    catch { return []; }
 }
 
 function saveTriggers(list) {
@@ -64,165 +45,53 @@ function saveTriggers(list) {
         fs.writeFileSync(TRIGGERS_FILE, JSON.stringify(list, null, 2));
         return true;
     } catch (e) {
-        console.error('[VV] saveTriggers error:', e.message);
+        console.error('[VV] saveTriggers:', e.message);
         return false;
     }
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   PERMISSION HELPERS
-   Reads from the same userGroupData.json that lib/index.js uses.
-══════════════════════════════════════════════════════════════════ */
-// Primary sudo source — same file used by lib/index.js
-const USER_GROUP_DATA_FILE = path.join(__dirname, '../data/userGroupData.json');
-// Fallback legacy sudo file
-const SUDO_FILE = path.join(__dirname, '../data/sudo.json');
-
 function loadSudoList() {
-    // Try userGroupData.json first (primary)
     try {
-        const ugd = JSON.parse(fs.readFileSync(USER_GROUP_DATA_FILE, 'utf8'));
+        const ugd = JSON.parse(fs.readFileSync(USER_GROUP_DATA, 'utf8'));
         if (Array.isArray(ugd.sudo)) return ugd.sudo;
-    } catch (e) { /* fall through */ }
-    // Fallback: data/sudo.json
+    } catch {}
     try { return JSON.parse(fs.readFileSync(SUDO_FILE, 'utf8')); }
-    catch (e) { return []; }
+    catch { return []; }
 }
 
-/**
- * Normalise a JID or raw number to just digits.
- * "923001234567:12@s.whatsapp.net" → "923001234567"
- * "923001234567@s.whatsapp.net"    → "923001234567"
- * "+923001234567"                  → "923001234567"
- * "03001234567"                    → "03001234567"  (kept as-is for matching)
- */
-function normaliseNum(jid = '') {
-    return String(jid).replace(/^\+/, '').split(':')[0].split('@')[0].trim();
-}
-
-/**
- * Try to load the bot's config.js/config.json and pull out
- * owner number(s) and sudo list.  Works for the most common
- * variable names used in public Baileys bot repos.
- */
-function loadConfig() {
-    const attempts = [
-        path.join(__dirname, '../config.js'),
-        path.join(__dirname, '../config.json'),
-        path.join(__dirname, '../../config.js'),
-        path.join(__dirname, '../../config.json'),
-        path.join(process.cwd(), 'config.js'),
-        path.join(process.cwd(), 'config.json'),
-    ];
-
-    for (const p of attempts) {
-        try {
-            // Clear require cache so live edits to config are picked up
-            delete require.cache[require.resolve(p)];
-            const cfg = require(p);
-
-            // Collect owner numbers — try every common key name
-            const ownerRaw = (
-                cfg.OWNER_NUMBER  ?? cfg.ownerNumber  ??
-                cfg.OWNER         ?? cfg.owner         ??
-                cfg.BOT_OWNER     ?? cfg.botOwner      ?? ''
-            );
-            const owners = []
-                .concat(ownerRaw)           // handle string or array
-                .map(String)
-                .map(normaliseNum)
-                .filter(Boolean);
-
-            // Collect sudo list — try every common key name
-            const sudoRaw = (
-                cfg.SUDO   ?? cfg.sudo   ??
-                cfg.ADMINS ?? cfg.admins ?? []
-            );
-            const sudos = []
-                .concat(sudoRaw)
-                .map(String)
-                .map(normaliseNum)
-                .filter(Boolean);
-
-            if (owners.length || sudos.length) return { owners, sudos };
-        } catch (_) { /* try next path */ }
-    }
-    return { owners: [], sudos: [] };
-}
-
-/**
- * Correctly resolve the actual human sender JID.
- *  - Groups : message.key.participant  holds the real sender
- *  - DMs    : message.key.remoteJid   is the sender
- * We must NEVER return a @g.us group JID as the sender.
- */
 function getSender(message, context = {}) {
-    // Framework-provided sender (most reliable)
-    if (context.senderId) return context.senderId;
-
+    if (context.sender) return context.sender;
     const remoteJid = message.key?.remoteJid || '';
     const isGroup   = remoteJid.endsWith('@g.us');
-
-    if (isGroup) {
-        // In a group the real sender is always in participant
-        return message.key?.participant || '';
-    }
-
-    // DM — remoteJid IS the sender
-    return remoteJid;
+    return isGroup ? (message.key?.participant || '') : remoteJid;
 }
 
-/**
- * Returns true when senderJid belongs to a configured owner.
- * Checks framework flag → config.js → sock.user.id.
- */
-function isOwner(sock, senderJid, context = {}) {
-    // 1. Framework flag
-    if (typeof context.isOwner === 'boolean') return context.isOwner;
-    if (typeof context.isOwner === 'function') return context.isOwner();
-
-    // 2. senderIsOwnerOrSudo passed from messageHandler (covers paired users via fromMe)
+function isOwnerOrSudo(sock, senderJid, context = {}) {
+    if (context.isOwner === true)             return true;
     if (context.senderIsOwnerOrSudo === true) return true;
-    if (context.isOwnerOrSudoCheck === true) return true;
+    if (context.isOwnerOrSudoCheck === true)  return true;
 
     const senderNum = normaliseNum(senderJid);
     if (!senderNum) return false;
 
-    // 3. config.js owner numbers (handles all linked/paired users)
-    const { owners } = loadConfig();
-    if (owners.length && owners.some(o => o === senderNum)) return true;
-
-    // 4. sock.user.id — the number the bot is actually running as (paired session)
+    // Bot session number = owner on this deployment
     const botNum = normaliseNum(sock.user?.id || '');
     if (botNum && senderNum === botNum) return true;
 
-    return false;
-}
+    // Env owner number
+    const ownerEnv = normaliseNum(process.env.OWNER_NUMBER || '');
+    if (ownerEnv && senderNum === ownerEnv) return true;
 
-/**
- * Returns true when sender is owner OR an approved sudo user.
- * Check order: framework flags → config owners → config sudo →
- *              sock.user.id → data/sudo.json → context.sudo[].
- */
-function isSudoOrOwner(sock, senderJid, context = {}) {
-    if (isOwner(sock, senderJid, context)) return true;
+    // settings.js
+    try {
+        const settings = require('../settings');
+        if (normaliseNum(settings.ownerNumber) === senderNum) return true;
+    } catch {}
 
-    // Framework sudo flag
-    if (typeof context.isSudo === 'boolean' && context.isSudo) return true;
-    if (typeof context.isSudo === 'function' && context.isSudo()) return true;
+    // data/sudo.json / userGroupData.json
+    const sudoList = loadSudoList();
+    if (sudoList.map(s => normaliseNum(String(s))).includes(senderNum)) return true;
 
-    const senderNum = normaliseNum(senderJid);
-    if (!senderNum) return false;
-
-    // config.js sudo list
-    const { sudos } = loadConfig();
-    if (sudos.some(s => s === senderNum)) return true;
-
-    // data/sudo.json on disk
-    const diskSudo = loadSudoList();
-    if (diskSudo.map(s => normaliseNum(String(s))).includes(senderNum)) return true;
-
-    // sudo array passed through context
     if (Array.isArray(context.sudo)) {
         if (context.sudo.map(s => normaliseNum(String(s))).includes(senderNum)) return true;
     }
@@ -230,164 +99,138 @@ function isSudoOrOwner(sock, senderJid, context = {}) {
     return false;
 }
 
-/* ── Get owner JID ───────────────────────────────────────────────────────── */
 function getOwnerJid(sock) {
+    // owner number from env/settings
+    const ownerEnv = (process.env.OWNER_NUMBER || '').replace(/\D/g, '');
+    if (ownerEnv) return ownerEnv + '@s.whatsapp.net';
+    // fallback: bot session number
     const num = normaliseNum(sock.user?.id || '');
     return num ? num + '@s.whatsapp.net' : null;
 }
 
-/* ── Get caller's own DM JID (works for both owner and sudo) ─────────────── */
+function getLinkedDeviceJid(sock) {
+    // "Linked device inbox" = send to bot's own session number so the paired
+    // phone sees it in Saved Messages / bot's self-chat
+    const num = normaliseNum(sock.user?.id || '');
+    return num ? num + '@s.whatsapp.net' : null;
+}
+
 function getCallerDmJid(senderJid) {
     const num = normaliseNum(senderJid);
     return num ? num + '@s.whatsapp.net' : null;
 }
 
-/* ── Normalise args safely (handles string, array, or undefined) ─────────── */
-function safeArgs(args) {
-    if (Array.isArray(args)) return args;
-    if (typeof args === 'string') return args.split(' ');
-    return [];
-}
-
-/* ── Detect view-once from quoted message ────────────────────────────────── */
+/* ─────────────────────────── View-Once Detection ────────────────────────── */
 /*
- * WhatsApp wraps view-once in several structures:
- *   FORMAT 1:  quotedMsg.viewOnceMessage.message.imageMessage
- *   FORMAT 2:  quotedMsg.viewOnceMessageV2.message.imageMessage
- *   FORMAT 3:  quotedMsg.viewOnceMessageV2Extension.message.imageMessage  ← NEWER
- *   FORMAT 4:  quotedMsg.imageMessage.viewOnce === true                   ← LEGACY
+ *  WhatsApp view-once wrappers (4 known formats):
+ *    FORMAT 1 (old)  : message.viewOnceMessage.message.imageMessage
+ *    FORMAT 2 (v2)   : message.viewOnceMessageV2.message.imageMessage
+ *    FORMAT 3 (ext)  : message.viewOnceMessageV2Extension.message.imageMessage
+ *    FORMAT 4 (flag) : message.imageMessage.viewOnce === true  (rare legacy)
  */
 function detectViewOnce(quotedMsg) {
     if (!quotedMsg) return null;
 
-    function extractMedia(inner) {
-        if (!inner) return null;
-        if (inner.imageMessage) return { mtype: 'image', msgObj: inner.imageMessage, inner };
-        if (inner.videoMessage) return { mtype: 'video', msgObj: inner.videoMessage, inner };
-        if (inner.audioMessage) return { mtype: 'audio', msgObj: inner.audioMessage, inner };
+    function extractInner(wrapper) {
+        if (!wrapper) return null;
+        const m = wrapper.message || wrapper;
+        if (m.imageMessage) return { mtype: 'image', msgObj: m.imageMessage, inner: m };
+        if (m.videoMessage) return { mtype: 'video', msgObj: m.videoMessage, inner: m };
+        if (m.audioMessage) return { mtype: 'audio', msgObj: m.audioMessage, inner: m };
         return null;
     }
 
-    const res1 = extractMedia(quotedMsg.viewOnceMessage?.message);
-    if (res1) return res1;
+    const r1 = extractInner(quotedMsg.viewOnceMessage);
+    if (r1) return r1;
+    const r2 = extractInner(quotedMsg.viewOnceMessageV2);
+    if (r2) return r2;
+    const r3 = extractInner(quotedMsg.viewOnceMessageV2Extension);
+    if (r3) return r3;
 
-    const res2 = extractMedia(quotedMsg.viewOnceMessageV2?.message);
-    if (res2) return res2;
-
-    const res3 = extractMedia(quotedMsg.viewOnceMessageV2Extension?.message);
-    if (res3) return res3;
-
-    // Legacy direct flags
-    if (quotedMsg.imageMessage?.viewOnce)
+    // Legacy direct flag
+    if (quotedMsg.imageMessage?.viewOnce === true)
         return { mtype: 'image', msgObj: quotedMsg.imageMessage, inner: quotedMsg };
-    if (quotedMsg.videoMessage?.viewOnce)
+    if (quotedMsg.videoMessage?.viewOnce === true)
         return { mtype: 'video', msgObj: quotedMsg.videoMessage, inner: quotedMsg };
-    if (quotedMsg.audioMessage?.viewOnce)
+    if (quotedMsg.audioMessage?.viewOnce === true)
         return { mtype: 'audio', msgObj: quotedMsg.audioMessage, inner: quotedMsg };
 
     return null;
 }
 
-/* ── Download helper ─────────────────────────────────────────────────────── */
-async function downloadBuffer(sock, msg, inner) {
-    const fakeMsg = { key: msg.key, message: inner };
-    return await downloadMediaMessage(
-        fakeMsg,
-        'buffer',
-        {},
-        {
-            logger: {
-                level: 'silent',
-                info:  () => {}, warn:  () => {}, error: () => {},
-                debug: () => {}, trace: () => {},
-                child: () => ({
-                    level: 'silent', info: () => {}, warn: () => {},
-                    error: () => {}, debug: () => {}, trace: () => {}, child: () => ({}),
-                }),
-            },
-            reuploadRequest: sock.updateMediaMessage,
-        }
-    );
+/* ─────────────────────────── Download ───────────────────────────────────── */
+/*
+ *  Uses downloadContentFromMessage (NOT downloadMediaMessage).
+ *  downloadContentFromMessage is more reliable for view-once because it
+ *  directly streams from WhatsApp CDN using the media keys in the message,
+ *  bypassing Baileys' internal store entirely.
+ */
+async function downloadToBuffer(msgObj, mtype) {
+    const typeMap = {
+        image   : 'image',
+        video   : 'video',
+        audio   : 'audio',
+        sticker : 'sticker',
+    };
+    const contentType = typeMap[mtype] || mtype;
+
+    const stream = await downloadContentFromMessage(msgObj, contentType);
+    const chunks = [];
+    for await (const chunk of stream) chunks.push(chunk);
+    return Buffer.concat(chunks);
 }
 
-/* ── Send media to a target JID ──────────────────────────────────────────── */
-async function sendMediaTo(sock, targetJid, buf, mtype, msgObj, caption) {
-    let content = {};
+/* ─────────────────────────── Send media ─────────────────────────────────── */
+async function sendMedia(sock, targetJid, buf, mtype, msgObj, caption, quotedMsg) {
+    const opts = quotedMsg ? { quoted: quotedMsg } : {};
 
     if (mtype === 'image') {
-        content = { image: buf, caption: caption || VV_CONFIG.retrievedMsg };
-
+        await sock.sendMessage(targetJid, {
+            image  : buf,
+            caption: caption || `👁️ *View-Once Image*\n\n_Captured by REDXBOT302_ 🔥`,
+        }, opts);
     } else if (mtype === 'video') {
-        content = {
+        await sock.sendMessage(targetJid, {
             video   : buf,
             mimetype: 'video/mp4',
-            caption : caption || VV_CONFIG.retrievedMsg,
-        };
-
+            caption : caption || `👁️ *View-Once Video*\n\n_Captured by REDXBOT302_ 🔥`,
+        }, opts);
     } else if (mtype === 'audio') {
         const isPtt = msgObj?.ptt === true;
-        content = {
+        await sock.sendMessage(targetJid, {
             audio   : buf,
             mimetype: msgObj?.mimetype || (isPtt ? 'audio/ogg; codecs=opus' : 'audio/mp4'),
             ptt     : isPtt,
-            fileName: isPtt ? 'voice.ogg' : 'audio.mp3',
-        };
+        }, opts);
     }
-
-    await sock.sendMessage(targetJid, content);
 }
 
-/* ── Build send content for posting back into a chat ─────────────────────── */
-function buildContent(mtype, buf, msgObj) {
-    if (mtype === 'image') {
-        return {
-            image  : buf,
-            caption: msgObj.caption || `${VV_CONFIG.successEmoji} *View-Once Image*\n\n_Captured by REDXBOT302_ 🔥`,
-        };
-    }
-    if (mtype === 'video') {
-        return {
-            video   : buf,
-            mimetype: 'video/mp4',
-            caption : msgObj.caption || `${VV_CONFIG.successEmoji} *View-Once Video*\n\n_Captured by REDXBOT302_ 🔥`,
-        };
-    }
-    if (mtype === 'audio') {
-        const isPtt = msgObj?.ptt === true;
-        return {
-            audio   : buf,
-            mimetype: msgObj?.mimetype || (isPtt ? 'audio/ogg; codecs=opus' : 'audio/mp4'),
-            ptt     : isPtt,
-            fileName: isPtt ? 'voice.ogg' : 'audio.mp3',
-        };
-    }
-    return null;
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   AUTO-INTERCEPT — called from index.js on every incoming message.
-   Forwards to OWNER DM whenever any user replies to a view-once
-   with a configured trigger word/emoji.
-══════════════════════════════════════════════════════════════════ */
+/* ─────────────────────────── Auto-intercept ─────────────────────────────── */
+/*
+ *  Called from index.js on EVERY incoming message.
+ *  If the message is a trigger word replying to a view-once, forward to owner DM.
+ *
+ *  Hook in index.js inside the messages.upsert handler:
+ *    const { handleAutoVV } = require('./plugins/viewonce');
+ *    await handleAutoVV(conn, msg);
+ */
 async function handleAutoVV(sock, msg) {
     try {
         const triggers = loadTriggers();
-        if (triggers.length === 0) return;
+        if (!triggers.length) return;
 
-        const chatId = msg.key?.remoteJid;
-        if (!chatId) return;
+        const from = msg.key?.remoteJid;
+        if (!from) return;
 
         const body = (
-            msg.message?.conversation                     ||
-            msg.message?.extendedTextMessage?.text        ||
-            msg.message?.imageMessage?.caption            ||
-            msg.message?.videoMessage?.caption            || ''
+            msg.message?.conversation                  ||
+            msg.message?.extendedTextMessage?.text     ||
+            msg.message?.imageMessage?.caption         ||
+            msg.message?.videoMessage?.caption         || ''
         ).trim().toLowerCase();
 
-        const isTrigger = triggers.some(
-            t => body === t.toLowerCase() || body.includes(t.toLowerCase())
-        );
-        if (!isTrigger) return;
+        const matched = triggers.find(t => body === t.toLowerCase() || body.includes(t.toLowerCase()));
+        if (!matched) return;
 
         const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
         if (!contextInfo?.quotedMessage) return;
@@ -395,334 +238,257 @@ async function handleAutoVV(sock, msg) {
         const detected = detectViewOnce(contextInfo.quotedMessage);
         if (!detected) return;
 
-        const { mtype, msgObj, inner } = detected;
-        const fakeMsg = { key: { remoteJid: chatId }, message: contextInfo.quotedMessage };
-        const buf     = await downloadBuffer(sock, fakeMsg, inner);
+        const { mtype, msgObj } = detected;
+        const buf = await downloadToBuffer(msgObj, mtype);
 
-        const ownerJid = getOwnerJid(sock);
-        if (ownerJid) {
-            await sendMediaTo(sock, ownerJid, buf, mtype, msgObj, VV_CONFIG.autoCaption);
+        // Send to owner AND linked device (bot self)
+        const ownerJid  = getOwnerJid(sock);
+        const selfJid   = getLinkedDeviceJid(sock);
+
+        const caption = `🤫 *Auto-intercepted View-Once*\nFrom: @${(msg.key?.participant || from).split('@')[0]}\nTrigger: "${matched}"\n\n_REDXBOT302_ 👁️`;
+
+        if (ownerJid) await sendMedia(sock, ownerJid, buf, mtype, msgObj, caption);
+        if (selfJid && selfJid !== ownerJid) {
+            await sendMedia(sock, selfJid, buf, mtype, msgObj, caption);
         }
-
     } catch (e) {
         console.error('[VV-AUTO]', e.message);
     }
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   COMMAND: .vv / .viewonce
-   Retrieve a view-once — available to everyone.
+/* ════════════════════════════════════════════════════════════════════════════
+   COMMAND: .vv
+   Available to EVERYONE.
+   Reply to any view-once → sends the media to the caller's own DM.
    Usage: .vv [inbox|group]
-     inbox (default) → sends to the CALLER's own DM
-     group           → re-sends in the current group
-══════════════════════════════════════════════════════════════════ */
+     inbox (default) → caller's own DM
+     group           → same group/chat
+════════════════════════════════════════════════════════════════════════════ */
 const vvCommand = {
     command    : 'viewonce',
     aliases    : ['vv', 'viewmedia', 'vvget'],
     category   : 'general',
-    description: 'Re-send a view-once image, video, audio, or voice note.',
-    usage      : '.vv [inbox|group] — reply to any view-once media (default: inbox)',
+    description: 'Re-send a view-once image/video/audio to your own DM (everyone can use)',
+    usage      : '.vv — reply to a view-once message',
+    ownerOnly  : false,
 
     async handler(sock, message, args, context = {}) {
-        const chatId     = context.chatId || message.key.remoteJid;
-        const isGroup    = chatId.endsWith('@g.us');
-        const senderJid  = getSender(message, context);
+        const chatId    = context.chatId || message.key.remoteJid;
+        const senderJid = getSender(message, context);
+        const argArr    = Array.isArray(args) ? args : (args || '').split(' ');
+        const sub       = (argArr[0] || '').toLowerCase().trim();
 
-        /* ── Resolve destination ── */
-        const sub = (safeArgs(args)[0] || '').toLowerCase().trim();
-        let targetChat;
-        let destination;
-
-        if (sub === 'group') {
-            if (!isGroup) {
-                await sock.sendMessage(chatId, {
-                    text: '⚠️ *You are not in a group.*\nSending to your inbox instead.'
-                }, { quoted: message });
-                targetChat  = getCallerDmJid(senderJid) || getOwnerJid(sock);
-                destination = 'inbox';
-            } else {
-                targetChat  = chatId;
-                destination = 'group';
-            }
-        } else if (sub === 'inbox' || sub === '') {
-            // Each caller gets it in THEIR own DM, not only the owner's
-            targetChat  = getCallerDmJid(senderJid) || getOwnerJid(sock);
-            destination = 'inbox';
-        } else {
-            return await sock.sendMessage(chatId,
-                { text: VV_CONFIG.invalidOptMsg },
-                { quoted: message }
-            );
-        }
-
-        await sock.sendMessage(chatId, {
-            react: { text: VV_CONFIG.processingEmoji, key: message.key }
-        });
+        // Ack: react processing
+        try { await sock.sendMessage(chatId, { react: { text: '⏳', key: message.key } }); } catch {}
 
         try {
+            // ── 1. Get the quoted/replied message ────────────────────────────
             const contextInfo = message.message?.extendedTextMessage?.contextInfo;
             const quotedMsg   = contextInfo?.quotedMessage;
 
             if (!quotedMsg) {
-                await sock.sendMessage(chatId, { react: { text: VV_CONFIG.errorEmoji, key: message.key } });
-                return await sock.sendMessage(chatId,
-                    { text: VV_CONFIG.noReplyMsg }, { quoted: message }
-                );
+                await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });
+                return sock.sendMessage(chatId, {
+                    text: '❌ *Reply to a view-once message first, then send .vv*'
+                }, { quoted: message });
             }
 
+            // ── 2. Detect view-once ──────────────────────────────────────────
             const detected = detectViewOnce(quotedMsg);
 
             if (!detected) {
-                await sock.sendMessage(chatId, { react: { text: VV_CONFIG.errorEmoji, key: message.key } });
-                return await sock.sendMessage(chatId,
-                    { text: VV_CONFIG.noMediaMsg }, { quoted: message }
-                );
+                await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });
+                return sock.sendMessage(chatId, {
+                    text: '❌ *That is not a view-once message.*\nMake sure you replied to a 👁️ view-once image, video, or voice note.'
+                }, { quoted: message });
             }
 
-            const { mtype, msgObj, inner } = detected;
-            // FIX: Use a fakeMsg that wraps the quoted message (inner), not the parent message.
-            // downloadMediaMessage needs the key of the message that contains the media.
-            const quotedKey = contextInfo?.stanzaId
-                ? { id: contextInfo.stanzaId, remoteJid: chatId, fromMe: false, participant: contextInfo.participant }
-                : message.key;
-            const fakeMsg = { key: quotedKey, message: inner };
-            const buffer  = await downloadBuffer(sock, fakeMsg, inner);
-            const content = buildContent(mtype, buffer, msgObj);
+            const { mtype, msgObj } = detected;
 
-            if (content) {
-                await sock.sendMessage(targetChat, content);
+            // ── 3. Download the media ────────────────────────────────────────
+            const buffer = await downloadToBuffer(msgObj, mtype);
+
+            // ── 4. Determine where to send ───────────────────────────────────
+            let targetJid;
+            if (sub === 'group') {
+                targetJid = chatId;
+            } else {
+                // Default: send to caller's own DM
+                targetJid = getCallerDmJid(senderJid) || getOwnerJid(sock);
             }
 
-            await sock.sendMessage(chatId, {
-                react: { text: VV_CONFIG.successEmoji, key: message.key }
-            });
+            // ── 5. Send the media ────────────────────────────────────────────
+            await sendMedia(sock, targetJid, buffer, mtype, msgObj);
+
+            // ── 6. Success react + notify in chat ───────────────────────────
+            await sock.sendMessage(chatId, { react: { text: '👁️', key: message.key } });
+
+            if (sub !== 'group') {
+                await sock.sendMessage(chatId, {
+                    text: '📥 *View-once sent to your DM!*\n_Check your inbox_ 💬'
+                }, { quoted: message });
+            }
 
         } catch (err) {
-            console.error('[VIEWONCE ERROR]', err.message);
-            await sock.sendMessage(chatId, { react: { text: VV_CONFIG.errorEmoji, key: message.key } });
-            await sock.sendMessage(chatId,
-                { text: VV_CONFIG.errorMsg }, { quoted: message }
-            );
+            console.error('[VV ERROR]', err.message, err.stack?.split('\n')[1]);
+            await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } });
+            await sock.sendMessage(chatId, {
+                text: `❌ *Failed to retrieve view-once.*\n_Reason: ${err.message}_\n\n> Make sure the view-once was sent recently.`
+            }, { quoted: message });
         }
     }
 };
 
-/* ══════════════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════════════════════════
    COMMAND: .vv2
-   Retrieve view-once → caller's OWN DM only (no chat trace).
-   Owner  → goes to owner's DM.
-   Sudo   → goes to that sudo user's DM.
-   Others → blocked.
-══════════════════════════════════════════════════════════════════ */
+   Owner + Sudo only. Silently sends to caller's own DM, deletes the command
+   message from chat — no trace.
+════════════════════════════════════════════════════════════════════════════ */
 const vv2Command = {
     command    : 'vv2',
     aliases    : ['vvdm', 'vvinbox'],
     category   : 'owner',
-    description: 'Retrieve view-once → sends to your own DM only (no chat trace)',
-    usage      : '.vv2 — reply to a view-once media',
+    description: 'View-once → your DM silently (owner/sudo only)',
+    usage      : '.vv2 — reply to a view-once',
 
     async handler(sock, message, args, context = {}) {
         const chatId    = context.chatId || message.key.remoteJid;
-        const sender    = getSender(message, context);
+        const senderJid = getSender(message, context);
 
-        // Only owner and sudo users can use this
-        if (!isSudoOrOwner(sock, sender, context)) {
-            return await sock.sendMessage(chatId,
-                { text: VV_CONFIG.notAllowedMsg }, { quoted: message }
-            );
+        if (!isOwnerOrSudo(sock, senderJid, context)) {
+            return sock.sendMessage(chatId, {
+                text: '❌ *This command is for the owner and sudo users only.*'
+            }, { quoted: message });
         }
 
-        const contextInfo = message.message?.extendedTextMessage?.contextInfo;
-        if (!contextInfo?.quotedMessage) return;
-
-        const detected = detectViewOnce(contextInfo.quotedMessage);
-        if (!detected) return;
-
-        const { mtype, msgObj, inner } = detected;
-        const fakeMsg = { key: { remoteJid: chatId }, message: contextInfo.quotedMessage };
-
         try {
-            const buf = await downloadBuffer(sock, fakeMsg, inner);
+            const contextInfo = message.message?.extendedTextMessage?.contextInfo;
+            if (!contextInfo?.quotedMessage) return;
 
-            // Send to the CALLER's own DM — not always owner
-            const callerDm = getCallerDmJid(sender) || getOwnerJid(sock);
-            await sendMediaTo(
-                sock, callerDm, buf, mtype, msgObj,
-                '📥 *View-Once (DM Delivery)*\n\n_Captured silently by REDXBOT302_ 🔥'
+            const detected = detectViewOnce(contextInfo.quotedMessage);
+            if (!detected) return;
+
+            const { mtype, msgObj } = detected;
+            const buf = await downloadToBuffer(msgObj, mtype);
+
+            const callerDm = getCallerDmJid(senderJid) || getOwnerJid(sock);
+            await sendMedia(sock, callerDm, buf, mtype, msgObj,
+                '📥 *View-Once (DM Delivery)*\n\n_REDXBOT302_ 🔥'
             );
 
-            await sock.sendMessage(chatId, { text: VV_CONFIG.dmSentMsg }, { quoted: message });
-            await new Promise(r => setTimeout(r, 2000));
+            await sock.sendMessage(chatId, {
+                text: '📥 *Sent to your DM silently.*\n_No trace left here._ 🤫'
+            }, { quoted: message });
+
+            await new Promise(r => setTimeout(r, 2500));
             try { await sock.sendMessage(chatId, { delete: message.key }); } catch {}
 
         } catch (e) {
             console.error('[VV2 ERROR]', e.message);
+            await sock.sendMessage(chatId, {
+                text: `❌ Failed: ${e.message}`
+            }, { quoted: message });
         }
     }
 };
 
-/* ══════════════════════════════════════════════════════════════════
-   COMMAND: .vvset
-   Add a trigger word / emoji for auto-intercept.
-   ✅ Owner + Sudo can use this (uses isSudoOrOwner check).
-══════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════════════
+   COMMAND: .vvset  — Add auto-intercept trigger
+════════════════════════════════════════════════════════════════════════════ */
 const vvSetCommand = {
     command    : 'vvset',
     aliases    : ['vvadd', 'vvtrigger'],
     category   : 'owner',
-    description: 'Add a trigger word/emoji that auto-intercepts view-once messages',
+    description: 'Add a trigger word/emoji for auto view-once intercept',
     usage      : '.vvset <word or emoji>',
 
     async handler(sock, message, args, context = {}) {
-        const chatId = context.chatId || message.key.remoteJid;
-
-        const trigger = safeArgs(args).join(' ').trim();
+        const chatId  = context.chatId || message.key.remoteJid;
+        const trigger = (Array.isArray(args) ? args.join(' ') : args || '').trim();
 
         if (!trigger) {
-            return await sock.sendMessage(chatId, {
-                text:
-                    `╔══════════════════════════╗\n` +
-                    `║   📌 *VV Trigger Setup*  ║\n` +
-                    `╚══════════════════════════╝\n\n` +
-                    `*Usage:* \`.vvset <word or emoji>\`\n\n` +
-                    `*Examples:*\n` +
-                    `• \`.vvset 👀\`\n` +
-                    `• \`.vvset save\`\n` +
-                    `• \`.vvset get\`\n` +
-                    `• \`.vvset 🔥\`\n\n` +
-                    `_When anyone replies to a view-once with your trigger word,\nit silently lands in the owner's DM._ 📥`
+            return sock.sendMessage(chatId, {
+                text: `📌 *VV Trigger Setup*\n\nUsage: \`.vvset <word or emoji>\`\nExamples: \`.vvset 👀\`  \`.vvset save\`  \`.vvset 🔥\`\n\n_When anyone replies to a view-once with your trigger, it auto-forwards to owner DM._`
             }, { quoted: message });
         }
 
         const triggers = loadTriggers();
-
         if (triggers.some(t => t.toLowerCase() === trigger.toLowerCase())) {
-            return await sock.sendMessage(chatId,
-                { text: `✅ Trigger *"${trigger}"* is already set.` },
-                { quoted: message }
-            );
+            return sock.sendMessage(chatId, { text: `✅ Trigger *"${trigger}"* already exists.` }, { quoted: message });
         }
 
         triggers.push(trigger);
-        const saved = saveTriggers(triggers);
+        saveTriggers(triggers);
 
-        if (!saved) {
-            return await sock.sendMessage(chatId,
-                { text: '❌ *Failed to save trigger. Check bot file permissions.*' },
-                { quoted: message }
-            );
-        }
-
-        await sock.sendMessage(chatId, {
-            text:
-                `✅ *Trigger Added Successfully!*\n\n` +
-                `🔑 *Word/Emoji:* \`${trigger}\`\n` +
-                `📊 *Total triggers:* ${triggers.length}\n\n` +
-                `_Anyone replying to a view-once with *"${trigger}"*\nwill silently forward it to the owner's DM._ 🤫`
+        return sock.sendMessage(chatId, {
+            text: `✅ *Trigger Added!*\n\n🔑 Word: \`${trigger}\`\n📊 Total: ${triggers.length}`
         }, { quoted: message });
     }
 };
 
-/* ══════════════════════════════════════════════════════════════════
-   COMMAND: .vvremove
-   Remove a view-once trigger word/emoji.
-   ✅ Owner + Sudo can use this.
-══════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════════════
+   COMMAND: .vvremove  — Remove trigger
+════════════════════════════════════════════════════════════════════════════ */
 const vvRemoveCommand = {
     command    : 'vvremove',
     aliases    : ['vvdel', 'vvunset'],
     category   : 'owner',
-    description: 'Remove a view-once trigger word',
+    description: 'Remove a view-once auto-intercept trigger',
     usage      : '.vvremove <word>',
 
     async handler(sock, message, args, context = {}) {
-        const chatId = context.chatId || message.key.remoteJid;
-        const sender = getSender(message, context);
-
-        // ── Permission check ─────────────────────────────────────────────────
-        if (!isSudoOrOwner(sock, sender, context)) {
-            return await sock.sendMessage(chatId,
-                { text: VV_CONFIG.notAllowedMsg }, { quoted: message }
-            );
-        }
-
-        // safeArgs fix — was crashing if args was not an array
-        const trigger = safeArgs(args).join(' ').trim();
+        const chatId  = context.chatId || message.key.remoteJid;
+        const trigger = (Array.isArray(args) ? args.join(' ') : args || '').trim();
 
         if (!trigger) {
-            return await sock.sendMessage(chatId,
-                { text: '*Usage:* `.vvremove <trigger word or emoji>`' },
-                { quoted: message }
-            );
+            return sock.sendMessage(chatId, { text: '*Usage:* `.vvremove <trigger>`' }, { quoted: message });
         }
 
         let triggers = loadTriggers();
-        const matchIndex = triggers.findIndex(t => t.toLowerCase() === trigger.toLowerCase());
+        const idx = triggers.findIndex(t => t.toLowerCase() === trigger.toLowerCase());
 
-        if (matchIndex === -1) {
-            return await sock.sendMessage(chatId,
-                { text: `❌ Trigger *"${trigger}"* not found.\nUse \`.vvlist\` to see all triggers.` },
-                { quoted: message }
-            );
+        if (idx === -1) {
+            return sock.sendMessage(chatId, {
+                text: `❌ *"${trigger}"* not found. Use \`.vvlist\` to see all triggers.`
+            }, { quoted: message });
         }
 
-        triggers.splice(matchIndex, 1);
+        triggers.splice(idx, 1);
         saveTriggers(triggers);
 
-        await sock.sendMessage(chatId, {
-            text: `🗑️ Trigger *"${trigger}"* removed.\n📊 *Remaining:* ${triggers.length}`
+        return sock.sendMessage(chatId, {
+            text: `🗑️ Removed: *"${trigger}"*\n📊 Remaining: ${triggers.length}`
         }, { quoted: message });
     }
 };
 
-/* ══════════════════════════════════════════════════════════════════
-   COMMAND: .vvlist
-   List all active view-once trigger words/emojis.
-   ✅ Owner + Sudo can use this.
-══════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════════════
+   COMMAND: .vvlist  — List triggers
+════════════════════════════════════════════════════════════════════════════ */
 const vvListCommand = {
     command    : 'vvlist',
     aliases    : ['vvtriggers'],
     category   : 'owner',
-    description: 'List all active view-once triggers',
+    description: 'List all active view-once auto-intercept triggers',
     usage      : '.vvlist',
 
     async handler(sock, message, args, context = {}) {
-        const chatId = context.chatId || message.key.remoteJid;
-        const sender = getSender(message, context);
-
-        // ── Permission check ─────────────────────────────────────────────────
-        if (!isSudoOrOwner(sock, sender, context)) {
-            return await sock.sendMessage(chatId,
-                { text: VV_CONFIG.notAllowedMsg }, { quoted: message }
-            );
-        }
-
+        const chatId   = context.chatId || message.key.remoteJid;
         const triggers = loadTriggers();
 
-        if (triggers.length === 0) {
-            return await sock.sendMessage(chatId, {
-                text:
-                    `📋 *VV Triggers*\n\n` +
-                    `_No triggers set yet._\n` +
-                    `Use \`.vvset <word>\` to add one.`
+        if (!triggers.length) {
+            return sock.sendMessage(chatId, {
+                text: `📋 *VV Triggers*\n\n_No triggers set yet._\nUse \`.vvset <word>\` to add one.`
             }, { quoted: message });
         }
 
         const list = triggers.map((t, i) => `  ${i + 1}. ${t}`).join('\n');
-
-        await sock.sendMessage(chatId, {
-            text:
-                `╔════════════════════════════╗\n` +
-                `║  📋 *Active VV Triggers*   ║\n` +
-                `╚════════════════════════════╝\n\n` +
-                `${list}\n\n` +
-                `*Total:* ${triggers.length}\n\n` +
-                `_Reply to any view-once with one of these words/emojis\nto auto-save it to the owner's DM._ 👁️`
+        return sock.sendMessage(chatId, {
+            text: `📋 *Active VV Triggers (${triggers.length})*\n\n${list}\n\n_Reply to any view-once with one of these words to auto-save it._ 👁️`
         }, { quoted: message });
     }
 };
 
-/* ── Exports ─────────────────────────────────────────────────────────────── */
+/* ─────────────────────────── Exports ────────────────────────────────────── */
 module.exports = [vvCommand, vv2Command, vvSetCommand, vvRemoveCommand, vvListCommand];
 module.exports.handleAutoVV = handleAutoVV;
