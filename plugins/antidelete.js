@@ -141,21 +141,33 @@ async function storeMessage(sock, message) {
                 const ext = mediaType === 'image' ? 'jpg' : 'mp4';
                 const mediaPath = path.join(TEMP_MEDIA_DIR, `vo_${messageId}.${ext}`);
                 await writeFile(mediaPath, buffer);
-                // Use real owner from settings; fallback to session number
+
                 const realOwnerNum = require('../settings').ownerNumber || '';
                 const ownerNumber = realOwnerNum
                     ? realOwnerNum.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
                     : sock.user.id.split(':')[0] + '@s.whatsapp.net';
-                // FIX: Respect delpath config instead of always sending to owner
+                const linkedDevice = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+
                 const freshConfig = await loadAntideleteConfig();
                 const delpath = freshConfig.delpath || 'owner';
                 const groupJid = message.key.remoteJid?.endsWith('@g.us') ? message.key.remoteJid : null;
-                let targetJid = ownerNumber;
-                if (delpath === 'group' && groupJid) targetJid = groupJid;
-                else if (delpath && !['owner', 'group'].includes(delpath) && delpath.includes('@')) targetJid = delpath;
+
+                // Build delivery targets
+                const voTargets = new Set();
+                if (delpath === 'group' && groupJid) {
+                    voTargets.add(groupJid);
+                } else if (delpath && !['owner', 'group'].includes(delpath) && delpath.includes('@')) {
+                    voTargets.add(delpath);
+                } else {
+                    voTargets.add(ownerNumber);
+                    if (linkedDevice !== ownerNumber) voTargets.add(linkedDevice); // linked device inbox
+                }
+
                 const opts = { caption: `*👁️ View-Once ${mediaType}*\nFrom: @${sender.split('@')[0]}`, mentions: [sender] };
-                if (mediaType === 'image') await sock.sendMessage(targetJid, { image: { url: mediaPath }, ...opts });
-                else await sock.sendMessage(targetJid, { video: { url: mediaPath }, ...opts });
+                for (const jid of voTargets) {
+                    if (mediaType === 'image') await sock.sendMessage(jid, { image: { url: mediaPath }, ...opts }).catch(() => {});
+                    else await sock.sendMessage(jid, { video: { url: mediaPath }, ...opts }).catch(() => {});
+                }
                 try { fs.unlinkSync(mediaPath); } catch {}
             } catch (e) { console.error('[ANTIDELETE] ViewOnce error:', e.message); }
         }
@@ -215,10 +227,15 @@ async function handleMessageRevocation(sock, revocationMessage) {
         const config = await loadAntideleteConfig();
         if (!config.enabled) return;
 
-        const messageId = revocationMessage.message?.protocolMessage?.key?.id;
+        // messages.update fires with { key, update } structure; handle both shapes
+        const actualMsg = revocationMessage.update || revocationMessage;
+        const messageId = actualMsg.message?.protocolMessage?.key?.id
+            || revocationMessage.message?.protocolMessage?.key?.id;
         if (!messageId) return;
 
-        const deletedBy = revocationMessage.participant || revocationMessage.key?.participant || revocationMessage.key?.remoteJid;
+        const deletedBy = actualMsg.participant || actualMsg.key?.participant
+            || revocationMessage.participant || revocationMessage.key?.participant
+            || revocationMessage.key?.remoteJid;
         const sessionNumber = sock.user.id.split(':')[0] + '@s.whatsapp.net';
         // Real owner from settings (linked device should also receive)
         const realOwnerNum = require('../settings').ownerNumber || '';
@@ -251,13 +268,25 @@ async function handleMessageRevocation(sock, revocationMessage) {
         if (original.content) text += `\n*💬 Message:*\n${original.content}`;
         if (original.mediaType) text += `\n*📎 Media:* ${original.mediaType}`;
 
-        // Determine target
-        let targetJid = ownerNumber;
-        const delpath = config.delpath;
-        if (delpath === 'group' && original.group) targetJid = original.group;
-        else if (delpath && !['owner', 'group'].includes(delpath) && delpath.includes('@')) targetJid = delpath;
+        // Determine delivery targets
+        // Always deliver to owner number AND bot's own linked-device self-chat
+        const delpath   = config.delpath;
+        const linkedJid = sessionNumber; // bot session = linked device inbox
+        const targets   = new Set();
 
-        await sock.sendMessage(targetJid, { text, mentions: [deletedBy, sender] });
+        if (delpath === 'group' && original.group) {
+            targets.add(original.group);
+        } else if (delpath && !['owner', 'group'].includes(delpath) && delpath.includes('@')) {
+            targets.add(delpath);
+        } else {
+            // delpath === 'owner' (default) — send to owner + linked device
+            targets.add(ownerNumber);
+            if (linkedJid !== ownerNumber) targets.add(linkedJid); // bot self inbox
+        }
+
+        for (const jid of targets) {
+            await sock.sendMessage(jid, { text, mentions: [deletedBy, sender] }).catch(() => {});
+        }
 
         // Now lazily download media ONLY when deletion is detected
         if (original.mediaType) {
@@ -269,26 +298,28 @@ async function handleMessageRevocation(sock, revocationMessage) {
                     caption: `*Deleted ${original.mediaType}*\nFrom: @${senderName}`,
                     mentions: [sender]
                 };
-                try {
-                    switch (original.mediaType) {
-                        case 'image':
-                            await sock.sendMessage(targetJid, { image: { url: mediaPath }, ...opts }); break;
-                        case 'sticker':
-                            await sock.sendMessage(targetJid, { sticker: { url: mediaPath } }); break;
-                        case 'video':
-                            await sock.sendMessage(targetJid, { video: { url: mediaPath }, ...opts }); break;
-                        case 'audio':
-                            await sock.sendMessage(targetJid, { audio: { url: mediaPath }, mimetype: 'audio/mpeg', ptt: false, ...opts }); break;
-                        case 'document':
-                            await sock.sendMessage(targetJid, {
-                                document: { url: mediaPath },
-                                fileName: doc?.fileName || path.basename(mediaPath),
-                                mimetype: doc?.mimetype || 'application/octet-stream',
-                                ...opts
-                            }); break;
+                for (const jid of targets) {
+                    try {
+                        switch (original.mediaType) {
+                            case 'image':
+                                await sock.sendMessage(jid, { image: { url: mediaPath }, ...opts }); break;
+                            case 'sticker':
+                                await sock.sendMessage(jid, { sticker: { url: mediaPath } }); break;
+                            case 'video':
+                                await sock.sendMessage(jid, { video: { url: mediaPath }, ...opts }); break;
+                            case 'audio':
+                                await sock.sendMessage(jid, { audio: { url: mediaPath }, mimetype: 'audio/mpeg', ptt: false, ...opts }); break;
+                            case 'document':
+                                await sock.sendMessage(jid, {
+                                    document: { url: mediaPath },
+                                    fileName: doc?.fileName || path.basename(mediaPath),
+                                    mimetype: doc?.mimetype || 'application/octet-stream',
+                                    ...opts
+                                }); break;
+                        }
+                    } catch (e) {
+                        await sock.sendMessage(jid, { text: `⚠️ Could not retrieve deleted media: ${e.message}` }).catch(() => {});
                     }
-                } catch (e) {
-                    await sock.sendMessage(targetJid, { text: `⚠️ Could not retrieve deleted media: ${e.message}` });
                 }
                 try { fs.unlinkSync(mediaPath); } catch {}
             }
@@ -307,7 +338,7 @@ module.exports = {
     category: 'owner',
     description: 'Enable/disable antidelete — shows deleted messages (text, media, docs, voice)',
     usage: '.antidelete <on|off|delpath> [owner|group|jid]',
-    ownerOnly: true,
+    ownerOnly: true,  // Only owner/sudo can toggle ON/OFF — monitoring runs for ALL messages
 
     async handler(sock, message, args, context = {}) {
         const chatId = context.chatId || message.key.remoteJid;
