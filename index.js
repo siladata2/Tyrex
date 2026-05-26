@@ -1,8 +1,9 @@
 'use strict';
 /**
- * 🔥 REDXBOT302 — FINAL EDITION v8.0 (Fixed: pair, channel-follow, presence, auto-update)
- * Full plugin system · Antidelete · Auto-Update · Stealth Presence · Channel Auto-React
- * Owner: Abdul Rehman Rajpoot (+923009842133)
+ * 🔥 REDXBOT302 — ANTI-BAN EDITION v9.0
+ * ✅ Fixed: forwardingScore spam, browser fingerprint, presence abuse,
+ *    aggressive reconnect, newsletter context injection, group auto-join
+ * Full plugin system · Antidelete · Stealth Presence · Channel Auto-React
  */
 
 const express  = require('express');
@@ -14,17 +15,14 @@ const fs       = require('fs');
 const crypto   = require('crypto');
 require('dotenv').config();
 
-// ── SUPABASE STORE (session persistence) ─────────────────────
 const supabaseStore = require('./lib/supabaseStore');
 
-// ── PRESENCE MANAGER (stealth offline mode) ──────────────────
 const {
   initPresenceManager,
   onOwnerActivity,
   destroyPresenceManager,
 } = require('./lib/presenceManager');
 
-// ── AUTO-UPDATE SYSTEM (hidden) ──────────────────────────────
 let autoUpdate = null;
 try { autoUpdate = require('./lib/autoUpdate'); } catch {}
 
@@ -43,6 +41,18 @@ const P = require('pino');
 // ── CHANNEL REACTION POOL ────────────────────────────────────
 const CHANNEL_REACTIONS = ['🔥','❤️','👏','💯','🚀','⚡','🎯','😍','🙌','💪'];
 
+// ── RATE LIMITER — prevents message flooding (ban trigger) ───
+const _msgTimestamps = new Map(); // jid -> [timestamps]
+function canSend(jid, limitPerMin = 20) {
+  const now = Date.now();
+  const cutoff = now - 60_000;
+  const arr = (_msgTimestamps.get(jid) || []).filter(t => t > cutoff);
+  if (arr.length >= limitPerMin) return false;
+  arr.push(now);
+  _msgTimestamps.set(jid, arr);
+  return true;
+}
+
 // ── SUDO / OWNER HELPERS ─────────────────────────────────────
 let _libIndex = null;
 function getLibIndex() {
@@ -54,35 +64,19 @@ async function isSudoUser(jid) {
 }
 function cleanNum(jid) { return (jid||'').split(':')[0].split('@')[0]; }
 
-// ── SAFE LOAD OF OPTIONAL MODULES ───────────────────────────
-let antidelete = {
-  storeMessage: async () => {},
-  handleMessageRevocation: async () => {}
-};
-let ytDownloader = null; // not used, but kept for compatibility
+// ── SAFE MODULE LOADING ──────────────────────────────────────
+let antidelete = { storeMessage: async () => {}, handleMessageRevocation: async () => {} };
 let GroupEvents = async () => {};
 
 try {
-  // If you have these files, they will be loaded; otherwise we use the dummy above
   const ad = require('./lib/antidelete');
   if (ad && typeof ad === 'object') antidelete = ad;
-} catch (e) {
-  console.warn('⚠️ antidelete module not found, using dummy.');
-}
-
-try {
-  const yd = require('./lib/ytdownloader');
-  if (yd) ytDownloader = yd;
-} catch (e) {
-  console.warn('⚠️ ytdownloader module not found, ignoring.');
-}
+} catch { console.warn('⚠️ antidelete module not found.'); }
 
 try {
   const ge = require('./lib/groupevents');
   if (ge && typeof ge === 'function') GroupEvents = ge;
-} catch (e) {
-  console.warn('⚠️ groupevents module not found, group events disabled.');
-}
+} catch { console.warn('⚠️ groupevents module not found.'); }
 
 // ── APP ─────────────────────────────────────────────────────
 const app    = express();
@@ -106,13 +100,20 @@ const BOT_IMG      = process.env.MENU_IMAGE   || 'https://files.catbox.moe/s36b1
 const REPO_LINK    = process.env.REPO_LINK    || 'https://github.com/AbdulRehman19721986/REDXBOT-MD';
 const NL_JID       = process.env.NEWSLETTER_JID || '120363405513439052@newsletter';
 const NL_NAME      = '🔥 REDXBOT302 🔥';
-const WA_GROUP     = 'https://chat.whatsapp.com/LhSmx2SeXX75r8I2bxsNDo';
+const WA_GROUP     = process.env.WA_GROUP || ''; // ⚠️ Set in .env — disabled by default to prevent ban
 const TG_GROUP     = 'https://t.me/TeamRedxhacker2';
-global.BOT_MODE    = 'public'; // Always public so all users can use the bot
+global.BOT_MODE    = 'public';
+
+// ── ANTI-BAN CONFIG ──────────────────────────────────────────
+// Set AUTO_STATUS_REACT=false and AUTO_GROUP_JOIN=false to prevent banning
+const AUTO_STATUS_REACT  = process.env.AUTO_STATUS_REACT !== 'false';  // default true
+const AUTO_STATUS_SEEN   = process.env.AUTO_STATUS_SEEN  !== 'false';  // default true
+const AUTO_GROUP_JOIN    = process.env.AUTO_GROUP_JOIN   === 'true';   // default FALSE (ban risk)
+const AUTO_NL_FOLLOW     = process.env.AUTO_NL_FOLLOW    !== 'false';  // default true
 
 let adminUsername = process.env.ADMIN_USERNAME || 'redx';
 let adminPassword = process.env.ADMIN_PASSWORD || 'redx';
-const adminSessions = new Map(); // token → { user, ts }
+const adminSessions = new Map();
 
 // ── PATHS ────────────────────────────────────────────────────
 const SESSIONS_DIR   = path.join(__dirname, 'sessions');
@@ -125,7 +126,7 @@ const DEPLOY_ID_FILE = path.join(__dirname, 'deploy_id.txt');
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 });
 
-// ── DEPLOY ID (this server's unique ID) ─────────────────────
+// ── DEPLOY ID ────────────────────────────────────────────────
 const DEPLOY_ID = (() => {
   if (fs.existsSync(DEPLOY_ID_FILE)) return fs.readFileSync(DEPLOY_ID_FILE,'utf8').trim();
   const id = process.env.DEPLOY_ID || ('REDX-' + crypto.randomBytes(4).toString('hex').toUpperCase());
@@ -155,20 +156,14 @@ loadDeploys();
 
 if (!deploys[DEPLOY_ID]) {
   deploys[DEPLOY_ID] = {
-    id: DEPLOY_ID,
-    platform: detectPlatform(),
-    createdAt: new Date().toISOString(),
-    numbers: [],
-    pairCount: 0,
-    botName: BOT_NAME,
-    ownerName: OWNER_NAME,
-    prefix: PREFIX,
-    mode: global.BOT_MODE,
+    id: DEPLOY_ID, platform: detectPlatform(),
+    createdAt: new Date().toISOString(), numbers: [],
+    pairCount: 0, botName: BOT_NAME, ownerName: OWNER_NAME,
+    prefix: PREFIX, mode: global.BOT_MODE,
     deployKey: crypto.randomBytes(16).toString('hex'),
   };
 }
-// ── RESTORE SAVED MODE ON RESTART ──────────────────────────
-// Priority: env var > saved deploy mode > 'public'
+
 const envMode = process.env.BOT_MODE?.toLowerCase();
 const savedMode = deploys[DEPLOY_ID]?.mode?.toLowerCase();
 if (envMode && VALID_MODES.includes(envMode)) {
@@ -188,13 +183,27 @@ const loadServers = () => { try { if (fs.existsSync(SERVERS_FILE)) servers = JSO
 const saveServers = () => { try { fs.writeFileSync(SERVERS_FILE, JSON.stringify(servers,null,2)); } catch {} };
 loadServers();
 
-// ── ACTIVE CONNECTIONS (per number) ────────────────────────
+// ── ACTIVE CONNECTIONS ────────────────────────────────────────
 const activeConnections = new Map();
 
 const broadcastStats = () => {
   const connected = [...activeConnections.values()].filter(c=>c.connected).length;
   io.emit('statsUpdate', { activeSockets: connected, totalUsers: statsData.totalUsers, pairCount: statsData.pairCount });
 };
+
+// ── GROUP METADATA CACHE (5-min TTL — avoids repeated API calls) ──
+const groupMetaCache = new Map();
+const GROUP_CACHE_TTL = 5 * 60 * 1000;
+async function getCachedGroupMeta(conn, jid) {
+  const now = Date.now();
+  const cached = groupMetaCache.get(jid);
+  if (cached && now - cached.ts < GROUP_CACHE_TTL) return cached.meta;
+  try {
+    const meta = await conn.groupMetadata(jid);
+    groupMetaCache.set(jid, { meta, ts: now });
+    return meta;
+  } catch { return null; }
+}
 
 // ======================== PLUGIN LOADER ========================
 const commands   = new Map();
@@ -204,7 +213,12 @@ let cmdCount     = 0;
 const loadPlugins = () => {
   commands.clear(); cmdCount = 0;
   if (!fs.existsSync(pluginsDir)) { fs.mkdirSync(pluginsDir,{recursive:true}); return; }
-  const files = fs.readdirSync(pluginsDir).filter(f=>f.endsWith('.js')&&!f.startsWith('.'));
+
+  // ⚠️ SKIP known spammer/bomber plugins — they cause immediate bans
+  const BANNED_PLUGINS = new Set(['smsbomber.js', 'bomber.js', 'boomber.js']);
+
+  const files = fs.readdirSync(pluginsDir)
+    .filter(f => f.endsWith('.js') && !f.startsWith('.') && !BANNED_PLUGINS.has(f));
 
   for (const file of files) {
     try {
@@ -220,39 +234,23 @@ const loadPlugins = () => {
           const execute = raw.handler
             ? async (conn, msg, m, opts) => {
                 const context = {
-                  chatId: opts.from,
-                  command: pattern,
-                  isOwner: opts.isOwner,
-                  isAdmin: opts.isAdmin,
-                  senderIsOwnerOrSudo: opts.isOwner,
-                  isOwnerOrSudoCheck: opts.isOwner,
+                  chatId: opts.from, command: pattern,
+                  isOwner: opts.isOwner, isAdmin: opts.isAdmin,
+                  senderIsOwnerOrSudo: opts.isOwner, isOwnerOrSudoCheck: opts.isOwner,
                   config: {
-                    botName: BOT_NAME,
-                    ownerName: OWNER_NAME,
-                    ownerNumber: OWNER_NUM,
-                    coOwner: CO_OWNER,
-                    coOwnerNumber: CO_OWNER_NUM,
-                    prefix: PREFIX,
-                    mode: global.BOT_MODE,
-                    platform: detectPlatform(),
+                    botName: BOT_NAME, ownerName: OWNER_NAME,
+                    ownerNumber: OWNER_NUM, coOwner: CO_OWNER,
+                    coOwnerNumber: CO_OWNER_NUM, prefix: PREFIX,
+                    mode: global.BOT_MODE, platform: detectPlatform(),
                   },
                   deployId: DEPLOY_ID,
-                  channelInfo: {
-                    contextInfo: {
-                      forwardingScore: 999,
-                      isForwarded: true,
-                      forwardedNewsletterMessageInfo: { newsletterJid: NL_JID, newsletterName: NL_NAME, serverMessageId: -1 },
-                    }
-                  },
                   ...opts,
                 };
                 return raw.handler(conn, msg, opts.args || [], context);
               }
             : raw.execute;
           return {
-            ...raw,
-            pattern,
-            execute,
+            ...raw, pattern, execute,
             alias: raw.aliases || raw.alias || [],
             category: raw.category || 'other',
             desc: raw.description || raw.desc || '',
@@ -274,11 +272,8 @@ const loadPlugins = () => {
         mod.forEach(register);
       } else if (mod && typeof mod === 'object') {
         const norm = normalise(mod);
-        if (norm) {
-          register(mod);
-        } else {
-          Object.values(mod).forEach(v => { if (v && typeof v === 'object') register(v); });
-        }
+        if (norm) { register(mod); }
+        else { Object.values(mod).forEach(v => { if (v && typeof v === 'object') register(v); }); }
       }
     } catch(e){ console.error(`Plugin ${file}: ${e.message?.slice(0,120)}`); }
   }
@@ -288,7 +283,34 @@ const loadPlugins = () => {
 loadPlugins();
 if (fs.existsSync(pluginsDir)) fs.watch(pluginsDir,(e,f)=>{ if(f&&f.endsWith('.js')){ console.log(`♻️ Reloading ${f}`); loadPlugins(); } });
 
-// ======================== INITIALIZATION FUNCTIONS ========================
+// ======================== MAKE SOCKET CONFIG ========================
+// ✅ ANTI-BAN: Use Ubuntu Chrome — most common fingerprint, lowest detection
+function buildSocketConfig(state) {
+  return {
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, P({ level: 'silent' }).child({ level: 'silent' })),
+    },
+    logger: P({ level: 'silent' }),
+    printQRInTerminal: false,
+    // ✅ ANTI-BAN: Ubuntu Chrome is the most common, least suspicious fingerprint
+    browser: Browsers.ubuntu('Chrome'),
+    // ✅ ANTI-BAN: 30s keepAlive instead of 10s — less WS noise
+    keepAliveIntervalMs:      30_000,
+    connectTimeoutMs:         30_000,
+    defaultQueryTimeoutMs:    30_000,
+    // ✅ ANTI-BAN: Slower retry — aggressive reconnect triggers ban
+    retryRequestDelayMs:      2_000,
+    maxRetries:               3,
+    // ✅ ANTI-BAN: Don't appear online on connect
+    markOnlineOnConnect:      false,
+    syncFullHistory:          false,
+    emitOwnEvents:            true,
+    fireInitQueries:          true,
+  };
+}
+
+// ======================== INIT CONNECTION ========================
 async function initConnection(number) {
   const sessionDir = path.join(SESSIONS_DIR, number);
   if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
@@ -296,47 +318,24 @@ async function initConnection(number) {
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
   const { version }          = await fetchLatestBaileysVersion();
 
-  // Per-session message cache (needed for retries & proper group message delivery)
   const msgRetryCounterCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
-  // In-memory message store so getMessage works for retries
   const _msgStore = new Map();
 
   const conn = makeWASocket({
     version,
-    logger: P({ level: 'silent' }),
-    printQRInTerminal: false,
-    auth: {
-      creds: state.creds,
-      keys: makeCacheableSignalKeyStore(
-        state.keys,
-        P({ level: 'silent' }).child({ level: 'silent' })
-      ),
-    },
-    browser: Browsers.macOS('Safari'),
-    connectTimeoutMs:      30000,
-    keepAliveIntervalMs:   10000,
-    defaultQueryTimeoutMs: 30000,
-    retryRequestDelayMs:   250,
-    maxRetries:            5,
-    markOnlineOnConnect:   false,   // stealth: don't show online on connect
-    syncFullHistory:       false,
-    emitOwnEvents:         true,    // needed to receive group messages properly
-    fireInitQueries:       true,
+    ...buildSocketConfig(state),
     msgRetryCounterCache,
     getMessage: async (key) => {
       try {
         const jid = jidNormalizedUser(key.remoteJid);
         const store = _msgStore.get(jid);
-        if (store) {
-          const found = store.get(key.id);
-          if (found) return found.message || undefined;
-        }
+        if (store) { const found = store.get(key.id); if (found) return found.message || undefined; }
       } catch {}
       return undefined;
     },
   });
 
-  // Bind message store so getMessage works for retries (groups need this)
+  // Bind message store (needed for group retry)
   conn.ev.on('messages.upsert', ({ messages }) => {
     for (const msg of messages) {
       if (!msg.message) continue;
@@ -344,13 +343,12 @@ async function initConnection(number) {
       if (!_msgStore.has(jid)) _msgStore.set(jid, new Map());
       const chatStore = _msgStore.get(jid);
       chatStore.set(msg.key.id, msg);
-      // Keep store from growing: cap at 200 per chat
-      if (chatStore.size > 200) {
-        const firstKey = chatStore.keys().next().value;
-        chatStore.delete(firstKey);
-      }
+      if (chatStore.size > 200) { const firstKey = chatStore.keys().next().value; chatStore.delete(firstKey); }
     }
   });
+
+  // Invalidate group cache on participant change
+  conn.ev.on('group-participants.update', ({ id }) => { groupMetaCache.delete(id); });
 
   const prev = activeConnections.get(number) || {};
   activeConnections.set(number, { conn, saveCreds, connected: false, hasWelcomed: prev.hasWelcomed||false, reconnectAttempts: prev.reconnectAttempts||0 });
@@ -365,7 +363,6 @@ function setupHandlers(conn, number, saveCreds) {
   conn.ev.on('creds.update', async () => {
     try {
       await saveCreds();
-      // Backup session to Supabase so it survives restarts/dyno cycling
       if (supabaseStore.isEnabled()) {
         try {
           const sessionDir = path.join(SESSIONS_DIR, number);
@@ -401,44 +398,38 @@ function setupHandlers(conn, number, saveCreds) {
       io.emit('botStatus', { connected: true, number, deployId: DEPLOY_ID, platform: detectPlatform() });
       console.log(`✅ [${number}] CONNECTED — ${BOT_NAME}`);
 
-      // ── STEALTH PRESENCE: go offline after connecting ────────
       initPresenceManager(conn, number);
 
-      // ── AUTO-FOLLOW OWNER CHANNEL ────────────────────────────
-      if (NL_JID) {
+      // ✅ ANTI-BAN: Newsletter follow — only if enabled, with safe delay
+      if (AUTO_NL_FOLLOW && NL_JID) {
         setTimeout(async () => {
           try {
             await conn.newsletterFollow(NL_JID);
-            console.log(`[${number}] ✅ Auto-followed channel: ${NL_JID}`);
-          } catch (e) {
-            try { await conn.followNewsletter?.(NL_JID); } catch {}
-            console.log(`[${number}] 📡 Channel follow attempted: ${e.message}`);
-          }
-        }, 1_500); // fast follow (was 5000ms)
+            console.log(`[${number}] ✅ Followed channel`);
+          } catch {}
+        }, 8_000); // longer delay = safer
       }
 
-      // ── AUTO-JOIN OWNER WA GROUP ─────────────────────────────
-      if (WA_GROUP && WA_GROUP.startsWith('https://chat.whatsapp.com/')) {
+      // ✅ ANTI-BAN: Auto-join group DISABLED by default — set AUTO_GROUP_JOIN=true in .env to enable
+      if (AUTO_GROUP_JOIN && WA_GROUP && WA_GROUP.startsWith('https://chat.whatsapp.com/')) {
         setTimeout(async () => {
           try {
             const inviteCode = WA_GROUP.split('chat.whatsapp.com/')[1].trim();
             await conn.groupAcceptInvite(inviteCode);
-            console.log(`[${number}] ✅ Auto-joined owner group`);
-          } catch (e) {
-            console.log(`[${number}] ⚠️ Group join: ${e.message}`);
-          }
-        }, 8_000);
+            console.log(`[${number}] ✅ Auto-joined group`);
+          } catch (e) { console.log(`[${number}] ⚠️ Group join: ${e.message}`); }
+        }, 15_000);
       }
 
       if (!entry.hasWelcomed) {
         entry.hasWelcomed = true;
-        setTimeout(() => sendWelcome(conn, number).catch(()=>{}), 3000);
+        setTimeout(() => sendWelcome(conn, number).catch(()=>{}), 5000);
       }
     }
 
     if (connection === 'close') {
       entry.connected = false;
-      destroyPresenceManager(number);   // clean up timers
+      destroyPresenceManager(number);
       broadcastStats();
       io.emit('botStatus', { connected: false, number });
 
@@ -454,15 +445,19 @@ function setupHandlers(conn, number, saveCreds) {
         return;
       }
 
-      if (entry.reconnectAttempts < 10) {
+      // ✅ ANTI-BAN: Exponential backoff with jitter — aggressive reconnect = ban
+      if (entry.reconnectAttempts < 5) {
         entry.reconnectAttempts++;
-        const wait = Math.min(3000*entry.reconnectAttempts, 20000);
-        console.log(`🔄 [${number}] reconnect in ${wait/1000}s (${entry.reconnectAttempts}/10)`);
+        const base = 5000 * entry.reconnectAttempts;
+        const jitter = Math.floor(Math.random() * 3000);
+        const wait = Math.min(base + jitter, 60_000);
+        console.log(`🔄 [${number}] reconnect in ${(wait/1000).toFixed(1)}s (${entry.reconnectAttempts}/5)`);
         setTimeout(async () => {
           try { conn.ev.removeAllListeners(); try{conn.ws?.terminate();}catch{}; await initConnection(number); }
           catch(e){ console.error(`Reconnect ${number}: ${e.message}`); }
         }, wait);
       } else {
+        console.log(`🛑 [${number}] max reconnects reached — manual re-pair needed`);
         activeConnections.delete(number);
         io.emit('unlinked', { sessionId: number, number });
       }
@@ -474,52 +469,44 @@ function setupHandlers(conn, number, saveCreds) {
     for (const msg of messages) {
       const from = msg.key?.remoteJid || '';
 
-      // ── AUTO-REACT ON FOLLOWED CHANNEL MESSAGES ────────────
+      // ✅ ANTI-BAN: Rate-limit channel reactions (no reaction spam)
       if (from.endsWith('@newsletter')) {
-        try {
-          const emoji = CHANNEL_REACTIONS[Math.floor(Math.random() * CHANNEL_REACTIONS.length)];
-          // Primary: standard react (works in most Baileys builds)
+        if (canSend(from, 5)) {
           try {
-            await conn.sendMessage(from, { react: { text: emoji, key: msg.key } });
-          } catch {
-            // Fallback: newsletterSendReaction (some Baileys v6+ builds)
-            await conn.newsletterSendReaction?.(from, msg.key.id, emoji);
-          }
-        } catch { /* silent */ }
-        continue; // skip normal message processing for newsletter msgs
+            const emoji = CHANNEL_REACTIONS[Math.floor(Math.random() * CHANNEL_REACTIONS.length)];
+            try { await conn.sendMessage(from, { react: { text: emoji, key: msg.key } }); }
+            catch { await conn.newsletterSendReaction?.(from, msg.key.id, emoji); }
+          } catch {}
+        }
+        continue;
       }
 
-      // Store for antidelete (safe call)
       if (antidelete && typeof antidelete.storeMessage === 'function')
         await antidelete.storeMessage(conn, msg);
       try { await handleMessage(conn, msg, number); } catch(e){ console.error(`msg: ${e.message}`); }
     }
-    // ── After processing, re-enforce offline presence (Baileys can auto-set available) ──
-    const { goOffline } = require('./lib/presenceManager');
-    goOffline(conn).catch(() => {});
+    // ✅ ANTI-BAN: Don't call goOffline after EVERY message batch — presence spam triggers ban
+    // Presence is managed by presenceManager on its own 5-min timer
   });
 
-  // Antidelete: listen for protocol messages that indicate a deletion
   conn.ev.on('messages.update', async (updates) => {
     for (const update of updates) {
-      if (update.update?.protocolMessage?.type === 1) { // message deletion
+      if (update.update?.protocolMessage?.type === 1) {
         if (antidelete && typeof antidelete.handleMessageRevocation === 'function')
           await antidelete.handleMessageRevocation(conn, update);
       }
     }
   });
 
-  // Group events (safe call)
   conn.ev.on('group-participants.update', async (update) => {
     try {
-      await GroupEvents(conn, update, {
-        botName: BOT_NAME, ownerName: OWNER_NAME,
-        menuImage: BOT_IMG, newsletterJid: NL_JID,
-      });
+      await GroupEvents(conn, update, { botName: BOT_NAME, ownerName: OWNER_NAME, menuImage: BOT_IMG, newsletterJid: NL_JID });
     } catch(e){ console.error('GroupEvents:', e.message); }
   });
 }
 
+// ======================== WELCOME MESSAGE ========================
+// ✅ ANTI-BAN: No forwardingScore, no isForwarded, no newsletterContext — plain messages don't get flagged
 async function sendWelcome(conn, number) {
   const userJid = `${number}@s.whatsapp.net`;
   let name = 'User';
@@ -533,11 +520,9 @@ async function sendWelcome(conn, number) {
 👋 Hey *${name}* 🤩
 🎉 *Pairing Completed — You're good to go!*
 
-_ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʀᴇᴅxʙᴏᴛ302_
-
 📱 *Number:* +${number}
 🆔 *Deploy ID:* \`${DEPLOY_ID}\`
-🔑 *Your Deploy Key:* \`${dep.deployKey}\`
+🔑 *Deploy Key:* \`${dep.deployKey}\`
 🌐 *Platform:* ${detectPlatform()}
 👑 *Owner:* ${OWNER_NAME}
 📦 *Commands:* ${cmdCount+8}+
@@ -545,29 +530,14 @@ _ᴘᴏᴡᴇʀᴇᴅ ʙʏ ʀᴇᴅxʙᴏᴛ302_
 🌍 *Mode:* ${global.BOT_MODE.toUpperCase()}
 
 > 🔒 Keep your Deploy Key private!
-> Use it on the website to manage your bot.
 > Type *${dep.prefix||PREFIX}menu* to see all commands!
 
 🍴 Fork & ⭐ Star: ${REPO_LINK}
 
 > 🔥 ${BOT_NAME} — By ${OWNER_NAME}`;
 
-  await conn.sendMessage(userJid, {
-    text,
-    contextInfo: {
-      forwardingScore: 999,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: { newsletterJid: NL_JID, newsletterName: NL_NAME, serverMessageId: -1 },
-      externalAdReply: {
-        title: `${BOT_NAME} Connected 🚀`,
-        body: `Deploy ID: ${DEPLOY_ID}`,
-        thumbnailUrl: BOT_IMG,
-        sourceUrl: REPO_LINK,
-        mediaType: 1,
-        renderLargerThumbnail: true,
-      },
-    },
-  });
+  // ✅ ANTI-BAN: Plain sendMessage — no forwardingScore/newsletter injection
+  await conn.sendMessage(userJid, { text });
 }
 
 // ======================== MESSAGE HANDLER ========================
@@ -576,63 +546,40 @@ async function handleMessage(conn, msg, sessionId) {
   const sender  = msg.key.participant || msg.key.remoteJid;
   const sNum    = sender.split('@')[0].split(':')[0];
 
-  const sNumClean = cleanNum(sender);
+  const sNumClean       = cleanNum(sender);
   const sessionNumClean = cleanNum(sessionId);
-
-  // ── PERMISSION SYSTEM (Fixed v2.0) ──────────────────────────────────────
-  //
-  //  Tier 1 — REAL OWNER:  OWNER_NUM or CO_OWNER_NUM (set in .env)
-  //  Tier 2 — SUDO USER:   added via .sudo add (stored in userGroupData.json)
-  //  Tier 3 — PAIRED USER: anyone who paired their bot (fromMe=true for their session)
-  //            → gets FULL owner-level command access (they are the user of this bot)
-  //            → but NOT treated as "real owner" for strictOwnerOnly commands
-  //
-  // isOwner = can use ALL .ownerOnly commands
-  // isRealOwner = can use .strictOwnerOnly commands (only OWNER_NUM + CO_OWNER_NUM)
 
   const isRealOwner = sNumClean === cleanNum(OWNER_NUM)
     || (CO_OWNER_NUM && sNumClean === cleanNum(CO_OWNER_NUM));
 
   let isOwner = isRealOwner;
 
-  // fromMe = true → message sent by the BOT's own account (linked device or same number)
-  // ANY paired session's fromMe = co-owner level access
-  if (!isOwner && msg.key.fromMe) {
-    isOwner = true; // Paired users sending from their own session get full owner access
-  }
+  if (!isOwner && msg.key.fromMe) isOwner = true;
 
-  // Also check @lid variants for linked devices in groups (owner only)
   if (!isOwner && from?.endsWith('@g.us')) {
     try {
-      const meta = await conn.groupMetadata(from).catch(()=>null);
+      const meta = await getCachedGroupMeta(conn, from);
       if (meta) {
         const participant = meta.participants.find(p => p.lid === sender || p.id === sender);
         if (participant) {
           const realNum = cleanNum(participant.id);
-          if (realNum === cleanNum(OWNER_NUM) || (CO_OWNER_NUM && realNum === cleanNum(CO_OWNER_NUM))) {
-            isOwner = true;
-          }
+          if (realNum === cleanNum(OWNER_NUM) || (CO_OWNER_NUM && realNum === cleanNum(CO_OWNER_NUM))) isOwner = true;
         }
       }
     } catch {}
   }
 
-  // Sudo users get owner-level access
   const isSudo = !isOwner ? await isSudoUser(sender) : false;
   const isSudoLinked = (!isOwner && !isSudo && sender.includes(':'))
-    ? await isSudoUser(sender.split(':')[0] + '@s.whatsapp.net')
-    : false;
+    ? await isSudoUser(sender.split(':')[0] + '@s.whatsapp.net') : false;
   if (!isOwner) isOwner = isSudo || isSudoLinked;
 
-  // ── PRESENCE PULSE: briefly go online when owner sends a msg ──
-  if (isOwner && msg.key.fromMe) {
-    onOwnerActivity(conn, sessionId);
-  }
+  if (isOwner && msg.key.fromMe) onOwnerActivity(conn, sessionId);
 
-  // Status messages
+  // Status messages — ✅ ANTI-BAN: rate-limited, no spam
   if (from === 'status@broadcast') {
-    if (process.env.AUTO_STATUS_SEEN !== 'false') await conn.readMessages([msg.key]).catch(()=>{});
-    if (process.env.AUTO_STATUS_REACT !== 'false') {
+    if (AUTO_STATUS_SEEN) await conn.readMessages([msg.key]).catch(()=>{});
+    if (AUTO_STATUS_REACT && canSend('status@broadcast', 30)) {
       const e=['🔥','⚡','💯','👑','🚀','💎','❤️','💜','✨','🌟'][Math.floor(Math.random()*10)];
       await conn.sendMessage(from,{react:{text:e,key:msg.key}},{statusJidList:[sender,conn.user.id]}).catch(()=>{});
     }
@@ -640,15 +587,14 @@ async function handleMessage(conn, msg, sessionId) {
   }
   if (from?.endsWith('@newsletter')) return;
   if (!msg.message) return;
-  // ── FULL MODE ACCESS CHECK (public/private/groups/inbox/self) ────────
+
   const isGroupChat = from?.endsWith('@g.us');
-  // isOwner (which includes the linked/session user) always bypasses mode restrictions
   if (!isOwner) {
     switch (global.BOT_MODE) {
-      case 'public':               break;         // everyone allowed everywhere
-      case 'private': case 'self': return;        // owner/sudo only
-      case 'groups':  if (!isGroupChat) return; break; // groups only
-      case 'inbox':   if (isGroupChat)  return; break; // DMs only
+      case 'public':               break;
+      case 'private': case 'self': return;
+      case 'groups':  if (!isGroupChat) return; break;
+      case 'inbox':   if (isGroupChat)  return; break;
       default:                     break;
     }
   }
@@ -667,8 +613,8 @@ async function handleMessage(conn, msg, sessionId) {
     || msg.message?.viewOnceMessage?.message?.videoMessage?.caption
     || '';
 
-  const dep    = deploys[DEPLOY_ID];
-  const pfx    = dep?.prefix || PREFIX;
+  const dep = deploys[DEPLOY_ID];
+  const pfx = dep?.prefix || PREFIX;
   if (!body.startsWith(pfx)) return;
 
   const args = body.slice(pfx.length).trim().split(/ +/);
@@ -677,18 +623,14 @@ async function handleMessage(conn, msg, sessionId) {
 
   console.log(`[${new Date().toLocaleTimeString()}] ${pfx}${cmd} | ${sNum}`);
 
-  // Built‑in commands (only essential ones)
   if (await runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx)) return;
 
-  // Plugin commands
   if (commands.has(cmd)) {
     const plugin = commands.get(cmd);
-    // strictOwnerOnly: ONLY real owner or co-owner (NOT paired users or sudo)
     if (plugin.strictOwnerOnly && !isRealOwner) {
       await conn.sendMessage(from, { text: '❌ This command is restricted to the real owner only.' }, { quoted: msg });
       return;
     }
-    // ownerOnly: owner, co-owner, paired users, and sudo users
     if (plugin.ownerOnly && !isOwner) {
       await conn.sendMessage(from, { text: '❌ This command is for the bot owner/co-owner only.' }, { quoted: msg });
       return;
@@ -697,54 +639,50 @@ async function handleMessage(conn, msg, sessionId) {
       const reply   = (text, opts={}) => conn.sendMessage(from,{text},{quoted:msg,...opts});
       const isGroup = from.endsWith('@g.us');
       let gMeta = null;
-      if (isGroup) { try { gMeta = await conn.groupMetadata(from); } catch {} }
+      if (isGroup) { gMeta = await getCachedGroupMeta(conn, from); }
       let isAdmin = false;
       if (isGroup && gMeta) { const p = gMeta.participants.find(p=>p.id===sender); isAdmin = p?.admin==='admin'||p?.admin==='superadmin'; }
       const quoted = getQuoted(msg);
       const pluginOpts = {
         args, q, reply, from, isGroup, groupMetadata: gMeta,
         sender, isAdmin, isOwner, isRealOwner, botName: BOT_NAME, ownerName: OWNER_NAME,
-        prefix: pfx, senderNumber: sNum,
-        chatId: from, deployId: DEPLOY_ID,
-        senderIsOwnerOrSudo: isOwner,
-        isOwnerOrSudoCheck: isOwner,
+        prefix: pfx, senderNumber: sNum, chatId: from, deployId: DEPLOY_ID,
+        senderIsOwnerOrSudo: isOwner, isOwnerOrSudoCheck: isOwner,
         sessionId: sessionNumClean,
       };
       await plugin.execute(conn, msg, {
         mentionedJid: msg.message?.extendedTextMessage?.contextInfo?.mentionedJid||[],
-        quoted, sender, key: msg.key,
-        message: msg.message,
+        quoted, sender, key: msg.key, message: msg.message,
       }, pluginOpts);
     } catch(e){ console.error(`cmd[${cmd}]: ${e.message}`); }
   }
 }
 
+// ======================== BUILT-IN COMMANDS ========================
+// ✅ ANTI-BAN: All built-in replies are plain messages — no forwardingScore/newsletter injection
 async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
   const dep = deploys[DEPLOY_ID];
-  const nlCtx = {
-    forwardingScore: 999, isForwarded: true,
-    forwardedNewsletterMessageInfo: { newsletterJid: NL_JID, newsletterName: NL_NAME, serverMessageId: -1 },
-    externalAdReply: { title: `🔥 ${BOT_NAME}`, body: `Owner: ${OWNER_NAME}`, thumbnailUrl: BOT_IMG, sourceUrl: REPO_LINK, mediaType: 1, renderLargerThumbnail: false },
-  };
-  const s = text => conn.sendMessage(from, { text, contextInfo: nlCtx }, { quoted: msg });
+
+  // Plain sender — no newsletter/forward context (ban risk removed)
+  const s = text => conn.sendMessage(from, { text }, { quoted: msg });
 
   switch(cmd) {
-    case 'ping':
+    case 'ping': {
       const t = Date.now();
       await conn.sendMessage(from, { react: { text: '⚡', key: msg.key } });
       await s(`⚡ *ᴘɪɴɢ:* \`${Date.now()-t}ms\`\n\n> 🔥 ${BOT_NAME}`);
       return true;
-
+    }
     case 'owner':
       await conn.sendMessage(from, {
         contacts: { displayName: OWNER_NAME, contacts: [{ vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${OWNER_NAME}\nTEL;type=CELL;waid=${OWNER_NUM}:+${OWNER_NUM}\nEND:VCARD` }] }
       }, { quoted: msg });
-      await s(`👑 *ᴏᴡɴᴇʀ:* ${OWNER_NAME}\n📱 *ɴᴜᴍ:* +${OWNER_NUM}\n👤 *ᴄᴏ:* ${CO_OWNER}\n\n> 🔥 ${BOT_NAME}`);
+      await s(`👑 *ᴏᴡɴᴇʀ:* ${OWNER_NAME}\n📱 *ɴᴜᴍ:* +${OWNER_NUM}\n\n> 🔥 ${BOT_NAME}`);
       return true;
 
     case 'mode':
     case 'setmode':
-    case 'botmode':
+    case 'botmode': {
       if (!isOwner) { await s('❌ Owner only.'); return true; }
       const m = args[0]?.toLowerCase();
       const modeDescMap = {
@@ -752,7 +690,7 @@ async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
         private: '🔒 Owner and sudo users only.',
         groups:  '👥 Only works in group chats for everyone.',
         inbox:   '💬 Only works in private DMs for everyone.',
-        self:    '👤 Owner and sudo users only (same as private).'
+        self:    '👤 Owner and sudo users only.'
       };
       if (m && VALID_MODES.includes(m)) {
         global.BOT_MODE = m;
@@ -764,19 +702,19 @@ async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
         await s(`📌 *ᴄᴜʀʀᴇɴᴛ ᴍᴏᴅᴇ:* \`${global.BOT_MODE.toUpperCase()}\`\n\n*Available Modes:*\n${mList}\n\n> 🔥 ${BOT_NAME}`);
       }
       return true;
-
+    }
     case 'deployid':
     case 'myid':
       await s(`🆔 *ᴅᴇᴘʟᴏʏ ɪᴅ:* \`${DEPLOY_ID}\`\n🔑 *ᴋᴇʏ:* \`${dep?.deployKey||'—'}\`\n🌐 *ᴘʟᴀᴛᴇ:* ${detectPlatform()}\n\n> 🔥 ${BOT_NAME}`);
       return true;
 
     case 'runtime':
-    case 'uptime':
+    case 'uptime': {
       const up = Math.floor((Date.now()-START_TIME)/1000);
       const h=Math.floor(up/3600), m2=Math.floor((up%3600)/60), s2=up%60;
       await s(`⏱️ *ʀᴜɴᴛɪᴍᴇ:* \`${h}h ${m2}m ${s2}s\`\n📦 *ᴄᴍᴅs:* ${cmdCount+8}+\n🌍 *ᴍᴏᴅᴇ:* ${global.BOT_MODE.toUpperCase()}\n\n> 🔥 ${BOT_NAME}`);
       return true;
-
+    }
     case 'restart':
     case 'shutdown':
       if (!isOwner) { await s('❌ Owner only.'); return true; }
@@ -798,7 +736,7 @@ function getQuoted(msg) {
 app.get('/', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
 app.get('/api/status', (req,res)=>res.json(getStats()));
 app.get('/status', (req, res) => res.json({ status: 'ok', uptime: process.uptime(), bot: getStats() }));
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', uptime: Math.floor((Date.now()-START_TIME)/1000), connected: [...activeConnections.values()].some(e=>e.connected), platform: detectPlatform(), deployId: DEPLOY_ID }));
 app.get('/api/config', (req,res)=>res.json({
   botName: BOT_NAME, ownerName: OWNER_NAME, coOwner: CO_OWNER,
   prefix: PREFIX, menuImage: BOT_IMG, repoLink: REPO_LINK,
@@ -818,30 +756,18 @@ app.post('/api/pair', async (req, res) => {
     console.log(`📱 Pair request: ${num} force=${!!force}`);
 
     const existing = activeConnections.get(num);
-
-    // If already fully connected and NOT forcing, tell user — but still allow
-    // via force=true so the frontend can offer a "Re-pair" button without 400
     if (existing?.connected && !force) {
-      return res.status(409).json({
-        error: 'Already connected!',
-        hint: 'Send force:true to re-pair or use Logout first.',
-        alreadyConnected: true
-      });
+      return res.status(409).json({ error: 'Already connected!', hint: 'Send force:true to re-pair or use Logout first.', alreadyConnected: true });
     }
 
-    // Clean up any stale/pending connection for this number
     if (existing) {
-      try {
-        existing.conn?.ev?.removeAllListeners();
-        existing.conn?.ws?.terminate();
-      } catch {}
+      try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
       destroyPresenceManager(num);
       activeConnections.delete(num);
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 1500)); // safe cleanup delay
     }
 
     const sessionDir = path.join(SESSIONS_DIR, num);
-    // If force re-pair, wipe old session so we get a fresh code
     if (force && fs.existsSync(sessionDir)) {
       try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
     }
@@ -852,34 +778,16 @@ app.post('/api/pair', async (req, res) => {
 
     conn = makeWASocket({
       version,
-      logger: P({ level: 'silent' }),
-      printQRInTerminal: false,
-      auth: {
-        creds: state.creds,
-        keys: makeCacheableSignalKeyStore(
-          state.keys,
-          P({ level: 'silent' }).child({ level: 'silent' })
-        ),
-      },
-      browser: Browsers.macOS('Safari'),
-      connectTimeoutMs:      35000,
-      keepAliveIntervalMs:   10000,
-      defaultQueryTimeoutMs: 30000,
-      retryRequestDelayMs:   300,
-      maxRetries:            3,
-      markOnlineOnConnect:   false,   // stealth mode
-      syncFullHistory:       false,
-      emitOwnEvents:         true,
-      fireInitQueries:       true,
+      ...buildSocketConfig(state),
+      msgRetryCounterCache: new NodeCache({ stdTTL: 60, checkperiod: 120 }),
     });
 
     activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
     setupHandlers(conn, num, saveCreds);
 
-    // Wait for socket to be ready before requesting code
-    await new Promise(r => setTimeout(r, 3500));
+    // ✅ ANTI-BAN: Wait for socket to stabilise before requesting code
+    await new Promise(r => setTimeout(r, 4000));
 
-    // Verify socket is still alive
     if (!conn.ws || conn.ws.readyState > 1) {
       throw new Error('WebSocket closed before pairing code could be requested. Please try again.');
     }
@@ -894,9 +802,7 @@ app.post('/api/pair', async (req, res) => {
 
   } catch (err) {
     console.error('❌ /api/pair:', err.message);
-    if (conn) {
-      try { conn.ev.removeAllListeners(); conn.ws?.terminate(); } catch {}
-    }
+    if (conn) { try { conn.ev.removeAllListeners(); conn.ws?.terminate(); } catch {} }
     return res.status(500).json({ error: err.message || 'Failed to get pairing code. Please try again.' });
   }
 });
@@ -908,15 +814,15 @@ app.post('/api/logout', async (req,res) => {
     if (num) {
       const e = activeConnections.get(num);
       if (e?.conn){ try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{} }
+      destroyPresenceManager(num);
       activeConnections.delete(num);
       try{fs.rmSync(path.join(SESSIONS_DIR,num),{recursive:true,force:true});}catch{}
       io.emit('unlinked',{sessionId:num,number:num});
     } else {
-      for(const[n,e]of activeConnections){ if(e?.conn){try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{}} try{fs.rmSync(path.join(SESSIONS_DIR,n),{recursive:true,force:true});}catch{} io.emit('unlinked',{sessionId:n,number:n}); }
+      for(const[n,e]of activeConnections){ if(e?.conn){try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{}} destroyPresenceManager(n); try{fs.rmSync(path.join(SESSIONS_DIR,n),{recursive:true,force:true});}catch{} io.emit('unlinked',{sessionId:n,number:n}); }
       activeConnections.clear();
     }
-    broadcastStats();
-    io.emit('botStatus',{connected:false,number:''});
+    broadcastStats(); io.emit('botStatus',{connected:false,number:''});
     res.json({success:true,message:'Logged out'});
   } catch(err){ res.status(500).json({error:err.message}); }
 });
@@ -929,62 +835,49 @@ app.get('/api/deploy/:id',(req,res)=>{
   res.json({ id:d.id, platform:d.platform, pairCount:d.pairCount||0, createdAt:d.createdAt, lastSeen:d.lastSeen, numbers:d.numbers?.length||0 });
 });
 
-// ======================== USER DEPLOY KEY API ========================
+// ── USER DEPLOY KEY API ───────────────────────────────────────
 function deployKeyAuth(req, res, next) {
   const key = req.headers['x-deploy-key'] || req.body?.deployKey || req.query?.key;
   if (!key) return res.status(401).json({ error: 'Deploy key required' });
   const dep = Object.values(deploys).find(d => d.deployKey === key);
   if (!dep) return res.status(401).json({ error: 'Invalid deploy key' });
-  req.deploy = dep;
-  next();
+  req.deploy = dep; next();
 }
 
 app.post('/api/user/info', deployKeyAuth, (req,res) => {
   const d = req.deploy;
-  res.json({
-    id: d.id, platform: d.platform, pairCount: d.pairCount||0,
-    numbers: d.numbers||[], createdAt: d.createdAt, lastSeen: d.lastSeen,
-    botName: d.botName, ownerName: d.ownerName, prefix: d.prefix, mode: d.mode,
-    connected: [...activeConnections.values()].some(e=>e.connected),
-  });
+  res.json({ id:d.id, platform:d.platform, pairCount:d.pairCount||0, numbers:d.numbers||[], createdAt:d.createdAt, lastSeen:d.lastSeen, botName:d.botName, ownerName:d.ownerName, prefix:d.prefix, mode:d.mode, connected:[...activeConnections.values()].some(e=>e.connected) });
 });
 
 app.post('/api/user/update', deployKeyAuth, (req,res) => {
   const d = req.deploy;
   const { botName, ownerName, prefix, mode } = req.body;
-  if (botName)   { d.botName   = botName;   }
-  if (ownerName) { d.ownerName = ownerName; }
-  if (prefix)    { d.prefix    = prefix;    }
-  if (mode && (mode==='public'||mode==='private')) {
-    d.mode = mode;
-    if (d.id === DEPLOY_ID) global.BOT_MODE = mode;
-  }
+  if (botName)   d.botName   = botName;
+  if (ownerName) d.ownerName = ownerName;
+  if (prefix)    d.prefix    = prefix;
+  if (mode && VALID_MODES.includes(mode)) { d.mode = mode; if (d.id === DEPLOY_ID) global.BOT_MODE = mode; }
   saveDeploys();
   res.json({ success: true, deploy: { id:d.id, botName:d.botName, ownerName:d.ownerName, prefix:d.prefix, mode:d.mode } });
 });
 
 app.post('/api/user/logout', deployKeyAuth, async (req,res) => {
-  const d = req.deploy;
-  let count = 0;
+  const d = req.deploy; let count = 0;
   for (const num of (d.numbers||[])) {
     const e = activeConnections.get(num);
     if (e?.conn) { try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{} }
+    destroyPresenceManager(num);
     activeConnections.delete(num);
     try{fs.rmSync(path.join(SESSIONS_DIR,num),{recursive:true,force:true});}catch{}
     count++;
   }
-  d.numbers = [];
-  saveDeploys();
-  broadcastStats();
+  d.numbers = []; saveDeploys(); broadcastStats();
   io.emit('botStatus',{connected:false,number:''});
   res.json({ success: true, message: `Logged out ${count} session(s)` });
 });
 
-app.get('/api/user/status', deployKeyAuth, (req,res) => {
-  res.json({ ...getStats(), deployKey: '***hidden***' });
-});
+app.get('/api/user/status', deployKeyAuth, (req,res) => { res.json({ ...getStats(), deployKey: '***hidden***' }); });
 
-// ======================== ADMIN ROUTES ========================
+// ── ADMIN ROUTES ──────────────────────────────────────────────
 const adminAuth = (req,res,next) => {
   const token = req.headers['x-admin-token']||req.query.token;
   if(!token||!adminSessions.has(token))return res.status(401).json({error:'Unauthorized'});
@@ -1005,7 +898,7 @@ app.post('/api/admin/logout',adminAuth,(req,res)=>{ adminSessions.delete(req.hea
 app.get('/api/admin/overview',adminAuth,(req,res)=>res.json({
   stats:{ totalDeploys:Object.keys(deploys).length, totalPairs:statsData.pairCount, totalUsers:statsData.totalUsers, uptime:Math.floor((Date.now()-START_TIME)/1000) },
   currentDeploy: deploys[DEPLOY_ID], servers, platform:detectPlatform(),
-  adminUser:req.adminSession.user, botVersion:'5.2.0', nodeVersion:process.version, memUsage:process.memoryUsage(), activeConnections:activeConnections.size,
+  adminUser:req.adminSession.user, botVersion:'9.0.0', nodeVersion:process.version, memUsage:process.memoryUsage(), activeConnections:activeConnections.size,
 }));
 
 app.get('/api/admin/deploys',adminAuth,(req,res)=>res.json({deploys:Object.values(deploys)}));
@@ -1032,7 +925,7 @@ app.delete('/api/admin/servers/:id',adminAuth,(req,res)=>{
 app.get('/api/admin/bot/status',adminAuth,(req,res)=>res.json(getStats()));
 app.post('/api/admin/bot/restart',adminAuth,(req,res)=>{ res.json({success:true}); setTimeout(()=>process.exit(0),800); });
 app.post('/api/admin/bot/logout',adminAuth,async(req,res)=>{
-  for(const[n,e]of activeConnections){ if(e?.conn){try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{}} try{fs.rmSync(path.join(SESSIONS_DIR,n),{recursive:true,force:true});}catch{} }
+  for(const[n,e]of activeConnections){ if(e?.conn){try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{}} destroyPresenceManager(n); try{fs.rmSync(path.join(SESSIONS_DIR,n),{recursive:true,force:true});}catch{} }
   activeConnections.clear(); broadcastStats(); io.emit('botStatus',{connected:false,number:''});
   res.json({success:true});
 });
@@ -1044,10 +937,10 @@ app.post('/api/admin/settings/credentials',adminAuth,(req,res)=>{
   const{currentPassword,newUsername,newPassword}=req.body;
   if(currentPassword!==adminPassword)return res.status(403).json({error:'Current password incorrect'});
   if(newUsername)adminUsername=newUsername; if(newPassword)adminPassword=newPassword;
-  res.json({success:true,message:'Updated (set ADMIN_USERNAME/ADMIN_PASSWORD env to persist)'});
+  res.json({success:true,message:'Updated'});
 });
 
-// ======================== SOCKET.IO ========================
+// ── SOCKET.IO ─────────────────────────────────────────────────
 io.on('connection', socket => {
   const st=getStats();
   socket.emit('statsUpdate',{activeSockets:st.activeSockets,totalUsers:st.totalUsers,pairCount:st.pairCount});
@@ -1055,13 +948,13 @@ io.on('connection', socket => {
   socket.on('disconnect',()=>{});
 });
 
-// ======================== GRACEFUL SHUTDOWN ========================
+// ── GRACEFUL SHUTDOWN ─────────────────────────────────────────
 let isShuttingDown=false;
 const gracefulShutdown=sig=>{
   if(isShuttingDown)return; isShuttingDown=true;
   console.log(`\n🛑 ${sig} — preserving all sessions`);
   saveStats();
-  activeConnections.forEach((e,num)=>{ try{e.conn.ws?.terminate();console.log(`🔒 ${num}`);}catch{} });
+  activeConnections.forEach((e,num)=>{ destroyPresenceManager(num); try{e.conn.ws?.terminate();}catch{} });
   setTimeout(()=>process.exit(0),3000);
 };
 process.on('SIGINT',()=>gracefulShutdown('SIGINT'));
@@ -1069,56 +962,39 @@ process.on('SIGTERM',()=>gracefulShutdown('SIGTERM'));
 process.on('uncaughtException',err=>console.error('uncaughtException:',err.message));
 process.on('unhandledRejection',err=>console.error('unhandledRejection:',err));
 
-// ======================== KEEP-ALIVE ========================
-const APP_URL = process.env.APP_URL || process.env.HEROKU_APP_DEFAULT_DOMAIN_NAME
-  ? `https://${process.env.HEROKU_APP_DEFAULT_DOMAIN_NAME}`
-  : null;
+// ── KEEP-ALIVE ────────────────────────────────────────────────
 function startKeepAlive() {
-  const url = APP_URL || process.env.RAILWAY_PUBLIC_DOMAIN
-    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-    : null;
-  if (!url) return;
-  const interval = 25 * 60 * 1000;
+  const rawUrl = process.env.APP_URL
+    || (process.env.HEROKU_APP_DEFAULT_DOMAIN_NAME ? `https://${process.env.HEROKU_APP_DEFAULT_DOMAIN_NAME}` : null)
+    || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null);
+  if (!rawUrl) return;
+  // ✅ ANTI-BAN: 25-min keep-alive — not too aggressive
   setInterval(() => {
     try {
-      const https = require('https');
-      const http  = require('http');
-      const mod   = url.startsWith('https') ? https : http;
-      mod.get(url + '/health', res => {
-        console.log(`💓 Keep-alive ping → ${res.statusCode}`);
-      }).on('error', () => {});
+      const mod = rawUrl.startsWith('https') ? require('https') : require('http');
+      mod.get(rawUrl + '/health', res => { console.log(`💓 Keep-alive → ${res.statusCode}`); }).on('error', ()=>{});
     } catch {}
-  }, interval);
-  console.log(`💓 Keep-alive enabled → ${url}`);
+  }, 25 * 60 * 1000);
+  console.log(`💓 Keep-alive enabled → ${rawUrl}`);
 }
-app.get('/health', (req, res) => res.json({
-  ok: true,
-  uptime: Math.floor((Date.now() - START_TIME) / 1000),
-  connected: [...activeConnections.values()].some(e => e.connected),
-  platform: detectPlatform(),
-  deployId: DEPLOY_ID,
-}));
 
-// ======================== START ========================
+// ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
   console.log(`\n╔════════════════════════════════════════════════════╗`);
-  console.log(`║  🔥 REDXBOT302 v8.0 — STEALTH + AUTO-UPDATE        ║`);
+  console.log(`║  🔥 REDXBOT302 v9.0 — ANTI-BAN EDITION             ║`);
   console.log(`║  🌐 http://localhost:${String(PORT).padEnd(26)}║`);
   console.log(`║  🆔 Deploy ID: ${String(DEPLOY_ID).padEnd(34)}║`);
-  console.log(`║  🔑 Deploy Key: ${String(deploys[DEPLOY_ID]?.deployKey||'—').slice(0,20).padEnd(33)}║`);
-  console.log(`║  🌐 Platform:  ${String(detectPlatform()).padEnd(34)}║`);
+  console.log(`║  🛡️  Browser:  Ubuntu Chrome (anti-ban)              ║`);
   console.log(`║  🔌 Commands:  ${String(cmdCount+'+ loaded').padEnd(34)}║`);
   console.log(`╚════════════════════════════════════════════════════╝\n`);
   await reloadExistingSessions();
   startKeepAlive();
-  // Start hidden auto-updater
   if (autoUpdate) autoUpdate.startAutoUpdater(__dirname);
 });
 
 async function reloadExistingSessions() {
   console.log('🔄 Checking existing sessions...');
 
-  // ── SUPABASE: Restore any sessions saved remotely that aren't on disk ──
   if (supabaseStore.isEnabled()) {
     try {
       await supabaseStore.initTables();
@@ -1132,13 +1008,11 @@ async function reloadExistingSessions() {
           if (creds) {
             fs.mkdirSync(sessionDir, { recursive: true });
             fs.writeFileSync(credsPath, JSON.stringify(creds, null, 2));
-            console.log(`☁️  Restored session from Supabase: ${num}`);
+            console.log(`☁️  Restored session: ${num}`);
           }
         }
       }
-    } catch (e) {
-      console.error('[SUPABASE] Session restore error:', e.message);
-    }
+    } catch (e) { console.error('[SUPABASE] Session restore error:', e.message); }
   }
 
   if (!fs.existsSync(SESSIONS_DIR)) return;
@@ -1146,10 +1020,14 @@ async function reloadExistingSessions() {
     try { return fs.statSync(path.join(SESSIONS_DIR,d)).isDirectory(); } catch { return false; }
   });
   console.log(`📂 Found ${dirs.length} local session(s)`);
-  for (const num of dirs) {
+
+  // ✅ ANTI-BAN: Stagger session reloads — don't connect all at once
+  for (let i = 0; i < dirs.length; i++) {
+    const num = dirs[i];
     if (fs.existsSync(path.join(SESSIONS_DIR,num,'creds.json'))) {
       console.log(`🔄 Reloading: ${num}`);
       try { await initConnection(num); } catch(e){ console.error(`Reload ${num}: ${e.message}`); }
+      if (i < dirs.length - 1) await new Promise(r => setTimeout(r, 3000)); // 3s between each
     }
   }
   broadcastStats();
@@ -1161,13 +1039,9 @@ function getStats() {
     connected: [...activeConnections.values()].some(e=>e.connected),
     activeSockets: [...activeConnections.values()].filter(e=>e.connected).length,
     botNumber: (()=>{ for(const[n,e]of activeConnections) if(e.connected) return n; return ''; })(),
-    commands: cmdCount+8,
-    totalUsers: statsData.totalUsers,
-    pairCount: statsData.pairCount,
-    uptime: Math.floor((Date.now()-START_TIME)/1000),
-    mode: global.BOT_MODE,
-    deployId: DEPLOY_ID,
-    platform: detectPlatform(),
+    commands: cmdCount+8, totalUsers: statsData.totalUsers, pairCount: statsData.pairCount,
+    uptime: Math.floor((Date.now()-START_TIME)/1000), mode: global.BOT_MODE,
+    deployId: DEPLOY_ID, platform: detectPlatform(),
     hasSession: (()=>{ try{ return fs.readdirSync(SESSIONS_DIR).some(d=>fs.existsSync(path.join(SESSIONS_DIR,d,'creds.json'))); }catch{return false;} })(),
     botName: deploys[DEPLOY_ID]?.botName || BOT_NAME,
     ownerName: deploys[DEPLOY_ID]?.ownerName || OWNER_NAME,
@@ -1177,49 +1051,28 @@ function getStats() {
 
 module.exports = { app, server, io };
 
-// ======================== GLOBAL PAIR HELPER ========================
-// Exposed so .pair plugin can call it without needing pairManager.init()
+// ── GLOBAL PAIR HELPER ────────────────────────────────────────
 global.doPairNumber = async function(num, force = false) {
   const existing = activeConnections.get(num);
-  if (existing?.connected && !force) {
-    return { alreadyConnected: true, number: num };
-  }
+  if (existing?.connected && !force) return { alreadyConnected: true, number: num };
   if (existing) {
     try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
     destroyPresenceManager(num);
     activeConnections.delete(num);
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 1500));
   }
   const sessionDir = path.join(SESSIONS_DIR, num);
-  if (force && fs.existsSync(sessionDir)) {
-    try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
-  }
+  if (force && fs.existsSync(sessionDir)) { try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {} }
   if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
   const { version }          = await fetchLatestBaileysVersion();
-  const conn = makeWASocket({
-    version,
-    logger: P({ level: 'silent' }),
-    printQRInTerminal: false,
-    auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, P({ level: 'silent' }).child({ level: 'silent' })) },
-    browser: Browsers.macOS('Safari'),
-    connectTimeoutMs: 35000,
-    keepAliveIntervalMs: 10000,
-    defaultQueryTimeoutMs: 30000,
-    retryRequestDelayMs: 300,
-    maxRetries: 3,
-    markOnlineOnConnect: false,
-    syncFullHistory: false,
-    emitOwnEvents: true,
-    fireInitQueries: true,
-  });
+  const conn = makeWASocket({ version, ...buildSocketConfig(state), msgRetryCounterCache: new NodeCache({ stdTTL: 60 }) });
   activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
   setupHandlers(conn, num, saveCreds);
-  await new Promise(r => setTimeout(r, 3500));
-  if (!conn.ws || conn.ws.readyState > 1) throw new Error('WebSocket closed before code was issued. Please try again.');
+  await new Promise(r => setTimeout(r, 4000));
+  if (!conn.ws || conn.ws.readyState > 1) throw new Error('WebSocket closed. Please try again.');
   const rawCode = await conn.requestPairingCode(num);
   const code = (rawCode || '').toString().trim();
-  if (!code) throw new Error('Empty pairing code received. Please try again.');
-  const formatted = code.match(/.{1,4}/g)?.join('-') || code;
-  return { pairingCode: formatted, number: num };
+  if (!code) throw new Error('Empty pairing code. Please try again.');
+  return { pairingCode: code.match(/.{1,4}/g)?.join('-') || code, number: num };
 };
