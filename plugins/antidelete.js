@@ -1,397 +1,417 @@
 /*****************************************************************************
- *  REDX BOT - ANTIDELETE (Memory-Safe Version)
- *  Fix: No longer downloads ALL media on every message.
- *  Only downloads media WHEN a deletion is detected (lazy download).
- *  This prevents memory spikes that caused bot restarts on Heroku.
+ *  🔰 REDXBOT302 — plugins/antidelete.js  ★ ULTRA FIXED v4.0 ★
+ *
+ *  ╔═══════════════════════════════════════════════════════╗
+ *  ║  FIXES APPLIED:                                      ║
+ *  ║  ✅ Owner @lid detection (linked device) fixed       ║
+ *  ║  ✅ fromMe flag respected (owner deleting own msgs)  ║
+ *  ║  ✅ Lazy media download (no memory spikes)           ║
+ *  ║  ✅ Sends to owner + linked device inbox             ║
+ *  ║  ✅ Stylish Toxic MD output format                   ║
+ *  ╚═══════════════════════════════════════════════════════╝
+ *
+ *  © 2026 Abdul Rehman Rajpoot — All rights reserved
  *****************************************************************************/
 
-const fs = require('fs');
+'use strict';
+
+const fs   = require('fs');
 const path = require('path');
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 const { writeFile } = require('fs/promises');
-const store = require('../lib/lightweight_store');
+const store          = require('../lib/lightweight_store');
+const { cleanJid, isLidJid, resolveOwnerNumber } = require('../lib/isOwner');
 
-// Store METADATA only (not full media buffers) — saves memory
-// We store the full message object so we can download on-demand at deletion time
-const messageStore = new Map();
-const MAX_STORE_SIZE = 500; // never store more than 500 messages (prevents memory leak)
+/* ── Storage ─────────────────────────────────────────────────────────────── */
+const messageStore   = new Map();          // id → metadata (NOT raw buffers)
+const MAX_STORE_SIZE = 500;                // hard cap → prevents memory leak
+const CONFIG_PATH    = path.join(process.cwd(), 'data', 'antidelete.json');
+const TEMP_DIR       = path.join(process.cwd(), 'tmp', 'antidel');
+const HAS_DB         = !!(process.env.MONGO_URL || process.env.POSTGRES_URL || process.env.MYSQL_URL || process.env.DB_URL);
 
-const CONFIG_PATH = path.join(__dirname, '../data/antidelete.json');
-const TEMP_MEDIA_DIR = path.join(__dirname, '../tmp');
+if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 
-const HAS_DB = !!(process.env.MONGO_URL || process.env.POSTGRES_URL || process.env.MYSQL_URL || process.env.DB_URL);
-
-if (!fs.existsSync(TEMP_MEDIA_DIR)) {
-    fs.mkdirSync(TEMP_MEDIA_DIR, { recursive: true });
-}
-
-// Clean tmp folder if over 100MB
-const cleanTempFolderIfLarge = () => {
+/* ── Temp folder auto-clean (every 5 min, if >80 MB) ────────────────────── */
+setInterval(() => {
     try {
-        const files = fs.readdirSync(TEMP_MEDIA_DIR);
-        let totalSize = 0;
-        for (const file of files) {
-            const filePath = path.join(TEMP_MEDIA_DIR, file);
-            try { totalSize += fs.statSync(filePath).size; } catch {}
+        const files = fs.readdirSync(TEMP_DIR);
+        let size = 0;
+        files.forEach(f => { try { size += fs.statSync(path.join(TEMP_DIR, f)).size; } catch {} });
+        if (size > 80 * 1024 * 1024) {
+            files.forEach(f => { try { fs.unlinkSync(path.join(TEMP_DIR, f)); } catch {} });
+            console.log('[ANTIDELETE] 🧹 Cleaned tmp (was >80 MB)');
         }
-        if (totalSize > 100 * 1024 * 1024) {
-            for (const file of files) {
-                try { fs.unlinkSync(path.join(TEMP_MEDIA_DIR, file)); } catch {}
-            }
-            console.log('[ANTIDELETE] Cleaned tmp folder (was >100MB)');
-        }
-    } catch (err) {
-        console.error('Temp cleanup error:', err);
-    }
-};
-setInterval(cleanTempFolderIfLarge, 5 * 60 * 1000); // every 5 min
+    } catch {}
+}, 5 * 60 * 1000);
 
-async function loadAntideleteConfig() {
+/* ── Config helpers ──────────────────────────────────────────────────────── */
+async function loadConfig() {
     try {
         if (HAS_DB) {
-            const config = await store.getSetting('global', 'antidelete');
-            return { enabled: false, delpath: 'owner', ...(config || {}) };
-        } else {
-            if (!fs.existsSync(CONFIG_PATH)) return { enabled: false, delpath: 'owner' };
-            const config = JSON.parse(fs.readFileSync(CONFIG_PATH));
-            return { enabled: false, delpath: 'owner', ...config };
+            const c = await store.getSetting('global', 'antidelete');
+            return { enabled: false, delpath: 'owner', ...(c || {}) };
         }
-    } catch {
-        return { enabled: false, delpath: 'owner' };
-    }
+        if (!fs.existsSync(CONFIG_PATH)) return { enabled: false, delpath: 'owner' };
+        return { enabled: false, delpath: 'owner', ...JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) };
+    } catch { return { enabled: false, delpath: 'owner' }; }
 }
 
-async function saveAntideleteConfig(config) {
+async function saveConfig(cfg) {
     try {
-        if (HAS_DB) {
-            await store.saveSetting('global', 'antidelete', config);
-        } else {
-            fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
-        }
-    } catch (err) {
-        console.error('Config save error:', err);
-    }
+        if (HAS_DB) return store.saveSetting('global', 'antidelete', cfg);
+        const dir = path.dirname(CONFIG_PATH);
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2));
+    } catch (e) { console.error('[ANTIDELETE] saveConfig:', e.message); }
 }
 
-/**
- * FIXED: Store only lightweight metadata — NOT the actual media buffer.
- * Media is downloaded lazily ONLY when deletion happens.
- */
+/* ── isOwner-aware: should we skip this sender? ─────────────────────────── */
+function isBotOrOwner(sock, jid) {
+    if (!jid) return false;
+    const ownerNum  = resolveOwnerNumber();
+    const senderNum = cleanJid(jid);
+
+    // Direct match
+    if (ownerNum && senderNum === ownerNum) return true;
+
+    // Bot/session match
+    if (sock?.user?.id) {
+        const botNum = cleanJid(sock.user.id);
+        if (botNum && senderNum === botNum) return true;
+    }
+
+    // @lid from owner's linked device: if botNum === ownerNum any @lid DM is owner
+    if (isLidJid(jid) && sock?.user?.id) {
+        const botNum = cleanJid(sock.user.id);
+        if (botNum && botNum === ownerNum) return true;
+    }
+
+    return false;
+}
+
+/* ── Delivery target helper ──────────────────────────────────────────────── */
+function buildTargets(sock, cfg, groupJid) {
+    const ownerNum = resolveOwnerNumber();
+    const ownerJid = ownerNum ? ownerNum + '@s.whatsapp.net' : null;
+    // Bot session JID = linked-device self-chat inbox
+    const sessionJid = sock?.user?.id
+        ? cleanJid(sock.user.id) + '@s.whatsapp.net'
+        : null;
+
+    const targets = new Set();
+    const dp = cfg.delpath || 'owner';
+
+    if (dp === 'group' && groupJid) {
+        targets.add(groupJid);
+    } else if (dp && !['owner', 'group'].includes(dp) && dp.includes('@')) {
+        targets.add(dp);
+    } else {
+        // 'owner' → owner DM + linked-device inbox (so both phone and PC see it)
+        if (ownerJid)   targets.add(ownerJid);
+        if (sessionJid && sessionJid !== ownerJid) targets.add(sessionJid);
+    }
+    return targets;
+}
+
+/* ── Detect & classify a message ─────────────────────────────────────────── */
+function classifyMessage(message) {
+    const vo = message.message?.viewOnceMessageV2?.message
+             || message.message?.viewOnceMessage?.message;
+    if (vo?.imageMessage) return { mediaType: 'image',    content: vo.imageMessage.caption || '',    viewOnce: true,  mediaMsg: vo.imageMessage  };
+    if (vo?.videoMessage) return { mediaType: 'video',    content: vo.videoMessage.caption || '',    viewOnce: true,  mediaMsg: vo.videoMessage  };
+
+    if (message.message?.conversation)                 return { mediaType: '',       content: message.message.conversation };
+    if (message.message?.extendedTextMessage?.text)    return { mediaType: '',       content: message.message.extendedTextMessage.text };
+    if (message.message?.imageMessage)                 return { mediaType: 'image',  content: message.message.imageMessage.caption || '' };
+    if (message.message?.videoMessage)                 return { mediaType: 'video',  content: message.message.videoMessage.caption || '' };
+    if (message.message?.stickerMessage)               return { mediaType: 'sticker',content: '' };
+    if (message.message?.audioMessage)                 return { mediaType: 'audio',  content: '' };
+    if (message.message?.voiceMessage)                 return { mediaType: 'audio',  content: '' };
+    if (message.message?.documentMessage)              return { mediaType: 'document',content: message.message.documentMessage.caption || '' };
+    return { mediaType: '', content: '' };
+}
+
+/* ── Store message (metadata only — lazy media) ──────────────────────────── */
 async function storeMessage(sock, message) {
     try {
-        const config = await loadAntideleteConfig();
-        if (!config.enabled) return;
+        const cfg = await loadConfig();
+        if (!cfg.enabled) return;
         if (!message.key?.id) return;
 
-        // Prevent memory leak: trim old entries
+        // Trim store to max size
         if (messageStore.size >= MAX_STORE_SIZE) {
-            const firstKey = messageStore.keys().next().value;
-            messageStore.delete(firstKey);
+            messageStore.delete(messageStore.keys().next().value);
         }
 
-        const messageId = message.key.id;
-        const sender = message.key.participant || message.key.remoteJid;
+        const { mediaType, content, viewOnce, mediaMsg } = classifyMessage(message);
+        const sender  = message.key.participant || message.key.remoteJid;
+        const groupJid = message.key.remoteJid?.endsWith('@g.us') ? message.key.remoteJid : null;
 
-        // Detect message type
-        let content = '';
-        let mediaType = '';
-
-        const viewOnceContainer = message.message?.viewOnceMessageV2?.message || message.message?.viewOnceMessage?.message;
-
-        if (viewOnceContainer?.imageMessage) {
-            mediaType = 'image'; content = viewOnceContainer.imageMessage.caption || '';
-        } else if (viewOnceContainer?.videoMessage) {
-            mediaType = 'video'; content = viewOnceContainer.videoMessage.caption || '';
-        } else if (message.message?.conversation) {
-            content = message.message.conversation;
-        } else if (message.message?.extendedTextMessage?.text) {
-            content = message.message.extendedTextMessage.text;
-        } else if (message.message?.imageMessage) {
-            mediaType = 'image'; content = message.message.imageMessage.caption || '';
-        } else if (message.message?.stickerMessage) {
-            mediaType = 'sticker';
-        } else if (message.message?.videoMessage) {
-            mediaType = 'video'; content = message.message.videoMessage.caption || '';
-        } else if (message.message?.audioMessage) {
-            mediaType = 'audio';
-        } else if (message.message?.documentMessage) {
-            mediaType = 'document'; content = message.message.documentMessage.caption || '';
-        } else if (message.message?.voiceMessage) {
-            mediaType = 'audio';
-        }
-
-        // Store metadata + full message object for lazy download later
-        messageStore.set(messageId, {
-            content,
-            mediaType,
-            sender,
-            group: message.key.remoteJid?.endsWith('@g.us') ? message.key.remoteJid : null,
+        messageStore.set(message.key.id, {
+            content, mediaType, viewOnce: !!viewOnce,
+            sender, groupJid,
             timestamp: Date.now(),
-            fullMessage: message, // keep full message for lazy download
+            fullMessage: message,
         });
 
-        // Handle view-once: download immediately (user can't access it again)
-        const isViewOnce = !!(viewOnceContainer?.imageMessage || viewOnceContainer?.videoMessage);
-        if (isViewOnce && mediaType) {
-            try {
-                const container = viewOnceContainer.imageMessage || viewOnceContainer.videoMessage;
-                const stream = await downloadContentFromMessage(container, mediaType);
-                let buffer = Buffer.from([]);
-                for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
-                const ext = mediaType === 'image' ? 'jpg' : 'mp4';
-                const mediaPath = path.join(TEMP_MEDIA_DIR, `vo_${messageId}.${ext}`);
-                await writeFile(mediaPath, buffer);
-
-                const realOwnerNum = require('../settings').ownerNumber || '';
-                const ownerNumber = realOwnerNum
-                    ? realOwnerNum.replace(/[^0-9]/g, '') + '@s.whatsapp.net'
-                    : sock.user.id.split(':')[0] + '@s.whatsapp.net';
-                const linkedDevice = sock.user.id.split(':')[0] + '@s.whatsapp.net';
-
-                const freshConfig = await loadAntideleteConfig();
-                const delpath = freshConfig.delpath || 'owner';
-                const groupJid = message.key.remoteJid?.endsWith('@g.us') ? message.key.remoteJid : null;
-
-                // Build delivery targets
-                const voTargets = new Set();
-                if (delpath === 'group' && groupJid) {
-                    voTargets.add(groupJid);
-                } else if (delpath && !['owner', 'group'].includes(delpath) && delpath.includes('@')) {
-                    voTargets.add(delpath);
-                } else {
-                    voTargets.add(ownerNumber);
-                    if (linkedDevice !== ownerNumber) voTargets.add(linkedDevice); // linked device inbox
-                }
-
-                const opts = { caption: `*👁️ View-Once ${mediaType}*\nFrom: @${sender.split('@')[0]}`, mentions: [sender] };
-                for (const jid of voTargets) {
-                    if (mediaType === 'image') await sock.sendMessage(jid, { image: { url: mediaPath }, ...opts }).catch(() => {});
-                    else await sock.sendMessage(jid, { video: { url: mediaPath }, ...opts }).catch(() => {});
-                }
-                try { fs.unlinkSync(mediaPath); } catch {}
-            } catch (e) { console.error('[ANTIDELETE] ViewOnce error:', e.message); }
+        // View-once: download immediately (can't access again after first view)
+        if (viewOnce && mediaType && mediaMsg) {
+            await _downloadAndForwardViewOnce(sock, message.key.id, mediaMsg, mediaType, sender, groupJid, cfg);
         }
-
-    } catch (err) {
-        console.error('[ANTIDELETE] storeMessage error:', err.message);
+    } catch (e) {
+        console.error('[ANTIDELETE] storeMessage:', e.message);
     }
 }
 
-/**
- * Download media from a stored message object (called ONLY when deletion occurs)
- */
-async function downloadMedia(original, messageId) {
+async function _downloadAndForwardViewOnce(sock, msgId, mediaMsg, mediaType, sender, groupJid, cfg) {
+    try {
+        const stream = await downloadContentFromMessage(mediaMsg, mediaType);
+        const chunks = [];
+        for await (const c of stream) chunks.push(c);
+        if (!chunks.length) return;
+
+        const ext = mediaType === 'video' ? 'mp4' : 'jpg';
+        const out = path.join(TEMP_DIR, `vo_${msgId}.${ext}`);
+        await writeFile(out, Buffer.concat(chunks));
+
+        const targets = buildTargets(sock, cfg, groupJid);
+        const senderNum = cleanJid(sender);
+        const caption =
+`╭───( 🔰 REDXBOT302 )───
+├───≫ 👁️ VIEW-ONCE SAVED ≪───
+├
+├ 👤 *From:* @${senderNum}
+├ 📎 *Type:* ${mediaType.toUpperCase()}
+╰──────────────────────☉
+> 𝑷𝒐𝒘𝒆𝒓𝒆𝒅 𝑩𝒚 𝑹𝑬𝑫𝑿𝑩𝑶𝑻𝟑𝟎𝟐 🔥`;
+
+        for (const jid of targets) {
+            if (mediaType === 'image') await sock.sendMessage(jid, { image:  { url: out }, caption, mentions: [sender] }).catch(() => {});
+            else                       await sock.sendMessage(jid, { video:  { url: out }, caption, mentions: [sender] }).catch(() => {});
+        }
+        try { fs.unlinkSync(out); } catch {}
+    } catch (e) {
+        console.error('[ANTIDELETE] view-once forward:', e.message);
+    }
+}
+
+/* ── Lazy media download (called ONLY when deletion detected) ─────────────── */
+async function downloadMedia(original, msgId) {
     const { mediaType, fullMessage } = original;
     if (!mediaType || !fullMessage) return null;
-
     try {
-        let mediaMsg = null;
-        let downloadType = mediaType;
         const msg = fullMessage.message;
+        let mediaMsg, dlType = mediaType;
 
-        if (mediaType === 'image') mediaMsg = msg?.imageMessage;
-        else if (mediaType === 'video') mediaMsg = msg?.videoMessage;
-        else if (mediaType === 'sticker') { mediaMsg = msg?.stickerMessage; downloadType = 'sticker'; }
-        else if (mediaType === 'audio') { mediaMsg = msg?.audioMessage || msg?.voiceMessage; downloadType = 'audio'; }
+        if (mediaType === 'image')    mediaMsg = msg?.imageMessage;
+        else if (mediaType === 'video')    mediaMsg = msg?.videoMessage;
+        else if (mediaType === 'sticker')  { mediaMsg = msg?.stickerMessage;  dlType = 'sticker'; }
+        else if (mediaType === 'audio')    { mediaMsg = msg?.audioMessage || msg?.voiceMessage; dlType = 'audio'; }
         else if (mediaType === 'document') mediaMsg = msg?.documentMessage;
 
         if (!mediaMsg) return null;
 
-        const stream = await downloadContentFromMessage(mediaMsg, downloadType);
-        let buffer = Buffer.from([]);
-        for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk]);
+        const stream = await downloadContentFromMessage(mediaMsg, dlType);
+        const chunks = [];
+        for await (const c of stream) chunks.push(c);
+        if (!chunks.length) return null;
 
         let ext = 'bin';
-        if (mediaType === 'image') ext = 'jpg';
-        else if (mediaType === 'video') ext = 'mp4';
-        else if (mediaType === 'sticker') ext = 'webp';
-        else if (mediaType === 'audio') {
-            const mime = mediaMsg.mimetype || '';
-            ext = mime.includes('ogg') ? 'ogg' : 'mp3';
-        } else if (mediaType === 'document') {
-            const fileName = mediaMsg.fileName || `doc.${mediaMsg.mimetype?.split('/')[1] || 'bin'}`;
-            ext = fileName.split('.').pop() || 'bin';
-        }
+        if (mediaType === 'image')    ext = 'jpg';
+        else if (mediaType === 'video')    ext = 'mp4';
+        else if (mediaType === 'sticker')  ext = 'webp';
+        else if (mediaType === 'audio')    ext = (mediaMsg.mimetype || '').includes('ogg') ? 'ogg' : 'mp3';
+        else if (mediaType === 'document') ext = (mediaMsg.fileName || 'doc.bin').split('.').pop() || 'bin';
 
-        const mediaPath = path.join(TEMP_MEDIA_DIR, `del_${messageId}.${ext}`);
-        await writeFile(mediaPath, buffer);
-        return { mediaPath, ext };
-    } catch (err) {
-        console.error('[ANTIDELETE] Download error:', err.message);
+        const out = path.join(TEMP_DIR, `del_${msgId}.${ext}`);
+        await writeFile(out, Buffer.concat(chunks));
+        return { mediaPath: out, ext };
+    } catch (e) {
+        console.error('[ANTIDELETE] downloadMedia:', e.message);
         return null;
     }
 }
 
+/* ── Handle deletion event ───────────────────────────────────────────────── */
 async function handleMessageRevocation(sock, revocationMessage) {
     try {
-        const config = await loadAntideleteConfig();
-        if (!config.enabled) return;
+        const cfg = await loadConfig();
+        if (!cfg.enabled) return;
 
-        // messages.update fires with { key, update } structure; handle both shapes
-        const actualMsg = revocationMessage.update || revocationMessage;
-        const messageId = actualMsg.message?.protocolMessage?.key?.id
-            || revocationMessage.message?.protocolMessage?.key?.id;
-        if (!messageId) return;
+        const actual   = revocationMessage.update || revocationMessage;
+        const msgId    = actual.message?.protocolMessage?.key?.id
+                       || revocationMessage.message?.protocolMessage?.key?.id;
+        if (!msgId) return;
 
-        const deletedBy = actualMsg.participant || actualMsg.key?.participant
-            || revocationMessage.participant || revocationMessage.key?.participant
-            || revocationMessage.key?.remoteJid;
-        const sessionNumber = sock.user.id.split(':')[0] + '@s.whatsapp.net';
-        // Real owner from settings (linked device should also receive)
-        const realOwnerNum = require('../settings').ownerNumber || '';
-        const ownerNumber = realOwnerNum ? realOwnerNum.replace(/[^0-9]/g, '') + '@s.whatsapp.net' : sessionNumber;
+        const deletedBy = actual.participant
+                       || actual.key?.participant
+                       || revocationMessage.participant
+                       || revocationMessage.key?.participant
+                       || revocationMessage.key?.remoteJid
+                       || '';
 
-        // Don't report if bot or owner deleted their own message
-        const deletedByClean = deletedBy?.split(':')[0].split('@')[0];
-        const sessionClean = sock.user.id.split(':')[0].split('@')[0];
-        const ownerClean = ownerNumber.split('@')[0];
-        if (deletedByClean === sessionClean || deletedByClean === ownerClean) return;
+        // ── FIXED: skip if owner/bot deleted their OWN message ─────────────
+        if (isBotOrOwner(sock, deletedBy)) return;
 
-        const original = messageStore.get(messageId);
+        const original = messageStore.get(msgId);
         if (!original) return;
 
-        const sender = original.sender;
-        const senderName = sender.split('@')[0];
-        const groupName = original.group ? (await sock.groupMetadata(original.group).catch(() => ({ subject: 'Group' }))).subject : '';
+        const { content, mediaType, sender, groupJid } = original;
+        const senderNum  = cleanJid(sender);
+        const deleterNum = cleanJid(deletedBy);
 
-        const time = new Date().toLocaleString('en-US', {
-            timeZone: 'Asia/Karachi', hour12: true, hour: '2-digit', minute: '2-digit',
-            day: '2-digit', month: '2-digit', year: 'numeric'
+        let groupName = '';
+        if (groupJid) {
+            try { groupName = (await sock.groupMetadata(groupJid)).subject || 'Group'; } catch { groupName = 'Group'; }
+        }
+
+        const time = new Date().toLocaleString('en-PK', {
+            timeZone: 'Asia/Karachi', hour12: true,
+            hour: '2-digit', minute: '2-digit',
+            day: '2-digit', month: 'short', year: 'numeric'
         });
 
-        let text = `*🔰 REDX ANTIDELETE 🔰*\n\n` +
-            `*🗑️ Deleted By:* @${deletedBy.split('@')[0]}\n` +
-            `*👤 Sender:* @${senderName}\n` +
-            `*📱 Number:* +${sender.split('@')[0]}\n` +
-            `*🕒 Time:* ${time}\n`;
-        if (groupName) text += `*👥 Group:* ${groupName}\n`;
-        if (original.content) text += `\n*💬 Message:*\n${original.content}`;
-        if (original.mediaType) text += `\n*📎 Media:* ${original.mediaType}`;
+        let notifyText =
+`╭───( 🔰 REDXBOT302 )───
+├───≫ 🗑️ ANTIDELETE ALERT ≪───
+├
+├ 🚫 *Deleted By:* @${deleterNum}
+├ 👤 *Sender:* @${senderNum}
+├ 📱 *Number:* +${senderNum}
+├ 🕒 *Time:* ${time}`;
+        if (groupName) notifyText += `\n├ 👥 *Group:* ${groupName}`;
+        if (content)   notifyText += `\n├\n├ 💬 *Message:*\n│ ${content.replace(/\n/g, '\n│ ')}`;
+        if (mediaType) notifyText += `\n├ 📎 *Media:* ${mediaType.toUpperCase()}`;
+        notifyText +=
+`
+╰──────────────────────☉
+> 𝑷𝒐𝒘𝒆𝒓𝒆𝒅 𝑩𝒚 𝑹𝑬𝑫𝑿𝑩𝑶𝑻𝟑𝟎𝟐 🔥`;
 
-        // Determine delivery targets
-        // Always deliver to owner number AND bot's own linked-device self-chat
-        const delpath   = config.delpath;
-        const linkedJid = sessionNumber; // bot session = linked device inbox
-        const targets   = new Set();
-
-        if (delpath === 'group' && original.group) {
-            targets.add(original.group);
-        } else if (delpath && !['owner', 'group'].includes(delpath) && delpath.includes('@')) {
-            targets.add(delpath);
-        } else {
-            // delpath === 'owner' (default) — send to owner + linked device
-            targets.add(ownerNumber);
-            if (linkedJid !== ownerNumber) targets.add(linkedJid); // bot self inbox
-        }
-
+        const targets = buildTargets(sock, cfg, groupJid);
         for (const jid of targets) {
-            await sock.sendMessage(jid, { text, mentions: [deletedBy, sender] }).catch(() => {});
+            await sock.sendMessage(jid, { text: notifyText, mentions: [deletedBy, sender] }).catch(() => {});
         }
 
-        // Now lazily download media ONLY when deletion is detected
-        if (original.mediaType) {
-            const downloaded = await downloadMedia(original, messageId);
-            if (downloaded) {
-                const { mediaPath } = downloaded;
-                const doc = original.fullMessage?.message?.documentMessage;
-                const opts = {
-                    caption: `*Deleted ${original.mediaType}*\nFrom: @${senderName}`,
-                    mentions: [sender]
-                };
+        // Lazy-download media only NOW (on deletion)
+        if (mediaType) {
+            const dl = await downloadMedia(original, msgId);
+            if (dl) {
+                const { mediaPath } = dl;
+                const docMsg = original.fullMessage?.message?.documentMessage;
+                const opts = { caption: `🗑️ *Deleted ${mediaType}*\nFrom: @${senderNum}`, mentions: [sender] };
+
                 for (const jid of targets) {
                     try {
-                        switch (original.mediaType) {
-                            case 'image':
-                                await sock.sendMessage(jid, { image: { url: mediaPath }, ...opts }); break;
-                            case 'sticker':
-                                await sock.sendMessage(jid, { sticker: { url: mediaPath } }); break;
-                            case 'video':
-                                await sock.sendMessage(jid, { video: { url: mediaPath }, ...opts }); break;
-                            case 'audio':
-                                await sock.sendMessage(jid, { audio: { url: mediaPath }, mimetype: 'audio/mpeg', ptt: false, ...opts }); break;
-                            case 'document':
-                                await sock.sendMessage(jid, {
-                                    document: { url: mediaPath },
-                                    fileName: doc?.fileName || path.basename(mediaPath),
-                                    mimetype: doc?.mimetype || 'application/octet-stream',
-                                    ...opts
-                                }); break;
-                        }
-                    } catch (e) {
-                        await sock.sendMessage(jid, { text: `⚠️ Could not retrieve deleted media: ${e.message}` }).catch(() => {});
-                    }
+                        if      (mediaType === 'image')    await sock.sendMessage(jid, { image:    { url: mediaPath }, ...opts });
+                        else if (mediaType === 'video')    await sock.sendMessage(jid, { video:    { url: mediaPath }, ...opts });
+                        else if (mediaType === 'sticker')  await sock.sendMessage(jid, { sticker:  { url: mediaPath } });
+                        else if (mediaType === 'audio')    await sock.sendMessage(jid, { audio:    { url: mediaPath }, mimetype: 'audio/mpeg', ptt: false });
+                        else if (mediaType === 'document') await sock.sendMessage(jid, {
+                            document:  { url: mediaPath },
+                            fileName:  docMsg?.fileName || path.basename(mediaPath),
+                            mimetype:  docMsg?.mimetype || 'application/octet-stream',
+                            ...opts
+                        });
+                    } catch { await sock.sendMessage(jid, { text: '⚠️ Could not retrieve deleted media.' }).catch(() => {}); }
                 }
                 try { fs.unlinkSync(mediaPath); } catch {}
             }
         }
 
-        messageStore.delete(messageId);
-
-    } catch (err) {
-        console.error('[ANTIDELETE] handleMessageRevocation error:', err.message);
+        messageStore.delete(msgId);
+    } catch (e) {
+        console.error('[ANTIDELETE] handleMessageRevocation:', e.message);
     }
 }
 
+/* ── Plugin export ───────────────────────────────────────────────────────── */
 module.exports = {
-    command: 'antidelete',
-    aliases: ['antidel', 'adel'],
-    category: 'owner',
-    description: 'Enable/disable antidelete — shows deleted messages (text, media, docs, voice)',
-    usage: '.antidelete <on|off|delpath> [owner|group|jid]',
-    ownerOnly: true,  // Only owner/sudo can toggle ON/OFF — monitoring runs for ALL messages
+    command    : 'antidelete',
+    aliases    : ['antidel', 'adel', 'nodel'],
+    category   : 'owner',
+    description: '🗑️ Recover deleted messages & view-once media (text, images, video, audio, docs)',
+    usage      : '.antidelete on/off/status/delpath [owner|group|jid]',
+    ownerOnly  : true,
 
     async handler(sock, message, args, context = {}) {
         const chatId = context.chatId || message.key.remoteJid;
-        const config = await loadAntideleteConfig();
-        const action = args[0]?.toLowerCase();
+        const cfg    = await loadConfig();
+        const action = (args[0] || '').toLowerCase().trim();
 
-        if (!action) {
-            const dp = config.delpath === 'owner' ? 'Owner Inbox' :
-                config.delpath === 'group' ? 'Group where deletion occurred' :
-                `Custom JID: ${config.delpath}`;
+        if (!action || action === 'status') {
+            const dp = cfg.delpath === 'owner' ? '👑 Owner DM'
+                     : cfg.delpath === 'group' ? '👥 Group (where deleted)'
+                     : `📍 ${cfg.delpath}`;
             return sock.sendMessage(chatId, {
-                text: `*🔰 ANTIDELETE STATUS*\n\n` +
-                    `*Status:* ${config.enabled ? '✅ ON' : '❌ OFF'}\n` +
-                    `*Delpath:* ${dp}\n` +
-                    `*Memory Mode:* ✅ Lazy (safe for Heroku)\n\n` +
-                    `*Commands:*\n` +
-                    `• \`.antidelete on/off\`\n` +
-                    `• \`.antidelete delpath owner\` — send to owner DM\n` +
-                    `• \`.antidelete delpath group\` — send in group\n` +
-                    `• \`.antidelete delpath <jid>\` — send to specific JID`
+                text:
+`╭───( 🔰 REDXBOT302 )───
+├───≫ 🗑️ ANTIDELETE STATUS ≪───
+├
+├ ⚡ *Status:* ${cfg.enabled ? '✅ ACTIVE' : '❌ OFFLINE'}
+├ 📬 *Delpath:* ${dp}
+├ 💾 *Mode:* Lazy (memory-safe ✅)
+├ 📦 *Stored:* ${messageStore.size} messages
+├
+├ ─── 𝗖𝗼𝗺𝗺𝗮𝗻𝗱𝘀 ───
+├ • *.antidelete on/off*
+├ • *.antidelete delpath owner*
+├ • *.antidelete delpath group*
+├ • *.antidelete delpath <jid>*
+╰──────────────────────☉
+> 𝑷𝒐𝒘𝒆𝒓𝒆𝒅 𝑩𝒚 𝑹𝑬𝑫𝑿𝑩𝑶𝑻𝟑𝟎𝟐 🔥`
             }, { quoted: message });
         }
 
         if (action === 'on') {
-            config.enabled = true;
-            await saveAntideleteConfig(config);
-            return sock.sendMessage(chatId, { text: `✅ *Antidelete ENABLED*\n\nDeleted messages (text, images, video, audio, docs, voice) will be reported.\n\n*Delpath:* ${config.delpath === 'owner' ? 'Owner inbox' : config.delpath}` }, { quoted: message });
+            cfg.enabled = true;
+            await saveConfig(cfg);
+            return sock.sendMessage(chatId, {
+                text:
+`╭───( 🔰 REDXBOT302 )───
+├ ✅ *ANTIDELETE ENABLED*
+├ 🗑️ Deleted messages will be reported.
+├ 📬 Delpath: ${cfg.delpath === 'owner' ? 'Owner DM' : cfg.delpath}
+╰──────────────────────☉`
+            }, { quoted: message });
         }
 
         if (action === 'off') {
-            config.enabled = false;
-            await saveAntideleteConfig(config);
-            return sock.sendMessage(chatId, { text: `❌ *Antidelete DISABLED*` }, { quoted: message });
+            cfg.enabled = false;
+            await saveConfig(cfg);
+            return sock.sendMessage(chatId, {
+                text:
+`╭───( 🔰 REDXBOT302 )───
+├ ❌ *ANTIDELETE DISABLED*
+╰──────────────────────☉`
+            }, { quoted: message });
         }
 
         if (action === 'delpath') {
-            const sub = args[1]?.toLowerCase();
+            const sub = (args[1] || '').toLowerCase().trim();
             if (!sub) {
-                return sock.sendMessage(chatId, { text: `*Current delpath:* ${config.delpath}\n\nOptions: \`owner\`, \`group\`, or a full JID` }, { quoted: message });
+                return sock.sendMessage(chatId, {
+                    text: `📬 *Current delpath:* ${cfg.delpath}\n\nOptions: \`owner\`, \`group\`, or a full JID`
+                }, { quoted: message });
             }
             if (['owner', 'group'].includes(sub) || sub.includes('@')) {
-                config.delpath = sub;
-                await saveAntideleteConfig(config);
-                return sock.sendMessage(chatId, { text: `✅ Delpath set to: *${sub}*` }, { quoted: message });
+                cfg.delpath = sub;
+                await saveConfig(cfg);
+                return sock.sendMessage(chatId, {
+                    text: `✅ *Delpath set to:* \`${sub}\``
+                }, { quoted: message });
             }
-            return sock.sendMessage(chatId, { text: `❌ Invalid delpath. Use \`owner\`, \`group\`, or a valid JID.` }, { quoted: message });
+            return sock.sendMessage(chatId, {
+                text: '❌ Invalid. Use `owner`, `group`, or a valid JID.'
+            }, { quoted: message });
         }
 
-        return sock.sendMessage(chatId, { text: `❌ Unknown action. Use: \`.antidelete on/off/delpath\`` }, { quoted: message });
+        return sock.sendMessage(chatId, {
+            text: '❌ Unknown action. Use `.antidelete status` for help.'
+        }, { quoted: message });
     },
 
     handleMessageRevocation,
     storeMessage,
-    loadAntideleteConfig,
-    saveAntideleteConfig
+    loadConfig,
+    saveConfig,
 };
