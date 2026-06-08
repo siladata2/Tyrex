@@ -97,24 +97,6 @@ module.exports = [
     },
   },
 
-  // ── ANTIDELETE
-  {
-    pattern: 'antidelete',
-    desc: 'Toggle anti-delete',
-    category: 'filter',
-    react: '🗑️',
-    use: '.antidelete on|off',
-    execute: async (conn, msg, m, { from, isGroup, reply, sender, args }) => {
-      if (!isOwnerCheck(sender)) return reply('❌ Owner only.');
-      const val = args[0]?.toLowerCase();
-      if (!['on','off'].includes(val)) return reply('❌ Usage: .antidelete on|off');
-      const d = loadData();
-      d.antidelete = val === 'on';
-      saveData(d);
-      reply(`🗑️ Anti-Delete: *${val.toUpperCase()}*\n\n> 🔥 ${BOT_NAME}`);
-    },
-  },
-
   // ── AUTOREAD
   {
     pattern: 'autoread',
