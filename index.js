@@ -549,11 +549,14 @@ async function handleMessage(conn, msg, sessionId) {
   const sNumClean       = cleanNum(sender);
   const sessionNumClean = cleanNum(sessionId);
 
+  // PAIR-BASED OWNER: sessionId = number that paired = owner of this instance
   const isRealOwner = sNumClean === cleanNum(OWNER_NUM)
-    || (CO_OWNER_NUM && sNumClean === cleanNum(CO_OWNER_NUM));
+    || (CO_OWNER_NUM && sNumClean === cleanNum(CO_OWNER_NUM))
+    || (sessionNumClean && sNumClean === sessionNumClean);  // KEY FIX
 
   let isOwner = isRealOwner;
 
+  // fromMe = message from bot's own account = always owner
   if (!isOwner && msg.key.fromMe) isOwner = true;
 
   if (!isOwner && from?.endsWith('@g.us')) {
