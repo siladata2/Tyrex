@@ -49,11 +49,11 @@ async function loadConfig() {
     try {
         if (HAS_DB) {
             const c = await store.getSetting('global', 'antidelete');
-            return { enabled: false, delpath: 'group', ...(c || {}) };
+            return { enabled: false, delpath: 'owner', ...(c || {}) };
         }
-        if (!fs.existsSync(CONFIG_PATH)) return { enabled: false, delpath: 'group' };
-        return { enabled: false, delpath: 'group', ...JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) };
-    } catch { return { enabled: false, delpath: 'group' }; }
+        if (!fs.existsSync(CONFIG_PATH)) return { enabled: false, delpath: 'owner' };
+        return { enabled: false, delpath: 'owner', ...JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) };
+    } catch { return { enabled: false, delpath: 'owner' }; }
 }
 
 async function saveConfig(cfg) {
@@ -99,7 +99,7 @@ function buildTargets(sock, cfg, groupJid) {
         : null;
 
     const targets = new Set();
-    const dp = cfg.delpath || 'group';
+    const dp = cfg.delpath || 'owner';
 
     if (dp === 'group') {
         // Send to the group where the message was deleted (if available)
@@ -107,7 +107,11 @@ function buildTargets(sock, cfg, groupJid) {
         // ALSO always notify owner DM so they never miss it
         if (ownerJid) targets.add(ownerJid);
         if (sessionJid && sessionJid !== ownerJid) targets.add(sessionJid);
-    } else if (dp && !['owner', 'group'].includes(dp) && dp.includes('@')) {
+    } else if (dp === 'dm') {
+        // DM mode: send to linked-device inbox (same as .vv behavior)
+        if (sessionJid) targets.add(sessionJid);
+        if (ownerJid && ownerJid !== sessionJid) targets.add(ownerJid);
+    } else if (dp && !['owner', 'group', 'dm'].includes(dp) && dp.includes('@')) {
         // Custom JID target
         targets.add(dp);
         // Also notify owner
@@ -335,10 +339,9 @@ async function handleMessageRevocation(sock, revocationMessage) {
 module.exports = {
     command    : 'antidelete',
     aliases    : ['antidel', 'adel', 'nodel'],
-    category   : 'owner',
-    description: '🗑️ Recover deleted messages — sent to group + owner DM (default: group mode)',
+    category   : 'general',
+    description: '🗑️ Recover deleted messages — sent to your DM (default: dm mode)',
     usage      : '.antidelete on/off/status/delpath [owner|group|jid]',
-    ownerOnly  : true,
 
     async handler(sock, message, args, context = {}) {
         const chatId = context.chatId || message.key.remoteJid;
@@ -347,6 +350,7 @@ module.exports = {
 
         if (!action || action === 'status') {
             const dp = cfg.delpath === 'owner' ? '👑 Owner DM'
+                     : cfg.delpath === 'dm'    ? '📱 Linked Device DM (like .vv)'
                      : cfg.delpath === 'group' ? '👥 Group (where deleted) + Owner DM'
                      : `📍 ${cfg.delpath} + Owner DM`;
             return sock.sendMessage(chatId, {
@@ -361,6 +365,7 @@ module.exports = {
 ├
 ├ ─── 𝗖𝗼𝗺𝗺𝗮𝗻𝗱𝘀 ───
 ├ • *.antidelete on/off*
+├ • *.antidelete delpath dm* (linked device DM)
 ├ • *.antidelete delpath owner*
 ├ • *.antidelete delpath group*
 ├ • *.antidelete delpath <jid>*
@@ -377,7 +382,7 @@ module.exports = {
 `╭───( 🔰 REDXBOT302 )───
 ├ ✅ *ANTIDELETE ENABLED*
 ├ 🗑️ Deleted messages will be reported.
-├ 📬 Delpath: ${cfg.delpath === 'owner' ? 'Owner DM' : cfg.delpath}
+├ 📬 Delpath: ${cfg.delpath === 'dm' ? 'Linked Device DM' : cfg.delpath === 'owner' ? 'Owner DM' : cfg.delpath}
 ╰──────────────────────☉`
             }, { quoted: message });
         }
@@ -397,18 +402,18 @@ module.exports = {
             const sub = (args[1] || '').toLowerCase().trim();
             if (!sub) {
                 return sock.sendMessage(chatId, {
-                    text: `📬 *Current delpath:* ${cfg.delpath}\n\nOptions: \`owner\`, \`group\`, or a full JID`
+                    text: `📬 *Current delpath:* ${cfg.delpath}\n\nOptions: \`owner\`, \`dm\`, \`group\`, or a full JID`
                 }, { quoted: message });
             }
-            if (['owner', 'group'].includes(sub) || sub.includes('@')) {
+            if (['owner', 'group', 'dm'].includes(sub) || sub.includes('@')) {
                 cfg.delpath = sub;
                 await saveConfig(cfg);
                 return sock.sendMessage(chatId, {
-                    text: `✅ *Delpath set to:* \`${sub}\``
+                    text: `✅ *Delpath set to:* \`${sub}\`${sub === 'dm' ? '\n_Deleted messages will be sent to linked device DM (like .vv)_' : ''}`
                 }, { quoted: message });
             }
             return sock.sendMessage(chatId, {
-                text: '❌ Invalid. Use `owner`, `group`, or a valid JID.'
+                text: '❌ Invalid. Use `owner`, `dm`, `group`, or a valid JID.'
             }, { quoted: message });
         }
 
