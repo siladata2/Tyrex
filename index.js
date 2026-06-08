@@ -78,6 +78,31 @@ try {
   if (ge && typeof ge === 'function') GroupEvents = ge;
 } catch { console.warn('⚠️ groupevents module not found.'); }
 
+// ── ANTICALL ─────────────────────────────────────────────────
+let anticallPlugin = null;
+try {
+  const ac = require('./plugins/anticall');
+  if (ac && typeof ac.handleIncomingCall === 'function') anticallPlugin = ac;
+} catch { console.warn('⚠️ anticall plugin not found.'); }
+
+// ── BGM TRIGGERS ─────────────────────────────────────────────
+let bgmPlugin = null;
+try {
+  const bg = require('./plugins/bgm');
+  if (bg && typeof bg.checkAndPlay === 'function') {
+    bgmPlugin = bg;
+    // Load triggers into cache immediately
+    if (typeof bg.loadTriggers === 'function') bg.loadTriggers().catch(() => {});
+  }
+} catch { console.warn('⚠️ bgm plugin not found.'); }
+
+// ── VV AUTO-TRIGGER ──────────────────────────────────────────
+let advancedVV = null;
+try {
+  const vv = require('./plugins/advanced-vv');
+  if (vv && typeof vv.handleAutoVV === 'function') advancedVV = vv;
+} catch { console.warn('⚠️ advanced-vv plugin not found.'); }
+
 // ── APP ─────────────────────────────────────────────────────
 const app    = express();
 const server = http.createServer(app);
@@ -491,9 +516,15 @@ function setupHandlers(conn, number, saveCreds) {
 
   conn.ev.on('messages.update', async (updates) => {
     for (const update of updates) {
-      if (update.update?.protocolMessage?.type === 1) {
+      // Baileys wraps deleted-message data as:
+      //   { key, update: { message: { protocolMessage: { key, type } } } }
+      // type 0 = REVOKE (message delete). Check BOTH paths for safety.
+      const proto = update.update?.message?.protocolMessage
+                  || update.update?.protocolMessage;
+      const isRevoke = proto?.type === 0;
+      if (isRevoke) {
         if (antidelete && typeof antidelete.handleMessageRevocation === 'function')
-          await antidelete.handleMessageRevocation(conn, update);
+          await antidelete.handleMessageRevocation(conn, update).catch(e => console.error('[antidelete revoke]', e.message));
       }
     }
   });
@@ -502,6 +533,17 @@ function setupHandlers(conn, number, saveCreds) {
     try {
       await GroupEvents(conn, update, { botName: BOT_NAME, ownerName: OWNER_NAME, menuImage: BOT_IMG, newsletterJid: NL_JID });
     } catch(e){ console.error('GroupEvents:', e.message); }
+  });
+
+  // ── ANTICALL: reject / log incoming voice & video calls ──────
+  conn.ev.on('call', async (calls) => {
+    for (const call of calls) {
+      // Only act on the OFFER (new incoming call), not STATUS updates
+      if (call.status !== 'offer') continue;
+      try {
+        if (anticallPlugin) await anticallPlugin.handleIncomingCall(conn, call);
+      } catch(e) { console.error('[anticall]', e.message); }
+    }
   });
 }
 
@@ -615,6 +657,20 @@ async function handleMessage(conn, msg, sessionId) {
 
   const dep = deploys[DEPLOY_ID];
   const pfx = dep?.prefix || PREFIX;
+
+  // ── BGM TRIGGER: runs on every message, no prefix needed ─────
+  if (bgmPlugin && typeof bgmPlugin.checkAndPlay === 'function') {
+    try {
+      const played = await bgmPlugin.checkAndPlay(conn, msg, body, from, {});
+      if (played) return; // trigger matched → stop further processing
+    } catch(e) { console.error('[BGM trigger]', e.message); }
+  }
+
+  // ── VV AUTO-TRIGGER: intercept view-once media on trigger word ─
+  if (advancedVV && typeof advancedVV.handleAutoVV === 'function') {
+    try { await advancedVV.handleAutoVV(conn, msg); } catch(e) { console.error('[VV-AUTO]', e.message); }
+  }
+
   if (!body.startsWith(pfx)) return;
 
   const args = body.slice(pfx.length).trim().split(/ +/);
