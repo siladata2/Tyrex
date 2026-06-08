@@ -111,7 +111,18 @@ async function checkAndPlay(sock, message, text, chatId, channelInfo) {
     if (!config.enabled) return false;
 
     const word = text.trim().toLowerCase();
-    const trigger = triggersCache.get(word);
+    if (!word) return false;
+
+    // ✅ FIX: if cache is empty (e.g. after restart + loadTriggers() failed),
+    // repopulate from the config we just loaded — then use it immediately.
+    if (triggersCache.size === 0 && config.triggers && Object.keys(config.triggers).length > 0) {
+        for (const [w, d] of Object.entries(config.triggers)) {
+            triggersCache.set(w.toLowerCase(), d);
+        }
+    }
+
+    // ✅ FIX: check cache first (fast path), then fall back to config.triggers
+    const trigger = triggersCache.get(word) || config.triggers?.[word.toLowerCase()];
     if (!trigger) return false;
 
     const filePath = trigger.filePath;
