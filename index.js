@@ -83,7 +83,8 @@ let anticallPlugin = null;
 try {
   const ac = require('./plugins/anticall');
   if (ac && typeof ac.handleIncomingCall === 'function') anticallPlugin = ac;
-} catch { console.warn('⚠️ anticall plugin not found.'); }
+  else console.warn('⚠️ anticall: handleIncomingCall missing');
+} catch (e) { console.warn('⚠️ anticall plugin not found:', e.message); }
 
 // ── BGM TRIGGERS ─────────────────────────────────────────────
 let bgmPlugin = null;
@@ -91,17 +92,10 @@ try {
   const bg = require('./plugins/bgm');
   if (bg && typeof bg.checkAndPlay === 'function') {
     bgmPlugin = bg;
-    // Load triggers into cache immediately
     if (typeof bg.loadTriggers === 'function') bg.loadTriggers().catch(() => {});
-  }
-} catch { console.warn('⚠️ bgm plugin not found.'); }
-
-// ── VV AUTO-TRIGGER ──────────────────────────────────────────
-let advancedVV = null;
-try {
-  const vv = require('./plugins/advanced-vv');
-  if (vv && typeof vv.handleAutoVV === 'function') advancedVV = vv;
-} catch { console.warn('⚠️ advanced-vv plugin not found.'); }
+    console.log('✅ BGM plugin loaded');
+  } else { console.warn('⚠️ bgm: checkAndPlay missing'); }
+} catch (e) { console.warn('⚠️ bgm plugin not found:', e.message); }
 
 // ── APP ─────────────────────────────────────────────────────
 const app    = express();
@@ -516,15 +510,13 @@ function setupHandlers(conn, number, saveCreds) {
 
   conn.ev.on('messages.update', async (updates) => {
     for (const update of updates) {
-      // Baileys wraps deleted-message data as:
-      //   { key, update: { message: { protocolMessage: { key, type } } } }
-      // type 0 = REVOKE (message delete). Check BOTH paths for safety.
+      // Baileys 7: deletion arrives as { key, update: { message: { protocolMessage: { type:0, key } } } }
+      // type 0 = REVOKE. Some builds wrap it differently — check both paths.
       const proto = update.update?.message?.protocolMessage
                   || update.update?.protocolMessage;
-      const isRevoke = proto?.type === 0;
-      if (isRevoke) {
+      if (proto?.type === 0) {
         if (antidelete && typeof antidelete.handleMessageRevocation === 'function')
-          await antidelete.handleMessageRevocation(conn, update).catch(e => console.error('[antidelete revoke]', e.message));
+          await antidelete.handleMessageRevocation(conn, update).catch(e => console.error('[antidel]', e.message));
       }
     }
   });
@@ -535,13 +527,20 @@ function setupHandlers(conn, number, saveCreds) {
     } catch(e){ console.error('GroupEvents:', e.message); }
   });
 
-  // ── ANTICALL: reject / log incoming voice & video calls ──────
+  // ── ANTICALL: intercept incoming calls ────────────────────────
+  // Only fires on 'offer' (new ring) — ignore accept/terminate/reject status updates
   conn.ev.on('call', async (calls) => {
     for (const call of calls) {
-      // Only act on the OFFER (new incoming call), not STATUS updates
       if (call.status !== 'offer') continue;
       try {
-        if (anticallPlugin) await anticallPlugin.handleIncomingCall(conn, call);
+        if (!anticallPlugin) continue;
+        // Baileys 7 rc9: call.from may include device suffix (xxx:yyy@s.whatsapp.net)
+        // Normalise so rejectCall + sendMessage use the clean JID
+        const normalizedCall = {
+          ...call,
+          from: (call.from || '').replace(/:\d+@/, '@'),
+        };
+        await anticallPlugin.handleIncomingCall(conn, normalizedCall);
       } catch(e) { console.error('[anticall]', e.message); }
     }
   });
@@ -658,19 +657,16 @@ async function handleMessage(conn, msg, sessionId) {
   const dep = deploys[DEPLOY_ID];
   const pfx = dep?.prefix || PREFIX;
 
-  // ── BGM TRIGGER: runs on every message, no prefix needed ─────
+  // ── BGM TRIGGER CHECK (runs before prefix gate — no prefix needed) ──
+  // Must happen here so trigger words work in DMs AND groups for all users
   if (bgmPlugin && typeof bgmPlugin.checkAndPlay === 'function') {
     try {
       const played = await bgmPlugin.checkAndPlay(conn, msg, body, from, {});
-      if (played) return; // trigger matched → stop further processing
-    } catch(e) { console.error('[BGM trigger]', e.message); }
+      if (played) return; // trigger matched → no further processing
+    } catch(e) { console.error('[BGM]', e.message); }
   }
 
-  // ── VV AUTO-TRIGGER: intercept view-once media on trigger word ─
-  if (advancedVV && typeof advancedVV.handleAutoVV === 'function') {
-    try { await advancedVV.handleAutoVV(conn, msg); } catch(e) { console.error('[VV-AUTO]', e.message); }
-  }
-
+  // Drop non-prefix messages (prefix commands only below this line)
   if (!body.startsWith(pfx)) return;
 
   const args = body.slice(pfx.length).trim().split(/ +/);
