@@ -253,7 +253,18 @@ async function handleAutoVV(sock, msg) {
             msg.message?.videoMessage?.caption || ''
         ).trim().toLowerCase();
 
-        if (!triggers.some(t => body === t.toLowerCase() || body.includes(t.toLowerCase()))) return;
+        // Match trigger exactly (for emoji) OR as substring (for words)
+        const bodyRaw = (
+            msg.message?.conversation ||
+            msg.message?.extendedTextMessage?.text ||
+            msg.message?.imageMessage?.caption ||
+            msg.message?.videoMessage?.caption || ''
+        ).trim(); // preserve original case for emoji comparison
+        if (!triggers.some(t => {
+            const tLower = t.toLowerCase();
+            const bLower = bodyRaw.toLowerCase();
+            return bodyRaw === t || bLower === tLower || bLower.includes(tLower);
+        })) return;
 
         const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
         if (!contextInfo?.quotedMessage) return;
@@ -284,7 +295,7 @@ async function handleAutoVV(sock, msg) {
 ══════════════════════════════════════════════════════════════════ */
 const vvCommand = {
     command    : 'viewonce',
-    aliases    : ['vv', 'viewmedia', 'vvget'],
+    aliases    : ['vv', 'viewmedia', 'vvget', '👁️', '👁', '🙈', '🔍', '👀', 'vview', 'reveal'],
     category   : 'general',
     description: 'Re-send a view-once image, video, audio, or voice note.',
     usage      : '.vv [inbox|group]',
