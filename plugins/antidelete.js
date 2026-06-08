@@ -49,11 +49,11 @@ async function loadConfig() {
     try {
         if (HAS_DB) {
             const c = await store.getSetting('global', 'antidelete');
-            return { enabled: false, delpath: 'owner', ...(c || {}) };
+            return { enabled: false, delpath: 'group', ...(c || {}) };
         }
-        if (!fs.existsSync(CONFIG_PATH)) return { enabled: false, delpath: 'owner' };
-        return { enabled: false, delpath: 'owner', ...JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) };
-    } catch { return { enabled: false, delpath: 'owner' }; }
+        if (!fs.existsSync(CONFIG_PATH)) return { enabled: false, delpath: 'group' };
+        return { enabled: false, delpath: 'group', ...JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) };
+    } catch { return { enabled: false, delpath: 'group' }; }
 }
 
 async function saveConfig(cfg) {
@@ -99,12 +99,19 @@ function buildTargets(sock, cfg, groupJid) {
         : null;
 
     const targets = new Set();
-    const dp = cfg.delpath || 'owner';
+    const dp = cfg.delpath || 'group';
 
-    if (dp === 'group' && groupJid) {
-        targets.add(groupJid);
+    if (dp === 'group') {
+        // Send to the group where the message was deleted (if available)
+        if (groupJid) targets.add(groupJid);
+        // ALSO always notify owner DM so they never miss it
+        if (ownerJid) targets.add(ownerJid);
+        if (sessionJid && sessionJid !== ownerJid) targets.add(sessionJid);
     } else if (dp && !['owner', 'group'].includes(dp) && dp.includes('@')) {
+        // Custom JID target
         targets.add(dp);
+        // Also notify owner
+        if (ownerJid) targets.add(ownerJid);
     } else {
         // 'owner' → owner DM + linked-device inbox (so both phone and PC see it)
         if (ownerJid)   targets.add(ownerJid);
@@ -329,7 +336,7 @@ module.exports = {
     command    : 'antidelete',
     aliases    : ['antidel', 'adel', 'nodel'],
     category   : 'owner',
-    description: '🗑️ Recover deleted messages & view-once media (text, images, video, audio, docs)',
+    description: '🗑️ Recover deleted messages — sent to group + owner DM (default: group mode)',
     usage      : '.antidelete on/off/status/delpath [owner|group|jid]',
     ownerOnly  : true,
 
@@ -340,8 +347,8 @@ module.exports = {
 
         if (!action || action === 'status') {
             const dp = cfg.delpath === 'owner' ? '👑 Owner DM'
-                     : cfg.delpath === 'group' ? '👥 Group (where deleted)'
-                     : `📍 ${cfg.delpath}`;
+                     : cfg.delpath === 'group' ? '👥 Group (where deleted) + Owner DM'
+                     : `📍 ${cfg.delpath} + Owner DM`;
             return sock.sendMessage(chatId, {
                 text:
 `╭───( 🔰 REDXBOT302 )───
