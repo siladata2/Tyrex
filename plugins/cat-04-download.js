@@ -189,8 +189,11 @@ try {
     const module = {exports: {}}; const exports = module.exports;
 'use strict';
 const axios = require('axios');
+// ✅ FIX: this package exports a named `facebook` function, not a callable
+// module — `require(...)` returned `{ facebook }`, so `fbdl(url)` threw
+// "fbdl is not a function". Destructure the real function instead.
 let fbdl;
-try { fbdl = require('@mrnima/facebook-downloader'); } catch {}
+try { fbdl = require('@mrnima/facebook-downloader').facebook; } catch {}
 module.exports = {
   command: 'facebook', aliases: ['fb', 'fbdl'],
   category: 'download', description: 'Download Facebook video',
@@ -201,11 +204,13 @@ module.exports = {
     if (!url) return sock.sendMessage(chatId, { text: '📘 *Facebook Downloader*\n\nUsage: .fb <Facebook video URL>' }, { quoted: message });
     await sock.sendMessage(chatId, { text: '⏳ Fetching Facebook video...' }, { quoted: message });
     try {
-      if (!fbdl) throw new Error('@mrnima/facebook-downloader not installed');
+      if (typeof fbdl !== 'function') throw new Error('@mrnima/facebook-downloader not installed');
       const res = await fbdl(url);
-      const videoUrl = res?.hd || res?.sd || res?.url;
-      if (!videoUrl) throw new Error('No video URL');
-      await sock.sendMessage(chatId, { video: { url: videoUrl }, caption: `📘 *Facebook Video*\n${res?.title || ''}`.trim() }, { quoted: message });
+      // Response shape: { status, result: { title, links: { HD, SD } } }
+      const links = res?.result?.links || res?.links || {};
+      const videoUrl = links.HD || links.hd || links.SD || links.sd || res?.result?.hd || res?.result?.sd || res?.hd || res?.sd || res?.url;
+      if (!videoUrl) throw new Error('No video URL found — link may be private or expired.');
+      await sock.sendMessage(chatId, { video: { url: videoUrl }, caption: `📘 *Facebook Video*\n${res?.result?.title || res?.title || ''}`.trim() }, { quoted: message });
     } catch (e) { await sock.sendMessage(chatId, { text: `❌ Failed: ${e.message}` }, { quoted: message }); }
   }
 };
