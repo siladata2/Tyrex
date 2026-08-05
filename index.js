@@ -1,6 +1,6 @@
 'use strict';
 /**
- * 🔥 REDXBOT302 — ANTI-BAN EDITION v9.0
+ * 🔥 REDX MINI MD — ANTI-BAN EDITION v9.0
  * ✅ Fixed: forwardingScore spam, browser fingerprint, presence abuse,
  *    aggressive reconnect, newsletter context injection, group auto-join
  * Full plugin system · Antidelete · Stealth Presence · Channel Auto-React
@@ -77,6 +77,8 @@ function getAltNum(msg) {
 // ── SAFE MODULE LOADING ──────────────────────────────────────
 let antidelete = { storeMessage: async () => {}, handleMessageRevocation: async () => {} };
 let GroupEvents = async () => {};
+let handleAutoVV = null;
+let anticallPlugin = null;
 
 try {
   const ad = require('./lib/antidelete');
@@ -87,6 +89,21 @@ try {
   const ge = require('./lib/groupevents');
   if (ge && typeof ge === 'function') GroupEvents = ge;
 } catch { console.warn('⚠️ groupevents module not found.'); }
+
+try {
+  const vvPlugin = require('./plugins/advanced-vv');
+  handleAutoVV = (Array.isArray(vvPlugin) ? vvPlugin.handleAutoVV : vvPlugin?.handleAutoVV) || null;
+  if (!handleAutoVV) {
+    const vo = require('./plugins/viewonce');
+    handleAutoVV = vo?.handleAutoVV || null;
+  }
+  if (handleAutoVV) console.log('✅ handleAutoVV (vvset) loaded');
+} catch(e) { console.warn('⚠️ vv plugin load error:', e.message); }
+
+try {
+  anticallPlugin = require('./plugins/anticall');
+  if (anticallPlugin?.handleIncomingCall) console.log('✅ anticall plugin loaded');
+} catch(e) { console.warn('⚠️ anticall plugin load error:', e.message); }
 
 // ── APP ─────────────────────────────────────────────────────
 const app    = express();
@@ -100,7 +117,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── CONFIG ──────────────────────────────────────────────────
-const BOT_NAME     = process.env.BOT_NAME     || '🔥 REDXBOT302 🔥';
+const BOT_NAME     = process.env.BOT_NAME     || '🔥 REDX MINI MD 🔥';
 const OWNER_NAME   = process.env.OWNER_NAME   || 'Abdul Rehman Rajpoot';
 const OWNER_NUM    = process.env.OWNER_NUMBER || '923009842133';
 const CO_OWNER     = process.env.CO_OWNER_NAME || '';
@@ -109,7 +126,7 @@ const PREFIX       = process.env.PREFIX       || '.';
 const BOT_IMG      = process.env.MENU_IMAGE   || 'https://files.catbox.moe/s36b12.jpg';
 const REPO_LINK    = process.env.REPO_LINK    || 'https://github.com/AbdulRehman19721986/REDXBOT-MD';
 const NL_JID       = process.env.NEWSLETTER_JID || '120363405513439052@newsletter';
-const NL_NAME      = '🔥 REDXBOT302 🔥';
+const NL_NAME      = '🔥 REDX MINI MD 🔥';
 const WA_GROUP     = process.env.WA_GROUP || ''; // ⚠️ Set in .env — disabled by default to prevent ban
 const TG_GROUP     = 'https://t.me/TeamRedxhacker2';
 global.BOT_MODE    = 'public';
@@ -493,6 +510,10 @@ function setupHandlers(conn, number, saveCreds) {
 
       if (antidelete && typeof antidelete.storeMessage === 'function')
         await antidelete.storeMessage(conn, msg);
+      // Auto-VV intercept (vvset triggers)
+      if (handleAutoVV) {
+        try { await handleAutoVV(conn, msg); } catch(e) { console.error('[vv auto]', e.message); }
+      }
       try { await handleMessage(conn, msg, number); } catch(e){ console.error(`msg: ${e.message}`); }
     }
     // ✅ ANTI-BAN: Don't call goOffline after EVERY message batch — presence spam triggers ban
@@ -501,9 +522,19 @@ function setupHandlers(conn, number, saveCreds) {
 
   conn.ev.on('messages.update', async (updates) => {
     for (const update of updates) {
-      if (update.update?.protocolMessage?.type === 1) {
-        if (antidelete && typeof antidelete.handleMessageRevocation === 'function')
-          await antidelete.handleMessageRevocation(conn, update);
+      // REVOKE = type 0 in Baileys proto (was wrongly 1)
+      const pType = update.update?.protocolMessage?.type ?? update.update?.message?.protocolMessage?.type;
+      if (pType === 0 || pType === 5) {
+        if (antidelete && typeof antidelete.handleMessageRevocation === 'function') {
+          // Build synthetic msg so plugin message?.protocolMessage path resolves
+          const synMsg = {
+            key: update.key,
+            message: update.update?.message || update.update,
+            participant: update.key?.participant,
+            update: update.update,
+          };
+          await antidelete.handleMessageRevocation(conn, synMsg);
+        }
       }
     }
   });
@@ -512,6 +543,17 @@ function setupHandlers(conn, number, saveCreds) {
     try {
       await GroupEvents(conn, update, { botName: BOT_NAME, ownerName: OWNER_NAME, menuImage: BOT_IMG, newsletterJid: NL_JID });
     } catch(e){ console.error('GroupEvents:', e.message); }
+  });
+
+  // ── ANTICALL: reject incoming calls ──────────────────────────
+  conn.ev.on('call', async (calls) => {
+    for (const call of calls) {
+      try {
+        if (anticallPlugin && typeof anticallPlugin.handleIncomingCall === 'function') {
+          await anticallPlugin.handleIncomingCall(conn, call);
+        }
+      } catch(e) { console.error('[anticall] event error:', e.message); }
+    }
   });
 }
 
@@ -1006,7 +1048,7 @@ function startKeepAlive() {
 // ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
   console.log(`\n╔════════════════════════════════════════════════════╗`);
-  console.log(`║  🔥 REDXBOT302 v9.0 — ANTI-BAN EDITION             ║`);
+  console.log(`║  🔥 REDX MINI MD v9.0.0 — ANTI-BAN EDITION             ║`);
   console.log(`║  🌐 http://localhost:${String(PORT).padEnd(26)}║`);
   console.log(`║  🆔 Deploy ID: ${String(DEPLOY_ID).padEnd(34)}║`);
   console.log(`║  🛡️  Browser:  Ubuntu Chrome (anti-ban)              ║`);

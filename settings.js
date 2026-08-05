@@ -12,11 +12,11 @@ require('dotenv').config();
 
 module.exports = {
   // ── BOT IDENTITY ─────────────────────────────────────────────
-  get botName()      { return process.env.BOT_NAME       || '🔥 REDXBOT302 🔥'; },
+  get botName()      { return process.env.BOT_NAME       || '🔥 REDX MINI MD 🔥'; },
   get botOwner()     { return process.env.OWNER_NAME     || 'Abdul Rehman Rajpoot'; },
   get ownerNumber()  { return process.env.OWNER_NUMBER   || '923009842133'; },
-  get botDesc()      { return process.env.BOT_DESC       || 'Powered by REDXBOT302 🔥'; },
-  get version()      { return process.env.BOT_VERSION    || 'v7.0 ULTRA'; },
+  get botDesc()      { return process.env.BOT_DESC       || 'Powered by REDX MINI MD 🔥'; },
+  get version()      { return process.env.BOT_VERSION    || 'v9.0 ULTRA'; },
 
   // ── BOT SETTINGS ──────────────────────────────────────────────
   get prefixes()     { return [process.env.PREFIX || '.']; },
