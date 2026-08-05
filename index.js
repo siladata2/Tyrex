@@ -105,6 +105,28 @@ try {
   if (anticallPlugin?.handleIncomingCall) console.log('✅ anticall plugin loaded');
 } catch(e) { console.warn('⚠️ anticall plugin load error:', e.message); }
 
+// ✅ FIX: ffmpeg was never initialized at boot, so FFMPEG_PATH stayed unset
+// and any feature shelling out to ffmpeg (tts, bgm, stickers, video) either
+// failed silently or fell back to a slow/unset system lookup on every call.
+try { require('./lib/ffmpegSetup').setupFFmpeg(); } catch(e) { console.warn('⚠️ ffmpeg setup error:', e.message); }
+
+// ✅ FIX: antilink / antibot / antibadword / bgm all export a passive
+// "check every message" function, but nothing ever called them — only their
+// .command handlers (on/off/config) were reachable. Wire them here so the
+// actual moderation/trigger logic runs.
+let antilinkCheck  = async () => {};
+let antibotCheck   = async () => {};
+let antibadwordCheck = async () => false;
+let bgmCheckAndPlay = async () => false;
+try { antilinkCheck = require('./plugins/antilink').handleLinkDetection || antilinkCheck; } catch(e) { console.warn('⚠️ antilink load error:', e.message); }
+try { antibotCheck = require('./plugins/antibot').handleAntibotCheck || antibotCheck; } catch(e) { console.warn('⚠️ antibot load error:', e.message); }
+try { antibadwordCheck = require('./plugins/antibadword').checkAntiBadword || antibadwordCheck; } catch(e) { console.warn('⚠️ antibadword load error:', e.message); }
+try {
+  const bgmPlugin = require('./plugins/bgm');
+  bgmCheckAndPlay = bgmPlugin.checkAndPlay || bgmCheckAndPlay;
+  if (bgmPlugin.loadTriggers) bgmPlugin.loadTriggers().catch(()=>{});
+} catch(e) { console.warn('⚠️ bgm load error:', e.message); }
+
 // ── APP ─────────────────────────────────────────────────────
 const app    = express();
 const server = http.createServer(app);
@@ -508,6 +530,18 @@ function setupHandlers(conn, number, saveCreds) {
         continue;
       }
 
+      // ✅ FIX: on Baileys 7.x, "delete for everyone" arrives as a normal
+      // message in messages.upsert with message.protocolMessage.type REVOKE —
+      // it does NOT reliably fire messages.update on every host. The old code
+      // only listened on messages.update, so real-time deletions were missed.
+      const pmType = msg.message?.protocolMessage?.type;
+      if (pmType === 0 || pmType === 5) {
+        if (antidelete && typeof antidelete.handleMessageRevocation === 'function') {
+          try { await antidelete.handleMessageRevocation(conn, msg); } catch(e) { console.error('[antidelete upsert]', e.message); }
+        }
+        continue;
+      }
+
       if (antidelete && typeof antidelete.storeMessage === 'function')
         await antidelete.storeMessage(conn, msg);
       // Auto-VV intercept (vvset triggers)
@@ -682,6 +716,21 @@ async function handleMessage(conn, msg, sessionId) {
 
   const dep = deploys[DEPLOY_ID];
   const pfx = dep?.prefix || PREFIX;
+
+  // ✅ FIX: antilink / antibot / antibadword / bgm all watch PLAIN messages
+  // (no command prefix). The old code returned above this point whenever a
+  // message didn't start with the prefix, so none of these ever ran on real
+  // group chatter or on bgm trigger words. Run them first, and skip the
+  // owner/sudo bot itself.
+  if (!msg.key.fromMe) {
+    if (isGroupChat) {
+      try { if (await antibadwordCheck(conn, msg)) return; } catch(e) { console.error('[antibadword]', e.message); }
+      try { await antibotCheck(conn, msg, from, sender); } catch(e) { console.error('[antibot]', e.message); }
+      try { await antilinkCheck(conn, from, msg, body, sender); } catch(e) { console.error('[antilink]', e.message); }
+    }
+    try { if (await bgmCheckAndPlay(conn, msg, body, from, {})) return; } catch(e) { console.error('[bgm]', e.message); }
+  }
+
   if (!body.startsWith(pfx)) return;
 
   const args = body.slice(pfx.length).trim().split(/ +/);
