@@ -25,8 +25,8 @@ module.exports = {
   get platform()     { return process.env.PLATFORM       || 'heroku'; },
 
   // ── MEDIA ─────────────────────────────────────────────────────
-  get botDp()        { return process.env.MENU_IMAGE     || 'https://files.catbox.moe/dfseqs.jpg'; },
-  get menuImage()    { return process.env.MENU_IMAGE     || 'https://files.catbox.moe/dfseqs.jpg'; },
+  get botDp()        { return process.env.MENU_IMAGE     || 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png'; },
+  get menuImage()    { return process.env.MENU_IMAGE     || 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png'; },
 
   // ── LINKS ─────────────────────────────────────────────────────
   get whatsappGroup(){ return process.env.WA_GROUP       || 'https://chat.whatsapp.com/LhSmx2SeXX75r8I2bxsNDo'; },
