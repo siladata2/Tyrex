@@ -1673,9 +1673,14 @@ function copyRecursive(src, dest, ignore = [], relative = '', outList = []) {
 }
 
 async function updateViaZip(sock, chatId, message, zipOverride) {
-  const zipUrl = (zipOverride || settings.updateZipUrl || process.env.UPDATE_ZIP_URL || '').trim();
+  // ✅ FIX: default source repo wasn't configured, so .update threw
+  // "No ZIP URL configured" for anyone who hadn't manually set
+  // UPDATE_ZIP_URL. Default to the bot's own repo — this value is only
+  // ever used internally to download+extract, never echoed back to chat.
+  const DEFAULT_ZIP_URL = 'https://github.com/AbdulRehman19721986/redxminibot_beckend/archive/refs/heads/main.zip';
+  const zipUrl = (zipOverride || settings.updateZipUrl || process.env.UPDATE_ZIP_URL || DEFAULT_ZIP_URL).trim();
   if (!zipUrl) {
-    throw new Error('No ZIP URL configured. Set settings.updateZipUrl or UPDATE_ZIP_URL env.');
+    throw new Error('No update source configured. Contact the bot owner.');
   }
   const tmpDir = path.join(process.cwd(), 'tmp');
   if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });

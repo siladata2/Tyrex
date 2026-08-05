@@ -141,6 +141,19 @@ try {
 const gTTS = require('gtts');
 const fs = require('fs');
 const path = require('path');
+const { promisify } = require('util');
+const exec = promisify(require('child_process').exec);
+
+// ✅ FIX: WhatsApp frequently refuses to play a plain audio/mpeg (mp3) message
+// inline — clients expect ogg/opus for the audio player to render a working
+// waveform. Convert with ffmpeg (path set by lib/ffmpegSetup at boot) and
+// fall back to the raw mp3 only if conversion fails.
+async function convertToPlayableOgg(mp3Path) {
+    const oggPath = mp3Path.replace(/\.mp3$/, '.ogg');
+    const bin = process.env.FFMPEG_PATH || 'ffmpeg';
+    await exec(`"${bin}" -i "${mp3Path}" -c:a libopus -ar 24000 -b:a 32k -ac 1 -f ogg "${oggPath}" -y`);
+    return oggPath;
+}
 
 module.exports = {
     command: 'tts',
@@ -181,13 +194,28 @@ module.exports = {
                 });
             });
 
-            // Send the audio
+            // Send the audio — try converting to ogg/opus first for reliable
+            // in-app playback, fall back to raw mp3 if ffmpeg isn't available.
+            let sendPath = filePath, mimetype = 'audio/mpeg', ptt = false;
+            let oggPath = null;
+            try {
+                oggPath = await convertToPlayableOgg(filePath);
+                sendPath = oggPath;
+                mimetype = 'audio/ogg; codecs=opus';
+                ptt = true;
+            } catch (convErr) {
+                console.warn('[TTS] ffmpeg conversion failed, sending mp3 as-is:', convErr.message);
+            }
+
             await sock.sendMessage(chatId, {
-                audio: { url: filePath },
-                mimetype: 'audio/mpeg',
-                fileName: 'tts.mp3',
+                audio: { url: sendPath },
+                mimetype,
+                ptt,
+                fileName: ptt ? undefined : 'tts.mp3',
                 ...channelInfo
             }, { quoted: message });
+
+            if (oggPath && fs.existsSync(oggPath)) fs.unlinkSync(oggPath);
 
         } catch (err) {
             console.error('TTS error:', err.message);

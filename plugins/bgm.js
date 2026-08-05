@@ -96,7 +96,8 @@ async function convertToVoiceNote(buffer) {
     const outputFile = path.join(MEDIA_DIR, `bgm_out_${tag}.opus`);
     fs.writeFileSync(inputFile, buffer);
     try {
-        await exec(`ffmpeg -i "${inputFile}" -c:a libopus -ar 24000 -b:a 24k -ac 1 -f ogg "${outputFile}" -y`);
+        const bin = process.env.FFMPEG_PATH || 'ffmpeg';
+        await exec(`"${bin}" -i "${inputFile}" -c:a libopus -ar 24000 -b:a 24k -ac 1 -f ogg "${outputFile}" -y`);
         return fs.readFileSync(outputFile);
     } finally {
         if (fs.existsSync(inputFile))  fs.unlinkSync(inputFile);
