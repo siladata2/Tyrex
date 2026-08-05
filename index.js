@@ -63,6 +63,16 @@ async function isSudoUser(jid) {
   try { const lib = getLibIndex(); return lib ? await lib.isSudo(jid) : false; } catch { return false; }
 }
 function cleanNum(jid) { return (jid||'').split(':')[0].split('@')[0]; }
+// ✅ FIX: WhatsApp now addresses many chats (DM + group) by @lid instead of the
+// real phone-number JID. Baileys 7 exposes the real phone-number JID on the
+// message key as participantAlt / remoteJidAlt / senderPn / participantPn.
+// Without checking these, isOwner/isSudo silently fail whenever WhatsApp sends
+// the message in @lid form (this was breaking owner-detection in DMs).
+function getAltNum(msg) {
+  const k = msg?.key || {};
+  const alt = k.participantAlt || k.remoteJidAlt || k.senderPn || k.participantPn || '';
+  return alt ? cleanNum(alt) : '';
+}
 
 // ── SAFE MODULE LOADING ──────────────────────────────────────
 let antidelete = { storeMessage: async () => {}, handleMessageRevocation: async () => {} };
@@ -93,8 +103,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 const BOT_NAME     = process.env.BOT_NAME     || '🔥 REDXBOT302 🔥';
 const OWNER_NAME   = process.env.OWNER_NAME   || 'Abdul Rehman Rajpoot';
 const OWNER_NUM    = process.env.OWNER_NUMBER || '923009842133';
-const CO_OWNER     = '';
-const CO_OWNER_NUM = '';
+const CO_OWNER     = process.env.CO_OWNER_NAME || '';
+const CO_OWNER_NUM = process.env.CO_OWNER_NUM  || '';
 const PREFIX       = process.env.PREFIX       || '.';
 const BOT_IMG      = process.env.MENU_IMAGE   || 'https://files.catbox.moe/s36b12.jpg';
 const REPO_LINK    = process.env.REPO_LINK    || 'https://github.com/AbdulRehman19721986/REDXBOT-MD';
@@ -547,14 +557,29 @@ async function handleMessage(conn, msg, sessionId) {
   const sNum    = sender.split('@')[0].split(':')[0];
 
   const sNumClean       = cleanNum(sender);
+  const altNumClean     = getAltNum(msg); // real PN when sender/remoteJid is @lid
   const sessionNumClean = cleanNum(sessionId);
+  const ownerClean      = cleanNum(OWNER_NUM);
+  const coOwnerClean    = CO_OWNER_NUM ? cleanNum(CO_OWNER_NUM) : '';
 
-  const isRealOwner = sNumClean === cleanNum(OWNER_NUM)
-    || (CO_OWNER_NUM && sNumClean === cleanNum(CO_OWNER_NUM));
+  const isRealOwner = sNumClean === ownerClean || altNumClean === ownerClean
+    || (coOwnerClean && (sNumClean === coOwnerClean || altNumClean === coOwnerClean));
 
   let isOwner = isRealOwner;
 
   if (!isOwner && msg.key.fromMe) isOwner = true;
+
+  // ✅ FIX: @lid resolution now also runs for DMs, not just groups.
+  if (!isOwner && (sNumClean.length > 15 || sender.includes('@lid'))) {
+    try {
+      const results = await conn.onWhatsApp?.(OWNER_NUM, ...(coOwnerClean ? [CO_OWNER_NUM] : []));
+      if (Array.isArray(results)) {
+        for (const r of results) {
+          if (r?.lid && cleanNum(r.lid) === sNumClean) { isOwner = true; break; }
+        }
+      }
+    } catch {}
+  }
 
   if (!isOwner && from?.endsWith('@g.us')) {
     try {
@@ -563,13 +588,13 @@ async function handleMessage(conn, msg, sessionId) {
         const participant = meta.participants.find(p => p.lid === sender || p.id === sender);
         if (participant) {
           const realNum = cleanNum(participant.id);
-          if (realNum === cleanNum(OWNER_NUM) || (CO_OWNER_NUM && realNum === cleanNum(CO_OWNER_NUM))) isOwner = true;
+          if (realNum === ownerClean || (coOwnerClean && realNum === coOwnerClean)) isOwner = true;
         }
       }
     } catch {}
   }
 
-  const isSudo = !isOwner ? await isSudoUser(sender) : false;
+  const isSudo = !isOwner ? (await isSudoUser(sender) || (altNumClean && await isSudoUser(altNumClean + '@s.whatsapp.net'))) : false;
   const isSudoLinked = (!isOwner && !isSudo && sender.includes(':'))
     ? await isSudoUser(sender.split(':')[0] + '@s.whatsapp.net') : false;
   if (!isOwner) isOwner = isSudo || isSudoLinked;
