@@ -598,32 +598,39 @@ async function sendWelcome(conn, number) {
   let name = 'User';
   try { name = conn.user?.name || conn.user?.notify || 'User'; } catch {}
   const dep = deploys[DEPLOY_ID];
+  const now = new Date().toLocaleString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short', year: 'numeric' });
 
-  const text = `╭━[ \`🔥 ${BOT_NAME}\` ]━⊷
-┆⚜️ *DEV:* ☛ _+${OWNER_NUM}_
-╰━━━━━━━━━━⊷
+  // ✅ FIX: raw REPO_LINK/GitHub source was printed directly in the welcome
+  // message — hidden now. Also sends BOT_IMG as an actual image (was
+  // text-only before) and reformats as a proper session card.
+  const caption = `╭───「 🔥 *${BOT_NAME}* 🔥 」
+│
+│  ✅ *Session Linked Successfully!*
+│
+├─ 👤 *User:* ${name}
+├─ 📱 *Number:* +${number}
+├─ 🕒 *Linked:* ${now}
+├─ 👑 *Owner:* ${OWNER_NAME}
+├─ 🌍 *Mode:* ${global.BOT_MODE.toUpperCase()}
+├─ 📌 *Prefix:* \`${dep.prefix||PREFIX}\`
+├─ 📦 *Commands:* ${cmdCount+8}+
+├─ 🆔 *Deploy ID:* \`${DEPLOY_ID}\`
+├─ 🔑 *Deploy Key:* \`${dep.deployKey}\`
+│
+╰───────────────⊷
 
-👋 Hey *${name}* 🤩
-🎉 *Pairing Completed — You're good to go!*
+🔒 *Keep your Deploy Key private — it controls this session.*
+💡 Send *${dep.prefix||PREFIX}menu* anytime to see every command.
 
-📱 *Number:* +${number}
-🆔 *Deploy ID:* \`${DEPLOY_ID}\`
-🔑 *Deploy Key:* \`${dep.deployKey}\`
-🌐 *Platform:* ${detectPlatform()}
-👑 *Owner:* ${OWNER_NAME}
-📦 *Commands:* ${cmdCount+8}+
-📌 *Prefix:* ${dep.prefix||PREFIX}
-🌍 *Mode:* ${global.BOT_MODE.toUpperCase()}
+> 🔥 ${BOT_NAME} — by ${OWNER_NAME}`;
 
-> 🔒 Keep your Deploy Key private!
-> Type *${dep.prefix||PREFIX}menu* to see all commands!
-
-🍴 Fork & ⭐ Star: ${REPO_LINK}
-
-> 🔥 ${BOT_NAME} — By ${OWNER_NAME}`;
-
-  // ✅ ANTI-BAN: Plain sendMessage — no forwardingScore/newsletter injection
-  await conn.sendMessage(userJid, { text });
+  try {
+    await conn.sendMessage(userJid, { image: { url: BOT_IMG }, caption });
+  } catch (e) {
+    // Fallback to plain text if the image fails to send (bad URL, offline host, etc.)
+    console.warn('[welcome] image send failed, falling back to text:', e.message);
+    await conn.sendMessage(userJid, { text: caption });
+  }
 }
 
 // ======================== MESSAGE HANDLER ========================
