@@ -29,7 +29,7 @@ module.exports = {
   get menuImage()    { return process.env.MENU_IMAGE     || 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png'; },
 
   // ── LINKS ─────────────────────────────────────────────────────
-  get whatsappGroup(){ return process.env.WA_GROUP       || 'https://chat.whatsapp.com/LhSmx2SeXX75r8I2bxsNDo'; },
+  get whatsappGroup(){ return process.env.WA_GROUP       || 'https://chat.whatsapp.com/C4ynk2v10WXDeL67ahhJLj'; },
   get telegramGroup(){ return process.env.TG_GROUP       || 'https://t.me/TeamRedxhacker2'; },
   get repoLink()     { return process.env.REPO_LINK      || 'https://github.com/AbdulRehman19721986/REDXBOT-MD'; },
   get newsletterJid(){ return process.env.NEWSLETTER_JID || '120363409338797582@newsletter'; },
