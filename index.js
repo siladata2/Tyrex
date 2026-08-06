@@ -63,6 +63,28 @@ async function isSudoUser(jid) {
   try { const lib = getLibIndex(); return lib ? await lib.isSudo(jid) : false; } catch { return false; }
 }
 function cleanNum(jid) { return (jid||'').split(':')[0].split('@')[0]; }
+
+/**
+ * Robust admin status from group metadata — matches by bare number so it works
+ * across device-suffix ("92300...:17@s.whatsapp.net") and @lid forms.
+ */
+function adminStatusFromMeta(meta, senderId, conn) {
+  const participants = (meta && meta.participants) || [];
+  const botIdNorm    = cleanNum(conn?.user?.id);
+  const botLidNorm   = cleanNum(conn?.user?.lid);
+  const senderNorm   = cleanNum(senderId);
+  let isBotAdmin = false, isSenderAdmin = false;
+  for (const p of participants) {
+    if (p.admin !== 'admin' && p.admin !== 'superadmin') continue;
+    const pIdNorm = cleanNum(p.id);
+    const pLidNorm = cleanNum(p.lid);
+    const pPnNorm  = cleanNum(p.phoneNumber);
+    if (botIdNorm && (botIdNorm === pIdNorm || botIdNorm === pLidNorm || (pPnNorm && botIdNorm === pPnNorm))) isBotAdmin = true;
+    if (botLidNorm && (botLidNorm === pIdNorm || botLidNorm === pLidNorm)) isBotAdmin = true;
+    if (senderNorm && (senderNorm === pIdNorm || senderNorm === pLidNorm || (pPnNorm && senderNorm === pPnNorm))) isSenderAdmin = true;
+  }
+  return { isSenderAdmin, isBotAdmin };
+}
 // ✅ FIX: WhatsApp now addresses many chats (DM + group) by @lid instead of the
 // real phone-number JID. Baileys 7 exposes the real phone-number JID on the
 // message key as participantAlt / remoteJidAlt / senderPn / participantPn.
@@ -116,10 +138,14 @@ try { require('./lib/ffmpegSetup').setupFFmpeg(); } catch(e) { console.warn('⚠
 // actual moderation/trigger logic runs.
 let antilinkCheck  = async () => {};
 let antibotCheck   = async () => {};
+let antifloodCheck = async () => {};
 let antibadwordCheck = async () => false;
 let bgmCheckAndPlay = async () => false;
 try { antilinkCheck = require('./plugins/antilink').handleLinkDetection || antilinkCheck; } catch(e) { console.warn('⚠️ antilink load error:', e.message); }
 try { antibotCheck = require('./plugins/antibot').handleAntibotCheck || antibotCheck; } catch(e) { console.warn('⚠️ antibot load error:', e.message); }
+// ✅ FIX: antiflood's checkFlood was exported "for messageHandler hook" but
+// nothing ever called it — the feature was completely dead. Wire it here.
+try { antifloodCheck = require('./plugins/antiflood').checkFlood || antifloodCheck; } catch(e) { console.warn('⚠️ antiflood load error:', e.message); }
 try { antibadwordCheck = require('./plugins/antibadword').checkAntiBadword || antibadwordCheck; } catch(e) { console.warn('⚠️ antibadword load error:', e.message); }
 let antibadwordMuteCheck = async () => false;
 try { antibadwordMuteCheck = require('./plugins/antibadword').checkMuted || antibadwordMuteCheck; } catch(e) {}
@@ -440,6 +466,7 @@ function setupHandlers(conn, number, saveCreds) {
     if (connection === 'open') {
       entry.connected = true;
       entry.reconnectAttempts = 0;
+      stopPairWaitLog(number); // pairing window done — real connection confirmed
       statsData.pairCount++;
       statsData.totalUsers++;
       saveStats();
@@ -487,6 +514,7 @@ function setupHandlers(conn, number, saveCreds) {
     if (connection === 'close') {
       entry.connected = false;
       destroyPresenceManager(number);
+      stopPairWaitLog(number);
       broadcastStats();
       io.emit('botStatus', { connected: false, number });
 
@@ -737,15 +765,23 @@ async function handleMessage(conn, msg, sessionId) {
   // message didn't start with the prefix, so none of these ever ran on real
   // group chatter or on bgm trigger words. Run them first.
   if (!msg.key.fromMe && isGroupChat) {
+    // ✅ FIX (speed): fetch group metadata ONCE (5-min cache) and share it with
+    // antibot / antiflood — they used to call groupMetadata() per message.
+    const gMetaFast = await getCachedGroupMeta(conn, from).catch(() => null);
     try { if (await antibadwordMuteCheck(conn, msg)) return; } catch(e) { console.error('[antibadword-mute]', e.message); }
     try { if (await antibadwordCheck(conn, msg)) return; } catch(e) { console.error('[antibadword]', e.message); }
-    try { await antibotCheck(conn, msg, from, sender); } catch(e) { console.error('[antibot]', e.message); }
+    try { await antibotCheck(conn, msg, from, sender, gMetaFast); } catch(e) { console.error('[antibot]', e.message); }
     try { await antilinkCheck(conn, from, msg, body, sender); } catch(e) { console.error('[antilink]', e.message); }
+    // ✅ FIX: antiflood was never invoked — wire it in so .antiflood on works.
+    try { await antifloodCheck(conn, msg, from, sender, gMetaFast); } catch(e) { console.error('[antiflood]', e.message); }
   }
   // ✅ NEW: a bare "1".."9" reply is how numbered pickers (movie search,
   // etc.) resolve — check that before bgm/prefix handling so it doesn't
   // get swallowed as an unmatched trigger word or ignored entirely.
-  if (!msg.key.fromMe && /^[1-9]$/.test(body.trim())) {
+  // ✅ FIX: also allow fromMe (owner/paired-number replies) — the owner who
+  // searched the movie replies from the SAME linked account, and their reply
+  // arrives with fromMe=true, which previously skipped the selector entirely.
+  if (/^[1-9]$/.test(body.trim())) {
     try {
       const handled = await handleSelection(conn, msg, { chatId: from }, parseInt(body.trim(), 10));
       if (handled) return;
@@ -783,14 +819,24 @@ async function handleMessage(conn, msg, sessionId) {
       const isGroup = from.endsWith('@g.us');
       let gMeta = null;
       if (isGroup) { gMeta = await getCachedGroupMeta(conn, from); }
-      let isAdmin = false;
-      if (isGroup && gMeta) { const p = gMeta.participants.find(p=>p.id===sender); isAdmin = p?.admin==='admin'||p?.admin==='superadmin'; }
+      // ✅ FIX: previously only the SENDER was checked (and only by exact JID
+      // match — broken for device suffixes / @lid). Now compute BOTH sender
+      // and bot admin status with normalized matching, and expose them to the
+      // plugin context. Bundled admin commands (kick, demote, mute, …) read
+      // context.isBotAdmin and wrongly replied "make the bot an admin first"
+      // because it was always undefined here.
+      let isAdmin = false, isBotAdmin = false, isSenderAdmin = false;
+      if (isGroup && gMeta) {
+        const a = adminStatusFromMeta(gMeta, sender, conn);
+        isAdmin = a.isSenderAdmin; isBotAdmin = a.isBotAdmin; isSenderAdmin = a.isSenderAdmin;
+      }
       const quoted = getQuoted(msg);
       const pluginOpts = {
         args, q, reply, from, isGroup, groupMetadata: gMeta,
         sender, isAdmin, isOwner, isRealOwner, botName: BOT_NAME, ownerName: OWNER_NAME,
         prefix: pfx, senderNumber: sNum, chatId: from, deployId: DEPLOY_ID,
         senderIsOwnerOrSudo: isOwner, isOwnerOrSudoCheck: isOwner,
+        isSenderAdmin, isBotAdmin,
         sessionId: sessionNumClean,
       };
       await plugin.execute(conn, msg, {
@@ -908,6 +954,50 @@ app.get('/api/config', (req,res)=>res.json({
   deployId: DEPLOY_ID, platform: detectPlatform(),
 }));
 
+// ── PER-NUMBER SESSION STATUS (used by the frontend to verify the real
+//    connection state instead of the global /api/status "any session" flag) ──
+app.get('/api/session/:number', (req, res) => {
+  try {
+    const num = String(req.params.number || '').replace(/\D/g, '');
+    const e = activeConnections.get(num);
+    let hasCreds = false;
+    try { hasCreds = fs.existsSync(path.join(SESSIONS_DIR, num, 'creds.json')); } catch {}
+    res.json({
+      number: num,
+      exists: !!e,
+      connected: !!(e && e.connected),
+      hasCreds,
+      status: (e && e.connected) ? 'connected' : (e ? 'pairing' : 'unknown')
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── PAIRING WINDOW LOGGING ────────────────────────────────────────────────
+// Logs the waiting state every 60s so Render logs clearly show whether the
+// user has actually linked the device (5-minute window), and when it opened.
+const PAIR_WINDOW_MS = 5 * 60 * 1000;
+const pairWaitTimers = new Map(); // number -> interval
+function startPairWaitLog(num) {
+  stopPairWaitLog(num);
+  const started = Date.now();
+  console.log(`⏳ [${num}] PAIRING CODE SENT — waiting for the user to enter it in WhatsApp (max 5 min)`);
+  const timer = setInterval(() => {
+    const entry = activeConnections.get(num);
+    if (!entry || entry.connected) { stopPairWaitLog(num); return; }
+    const elapsed = Math.round((Date.now() - started) / 1000);
+    console.log(`⏳ [${num}] still waiting for code entry... ${Math.floor(elapsed / 60)}m ${elapsed % 60}s elapsed`);
+    if (elapsed >= PAIR_WINDOW_MS / 1000) {
+      stopPairWaitLog(num);
+      console.log(`⚠️ [${num}] 5-minute pairing window expired — bot NOT connected. Ask for a new code.`);
+    }
+  }, 60000);
+  pairWaitTimers.set(num, timer);
+}
+function stopPairWaitLog(num) {
+  const t = pairWaitTimers.get(num);
+  if (t) { clearInterval(t); pairWaitTimers.delete(num); }
+}
+
 app.post('/api/pair', async (req, res) => {
   let conn;
   try {
@@ -961,6 +1051,9 @@ app.post('/api/pair', async (req, res) => {
     const formatted = code.match(/.{1,4}/g)?.join('-') || code;
 
     console.log(`✅ Code for ${num}: ${formatted}`);
+    // ✅ FIX: visible pairing-window logging — Render logs now show the wait
+    // state so you can verify whether the bot really connected.
+    startPairWaitLog(num);
     return res.json({ success: true, pairingCode: formatted, code: formatted, number: num });
 
   } catch (err) {
@@ -1264,5 +1357,6 @@ global.doPairNumber = async function(num, force = false) {
   const rawCode = await conn.requestPairingCode(num);
   const code = (rawCode || '').toString().trim();
   if (!code) throw new Error('Empty pairing code. Please try again.');
+  startPairWaitLog(num);
   return { pairingCode: code.match(/.{1,4}/g)?.join('-') || code, number: num };
 };
