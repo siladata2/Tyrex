@@ -11,7 +11,7 @@ global.SESSION_ID     = '';
 global.PAIRING_NUMBER = process.env.PAIRING_NUMBER || process.env.OWNER_NUMBER || '+923009842133';
 
 // Newsletter JID
-global.NEWSLETTER_JID = process.env.NEWSLETTER_JID || '120363405513439052@newsletter';
+global.NEWSLETTER_JID = process.env.NEWSLETTER_JID || '120363409338797582@newsletter';
 
 // External APIs used by plugins
 global.APIs = {
