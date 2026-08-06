@@ -155,50 +155,8 @@ const CO_OWNER_NUM = process.env.CO_OWNER_NUM  || '';
 const PREFIX       = process.env.PREFIX       || '.';
 const BOT_IMG      = process.env.MENU_IMAGE   || 'https://files.catbox.moe/s36b12.jpg';
 const REPO_LINK    = process.env.REPO_LINK    || 'https://github.com/AbdulRehman19721986/REDXBOT-MD';
-const NL_JID       = process.env.NEWSLETTER_JID || '120363409338797582@newsletter'; // ✅ user's channel
+const NL_JID       = process.env.NEWSLETTER_JID || '120363405513439052@newsletter';
 const NL_NAME      = '🔥 REDX MINI MD 🔥';
-
-// ── CHANNEL CONFIG (dynamic — changeable via .panel setchannel) ───────────
-const settings = require('./settings');
-const store    = require('./lib/lightweight_store');
-const CHANNEL_CFG_KEY = 'channel_config';
-let _channelCfgCache = null;
-let _channelCfgTs    = 0;
-async function getChannelCfg(force = false) {
-  const now = Date.now();
-  if (!force && _channelCfgCache && now - _channelCfgTs < 60_000) return _channelCfgCache;
-  try {
-    const cfg = await store.getSetting('global', CHANNEL_CFG_KEY) || {};
-    _channelCfgCache = cfg; _channelCfgTs = now;
-    return cfg;
-  } catch { return _channelCfgCache || {}; }
-}
-async function saveChannelCfg(cfg) {
-  _channelCfgCache = cfg; _channelCfgTs = Date.now();
-  try { await store.saveSetting('global', CHANNEL_CFG_KEY, cfg); } catch {}
-}
-async function getChannelJid() {
-  const cfg = await getChannelCfg();
-  return (cfg.jid || process.env.NEWSLETTER_JID || '120363409338797582@newsletter').trim();
-}
-// Expose for .panel setchannel (applies instantly, no restart needed)
-global.getChannelCfg   = getChannelCfg;
-global.saveChannelCfg  = saveChannelCfg;
-global.getChannelJid   = getChannelJid;
-global.refreshChannelCfg = () => getChannelCfg(true).catch(()=>{});
-
-// ── STATUS MEDIA CACHE ─────────────────────────────────────────────────────
-// ✅ FIX (status 404 root cause): statuses expire after 24h and WhatsApp's
-// media servers 404 the download. We cache every incoming status media buffer
-// in memory so .dlstatus works even after the status expires. Restart clears
-// the cache — acceptable trade-off.
-const statusMediaCache = new Map();
-global.setCachedStatus = (id, data) => {
-  if (!id) return;
-  statusMediaCache.set(id, data);
-  if (statusMediaCache.size > 500) { const k = statusMediaCache.keys().next().value; statusMediaCache.delete(k); }
-};
-global.getCachedStatus = (id) => statusMediaCache.get(id) || null;
 const WA_GROUP     = process.env.WA_GROUP || ''; // ⚠️ Set in .env — disabled by default to prevent ban
 const TG_GROUP     = 'https://t.me/TeamRedxhacker2';
 global.BOT_MODE    = 'public';
@@ -272,7 +230,6 @@ if (envMode && VALID_MODES.includes(envMode)) {
 } else {
   global.BOT_MODE = 'public';
 }
-global.MODE = global.BOT_MODE; // ✅ alias used by .panel
 deploys[DEPLOY_ID].mode = global.BOT_MODE;
 deploys[DEPLOY_ID].lastSeen = new Date().toISOString();
 deploys[DEPLOY_ID].platform = detectPlatform();
@@ -395,13 +352,13 @@ function buildSocketConfig(state) {
     printQRInTerminal: false,
     // ✅ ANTI-BAN: Ubuntu Chrome is the most common, least suspicious fingerprint
     browser: Browsers.ubuntu('Chrome'),
-    // ✅ SPEED: tighter timings — still above WhatsApp's minimums, no ban risk
-    keepAliveIntervalMs:      20_000,
-    connectTimeoutMs:         20_000,
-    defaultQueryTimeoutMs:    12_000,
+    // ✅ ANTI-BAN: 30s keepAlive instead of 10s — less WS noise
+    keepAliveIntervalMs:      30_000,
+    connectTimeoutMs:         30_000,
+    defaultQueryTimeoutMs:    30_000,
     // ✅ ANTI-BAN: Slower retry — aggressive reconnect triggers ban
-    retryRequestDelayMs:      1_000,
-    maxRetries:               4,
+    retryRequestDelayMs:      2_000,
+    maxRetries:               3,
     // ✅ ANTI-BAN: Don't appear online on connect
     markOnlineOnConnect:      false,
     syncFullHistory:          false,
@@ -500,16 +457,13 @@ function setupHandlers(conn, number, saveCreds) {
 
       initPresenceManager(conn, number);
 
-      // ✅ CHANNEL AUTO-JOIN: follow the configured channel (changeable via
-      // .panel setchannel) on every paired session, with a safe delay.
-      if (AUTO_NL_FOLLOW) {
+      // ✅ ANTI-BAN: Newsletter follow — only if enabled, with safe delay
+      if (AUTO_NL_FOLLOW && NL_JID) {
         setTimeout(async () => {
           try {
-            const jid = await getChannelJid();
-            if (!jid) return;
-            await conn.newsletterFollow(jid);
-            console.log(`[${number}] ✅ Followed channel ${jid}`);
-          } catch (e) { console.log(`[${number}] ⚠️ Channel follow: ${e.message?.slice(0,80)}`); }
+            await conn.newsletterFollow(NL_JID);
+            console.log(`[${number}] ✅ Followed channel`);
+          } catch {}
         }, 8_000); // longer delay = safer
       }
 
@@ -572,17 +526,15 @@ function setupHandlers(conn, number, saveCreds) {
     for (const msg of messages) {
       const from = msg.key?.remoteJid || '';
 
-      // ✅ CHANNEL AUTO-REACT: react only to the CONFIGURED channel's posts
-      // (set via .panel setchannel) — rate-limited to avoid bans.
+      // ✅ ANTI-BAN: Rate-limit channel reactions (no reaction spam)
       if (from.endsWith('@newsletter')) {
-        try {
-          const nlJid = await getChannelJid();
-          if (nlJid && from === nlJid && canSend(from, 5)) {
+        if (canSend(from, 5)) {
+          try {
             const emoji = CHANNEL_REACTIONS[Math.floor(Math.random() * CHANNEL_REACTIONS.length)];
             try { await conn.sendMessage(from, { react: { text: emoji, key: msg.key } }); }
             catch { await conn.newsletterSendReaction?.(from, msg.key.id, emoji); }
-          }
-        } catch {}
+          } catch {}
+        }
         continue;
       }
 
@@ -631,7 +583,7 @@ function setupHandlers(conn, number, saveCreds) {
 
   conn.ev.on('group-participants.update', async (update) => {
     try {
-      await GroupEvents(conn, update, { botName: BOT_NAME, ownerName: OWNER_NAME, menuImage: settings.botDp, newsletterJid: NL_JID });
+      await GroupEvents(conn, update, { botName: BOT_NAME, ownerName: OWNER_NAME, menuImage: BOT_IMG, newsletterJid: NL_JID });
     } catch(e){ console.error('GroupEvents:', e.message); }
   });
 
@@ -681,9 +633,7 @@ async function sendWelcome(conn, number) {
 > 🔥 ${BOT_NAME} — by ${OWNER_NAME}`;
 
   try {
-    // ✅ FIX: welcome image now uses the DP configured in settings (botDp /
-    // MENU_IMAGE) instead of a hardcoded URL.
-    await conn.sendMessage(userJid, { image: { url: settings.botDp }, caption });
+    await conn.sendMessage(userJid, { image: { url: BOT_IMG }, caption });
   } catch (e) {
     // Fallback to plain text if the image fails to send (bad URL, offline host, etc.)
     console.warn('[welcome] image send failed, falling back to text:', e.message);
@@ -745,28 +695,6 @@ async function handleMessage(conn, msg, sessionId) {
   // Status messages — ✅ ANTI-BAN: rate-limited, no spam
   if (from === 'status@broadcast') {
     if (AUTO_STATUS_SEEN) await conn.readMessages([msg.key]).catch(()=>{});
-    // ✅ FIX (status 404 root cause): cache the status media NOW, while it is
-    // still available, so .dlstatus can serve it after the 24h expiry.
-    try {
-      const m = msg.message || {};
-      const type = Object.keys(m).find(k => k.endsWith('Message') || k === 'conversation');
-      if (type) {
-        const media = m[type];
-        const isMedia = ['imageMessage','videoMessage','audioMessage','documentMessage','stickerMessage'].includes(type);
-        if (isMedia) {
-          try {
-            const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
-            const stream = await downloadContentFromMessage(media, type.replace('Message',''));
-            const chunks = [];
-            for await (const c of stream) chunks.push(c);
-            global.setCachedStatus(msg.key.id, { buffer: Buffer.concat(chunks), type, caption: media.caption || '', fileName: media.fileName || '' });
-          } catch {}
-        } else {
-          const text = m.conversation || media?.text || '';
-          global.setCachedStatus(msg.key.id, { text, type: 'text' });
-        }
-      }
-    } catch {}
     if (AUTO_STATUS_REACT && canSend('status@broadcast', 30)) {
       const e=['🔥','⚡','💯','👑','🚀','💎','❤️','💜','✨','🌟'][Math.floor(Math.random()*10)];
       await conn.sendMessage(from,{react:{text:e,key:msg.key}},{statusJidList:[sender,conn.user.id]}).catch(()=>{});
@@ -804,23 +732,15 @@ async function handleMessage(conn, msg, sessionId) {
   const dep = deploys[DEPLOY_ID];
   const pfx = dep?.prefix || PREFIX;
 
-  // ✅ SPEED: detect commands first — moderation/bgm never touch command lines.
-  const isCommand = body.startsWith(pfx);
+  // ✅ FIX: antilink / antibot / antibadword / bgm all watch PLAIN messages
+  // (no command prefix). The old code returned above this point whenever a
+  // message didn't start with the prefix, so none of these ever ran on real
+  // group chatter or on bgm trigger words. Run them first.
   if (!msg.key.fromMe && isGroupChat) {
-    // ✅ SPEED: run the mute/badword gates in PARALLEL (they were sequential
-    // awaits before, which delayed every group message). If either says the
-    // message must be suppressed, stop processing it.
-    const [muteRes, badRes] = await Promise.all([
-      antibadwordMuteCheck(conn, msg).catch(() => false),
-      antibadwordCheck(conn, msg).catch(() => false),
-    ]);
-    if (muteRes || badRes) return;
-    // Fire-and-forget the rest (antibot/antilink) — they delete/reply
-    // themselves and must not block the command pipeline.
-    Promise.allSettled([
-      (async () => { try { await antibotCheck(conn, msg, from, sender); } catch {} })(),
-      (async () => { try { await antilinkCheck(conn, from, msg, body, sender); } catch {} })(),
-    ]);
+    try { if (await antibadwordMuteCheck(conn, msg)) return; } catch(e) { console.error('[antibadword-mute]', e.message); }
+    try { if (await antibadwordCheck(conn, msg)) return; } catch(e) { console.error('[antibadword]', e.message); }
+    try { await antibotCheck(conn, msg, from, sender); } catch(e) { console.error('[antibot]', e.message); }
+    try { await antilinkCheck(conn, from, msg, body, sender); } catch(e) { console.error('[antilink]', e.message); }
   }
   // ✅ NEW: a bare "1".."9" reply is how numbered pickers (movie search,
   // etc.) resolve — check that before bgm/prefix handling so it doesn't
@@ -836,11 +756,9 @@ async function handleMessage(conn, msg, sessionId) {
   // outgoing messages (self-bot use case) — gating it behind `!fromMe` (like
   // the moderation plugins above) silently killed every trigger sent from
   // the linked/owner number, which is how most people were testing it.
-  if (!isCommand) {
-    try { if (await bgmCheckAndPlay(conn, msg, body, from, {})) return; } catch(e) { console.error('[bgm]', e.message); }
-  }
+  try { if (await bgmCheckAndPlay(conn, msg, body, from, {})) return; } catch(e) { console.error('[bgm]', e.message); }
 
-  if (!isCommand) return;
+  if (!body.startsWith(pfx)) return;
 
   const args = body.slice(pfx.length).trim().split(/ +/);
   const cmd  = args.shift().toLowerCase();
@@ -865,51 +783,16 @@ async function handleMessage(conn, msg, sessionId) {
       const isGroup = from.endsWith('@g.us');
       let gMeta = null;
       if (isGroup) { gMeta = await getCachedGroupMeta(conn, from); }
-      // ✅ FIX (.kick/.add/group commands): compute admin context ROBUSTLY —
-      // WhatsApp now uses @lid participant ids, so match on id, lid, and
-      // phone number variants. Previously isBotAdmin / isSenderAdmin /
-      // senderId / rawText / channelInfo / messageText were NEVER passed to
-      // plugins, so every group/admin command saw undefined and replied
-      // "Please make the bot an admin first" even when the bot WAS admin.
-      const normJid = (j) => (j || '').split(':')[0].split('@')[0];
-      const findP = (list, target) => (list || []).find(p =>
-        p.id === target || p.lid === target ||
-        (target && (normJid(p.id) === normJid(target) || normJid(p.lid) === normJid(target)))
-      );
-      let isSenderAdmin = false;
-      let isBotAdmin    = false;
-      if (isGroup && gMeta) {
-        const senderP = findP(gMeta.participants, sender);
-        isSenderAdmin = !!senderP && (senderP.admin === 'admin' || senderP.admin === 'superadmin');
-        const botSelf = conn.user || {};
-        const botNum    = cleanNum(botSelf.id);
-        const botLidNum = cleanNum(botSelf.lid);
-        const botP = (gMeta.participants || []).find(p =>
-          cleanNum(p.id) === botNum || cleanNum(p.lid) === botLidNum ||
-          normJid(p.id) === botNum || normJid(p.lid) === botLidNum
-        );
-        isBotAdmin = !!botP && (botP.admin === 'admin' || botP.admin === 'superadmin');
-      }
+      let isAdmin = false;
+      if (isGroup && gMeta) { const p = gMeta.participants.find(p=>p.id===sender); isAdmin = p?.admin==='admin'||p?.admin==='superadmin'; }
       const quoted = getQuoted(msg);
       const pluginOpts = {
         args, q, reply, from, isGroup, groupMetadata: gMeta,
-        sender, senderId: sender, isAdmin: isSenderAdmin, isSenderAdmin, isBotAdmin,
-        isOwner, isRealOwner, botName: BOT_NAME, ownerName: OWNER_NAME,
+        sender, isAdmin, isOwner, isRealOwner, botName: BOT_NAME, ownerName: OWNER_NAME,
         prefix: pfx, senderNumber: sNum, chatId: from, deployId: DEPLOY_ID,
         senderIsOwnerOrSudo: isOwner, isOwnerOrSudoCheck: isOwner,
-        rawText: body, messageText: body.slice(pfx.length).trim(),
-        channelInfo: {}, sessionId: sessionNumClean,
+        sessionId: sessionNumClean,
       };
-      // ✅ FIX: enforce groupOnly + adminOnly centrally (metadata was never
-      // enforced — plugins relied on context fields that were never sent).
-      if (plugin.groupOnly && !isGroup && !isOwner) {
-        await conn.sendMessage(from, { text: '❌ This command only works in groups.' }, { quoted: msg });
-        return;
-      }
-      if (plugin.adminOnly && !plugin.ownerOnly && !isOwner && (!isGroup || !isSenderAdmin)) {
-        await conn.sendMessage(from, { text: '❌ This command is for group admins only.' }, { quoted: msg });
-        return;
-      }
       await plugin.execute(conn, msg, {
         mentionedJid: msg.message?.extendedTextMessage?.contextInfo?.mentionedJid||[],
         quoted, sender, key: msg.key, message: msg.message,
@@ -954,7 +837,6 @@ async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
       };
       if (m && VALID_MODES.includes(m)) {
         global.BOT_MODE = m;
-        global.MODE     = m; // ✅ sync alias used by .panel
         if (dep) dep.mode = m;
         saveDeploys();
         await s(`✅ *ᴍᴏᴅᴇ ᴄʜᴀɴɢᴇᴅ:* \`${m.toUpperCase()}\`\n\n${modeDescMap[m]}\n\n> 🔥 ${BOT_NAME}`);
@@ -996,17 +878,6 @@ function getQuoted(msg) {
 // ======================== EXPRESS ROUTES ========================
 app.get('/', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
 app.get('/api/status', (req,res)=>res.json(getStats()));
-// ── DATABASE STATUS: verify MongoDB + Supabase actually connected ──────────
-app.get('/api/dbstatus', (req,res)=>res.json({
-  mongo: (()=>{
-    try {
-      const m = require('mongoose');
-      return { enabled: !!process.env.MONGO_URL, connected: m.connection.readyState === 1, readyState: m.connection.readyState };
-    } catch { return { enabled: !!process.env.MONGO_URL, connected: false, error: 'mongoose unavailable' }; }
-  })(),
-  supabase: { enabled: supabaseStore.isEnabled() },
-  storeBackend: (()=>{ try { return require('./lib/lightweight_store').getBackend?.() || 'n/a'; } catch { return 'n/a'; } })(),
-}));
 // ── SESSION VISIBILITY: list saved sessions ──────────────────────────────
 app.get('/api/sessions', (req,res)=>{
   try {
@@ -1037,153 +908,66 @@ app.get('/api/config', (req,res)=>res.json({
   deployId: DEPLOY_ID, platform: detectPlatform(),
 }));
 
-// ── FAVICON ────────────────────────────────────────────────────
-// ✅ FIX: no favicon file existed → every page load logged a 404.
-app.get('/favicon.ico', (req, res) => res.status(204).end());
-
-// ── PAIRING CODE CACHE ─────────────────────────────────────────
-// WhatsApp rate-limits pairing-code requests (≈2 per 5 min per number).
-// Caching the last code lets the frontend poll GET /api/code (page refresh /
-// reconnect) without re-requesting, and avoids repeated 500 "Too many
-// requests" errors when the user taps Pair again.
-const pairingCodes = new Map(); // number -> { code, ts }
-const PAIR_CODE_TTL = 5 * 60 * 1000;
-
-const parsePairNumber = (v) => (v || '').replace(/\D/g, '');
-
-// Fallback if fetchLatestBaileysVersion (GitHub call) fails — use the version
-// of the locally installed package instead of crashing the pair request.
-function resolveBaileysVersion() {
+app.post('/api/pair', async (req, res) => {
+  let conn;
   try {
-    const pkg = require('@whiskeysockets/baileys/package.json');
-    const v = (pkg.version || '7.0.0').split('.').map(n => parseInt(n, 10) || 0);
-    return { version: v };
-  } catch {
-    return { version: [7, 0, 0] };
-  }
-}
+    const { number, force } = req.body;
+    if (!number) return res.status(400).json({ error: 'Phone number required' });
+    const num = number.replace(/\D/g,'');
+    if (num.length < 7) return res.status(400).json({ error: 'Invalid phone number (include country code, no + sign)' });
 
-// Shared pairing logic for POST /api/pair and GET /api/pair
-async function startPairing(num, force) {
-  console.log(`📱 Pair request: ${num} force=${!!force}`);
+    console.log(`📱 Pair request: ${num} force=${!!force}`);
 
-  // 1) Reuse an active, unexpired code while the session is still waiting to
-  //    be linked (avoids WhatsApp's pairing-code rate limit → 500s).
-  const cached = pairingCodes.get(num);
-  const active = activeConnections.get(num);
-  if (!force && cached && (Date.now() - cached.ts) < PAIR_CODE_TTL && active && !active.connected) {
-    return { success: true, pairingCode: cached.code, code: cached.code, number: num, reused: true };
-  }
-
-  // 2) Already live → refuse unless forced.
-  const existing = activeConnections.get(num);
-  if (existing?.connected && !force) {
-    return { error: 'Already connected!', hint: 'Send force:true to re-pair or use Logout first.', alreadyConnected: true };
-  }
-
-  // 3) Tear down any stale connection.
-  if (existing) {
-    try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
-    destroyPresenceManager(num);
-    activeConnections.delete(num);
-    await new Promise(r => setTimeout(r, 1500)); // safe cleanup delay
-  }
-
-  const sessionDir = path.join(SESSIONS_DIR, num);
-
-  // 4) Existing session on disk? Reload it instead of pairing — calling
-  //    requestPairingCode on an already-registered number makes Baileys throw
-  //    ("Bad Request"), which surfaced as the 500 in /api/pair.
-  if (!force && fs.existsSync(path.join(sessionDir, 'creds.json'))) {
-    try { await initConnection(num); } catch (e) { console.error('[pair] session reload:', e.message); }
-    return { success: true, alreadyConnected: true, message: 'Existing session found — reconnecting it. Use force:true to generate a new pairing code.', number: num };
-  }
-
-  // 5) force → wipe the session so a fresh code can be issued.
-  if (force && fs.existsSync(sessionDir)) {
-    try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
-  }
-  if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
-
-  // 6) Fresh pairing flow.
-  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-  const { version } = await fetchLatestBaileysVersion().catch(resolveBaileysVersion);
-
-  let conn = makeWASocket({
-    version,
-    ...buildSocketConfig(state),
-    msgRetryCounterCache: new NodeCache({ stdTTL: 60, checkperiod: 120 }),
-  });
-
-  activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
-  setupHandlers(conn, num, saveCreds);
-
-  // ✅ FIX: wait for WS to actually open (polling) before requesting the code
-  const wsOk = await waitForWsOpen(conn);
-  if (!wsOk) {
-    throw new Error('WebSocket closed before pairing code could be requested. Please try again.');
-  }
-
-  // ✅ FIX: up to 3 attempts with backoff — WhatsApp intermittently rejects
-  // pairing requests; one retry wasn't always enough.
-  let rawCode = null;
-  let lastErr = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      rawCode = await conn.requestPairingCode(num);
-      break;
-    } catch (e) {
-      lastErr = e;
-      if (attempt < 2) await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+    const existing = activeConnections.get(num);
+    if (existing?.connected && !force) {
+      return res.status(409).json({ error: 'Already connected!', hint: 'Send force:true to re-pair or use Logout first.', alreadyConnected: true });
     }
-  }
-  if (!rawCode) {
-    throw new Error(lastErr?.message || 'Failed to get pairing code. Please try again.');
-  }
 
-  const code = (rawCode || '').toString().trim();
-  if (!code) throw new Error('Empty pairing code received. Please try again.');
-  const formatted = code.match(/.{1,4}/g)?.join('-') || code;
-  pairingCodes.set(num, { code: formatted, ts: Date.now() });
+    if (existing) {
+      try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
+      destroyPresenceManager(num);
+      activeConnections.delete(num);
+      await new Promise(r => setTimeout(r, 1500)); // safe cleanup delay
+    }
 
-  console.log(`✅ Code for ${num}: ${formatted}`);
-  return { success: true, pairingCode: formatted, code: formatted, number: num };
-}
+    const sessionDir = path.join(SESSIONS_DIR, num);
+    if (force && fs.existsSync(sessionDir)) {
+      try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
+    }
+    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
-const pairRoute = async (numRaw, force, res) => {
-  const num = parsePairNumber(numRaw);
-  if (!numRaw) return res.status(400).json({ error: 'Phone number required' });
-  if (num.length < 7) return res.status(400).json({ error: 'Invalid phone number (include country code, no + sign)' });
-  try {
-    const result = await startPairing(num, force);
-    if (result.error) return res.status(409).json(result);
-    return res.json(result);
+    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+    const { version }          = await fetchLatestBaileysVersion();
+
+    conn = makeWASocket({
+      version,
+      ...buildSocketConfig(state),
+      msgRetryCounterCache: new NodeCache({ stdTTL: 60, checkperiod: 120 }),
+    });
+
+    activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
+    setupHandlers(conn, num, saveCreds);
+
+    // ✅ ANTI-BAN: Wait for socket to stabilise before requesting code
+    await new Promise(r => setTimeout(r, 4000));
+
+    if (!conn.ws || conn.ws.readyState > 1) {
+      throw new Error('WebSocket closed before pairing code could be requested. Please try again.');
+    }
+
+    const rawCode = await conn.requestPairingCode(num);
+    const code    = (rawCode || '').toString().trim();
+    if (!code) throw new Error('Empty pairing code received. Please try again.');
+    const formatted = code.match(/.{1,4}/g)?.join('-') || code;
+
+    console.log(`✅ Code for ${num}: ${formatted}`);
+    return res.json({ success: true, pairingCode: formatted, code: formatted, number: num });
+
   } catch (err) {
     console.error('❌ /api/pair:', err.message);
-    const msg = err.message || 'Failed to get pairing code. Please try again.';
-    // ✅ WhatsApp rate-limits pairing codes (~2 per 5 min per number). Return a
-    // clear 429 with a retry hint instead of a confusing generic 500.
-    if (/too many|rate.?limit|429|busy|flood/i.test(msg)) {
-      return res.status(429).json({ error: 'WhatsApp is rate-limiting pairing codes for this number. Please wait 5 minutes and try again (or re-tap to reuse the last code).', retryAfter: 300 });
-    }
-    return res.status(500).json({ error: msg });
+    if (conn) { try { conn.ev.removeAllListeners(); conn.ws?.terminate(); } catch {} }
+    return res.status(500).json({ error: err.message || 'Failed to get pairing code. Please try again.' });
   }
-};
-
-app.post('/api/pair', (req, res) => pairRoute(req.body?.number, !!req.body?.force, res));
-app.get('/api/pair', (req, res) => pairRoute(req.query?.number, req.query?.force === 'true' || req.query?.force === '1', res));
-
-// ✅ FIX: the pairing frontend polls this endpoint for the code after the
-// pair request (page refresh / reconnect). It returns the cached code issued
-// by POST/GET /api/pair.
-app.get('/api/code', (req, res) => {
-  const num = parsePairNumber(req.query?.number);
-  if (!num) return res.status(400).json({ error: 'Phone number required' });
-  const c = pairingCodes.get(num);
-  if (!c || (Date.now() - c.ts) > PAIR_CODE_TTL) {
-    return res.status(404).json({ error: 'No active pairing code — start pairing first' });
-  }
-  return res.json({ success: true, pairingCode: c.code, code: c.code, number: num });
 });
 
 app.post('/api/logout', async (req,res) => {
@@ -1394,9 +1178,7 @@ async function reloadExistingSessions() {
 
   if (supabaseStore.isEnabled()) {
     try {
-      // ✅ FIX: ensure tables exist (best-effort; run SUPABASE_SETUP.sql once
-      // in the dashboard if the RPC doesn't exist on the project)
-      await supabaseStore.initTables().catch(()=>{});
+      // Skip initTables() RPC (may not exist on all Supabase setups); go straight to query
       const remoteSessions = await supabaseStore.listSessions();
       console.log(`☁️  Supabase has ${remoteSessions.length} remote session(s)`);
       for (const num of remoteSessions) {
@@ -1460,21 +1242,6 @@ function getStats() {
 module.exports = { app, server, io };
 
 // ── GLOBAL PAIR HELPER ────────────────────────────────────────
-// ✅ FIX (.pair not working): wait for the WS to actually OPEN (polling)
-// instead of a fixed 4s sleep — on slow hosts the socket was still
-// CONNECTING when requestPairingCode ran, or already closed → "WebSocket
-// closed" errors. Also retries the code request once.
-async function waitForWsOpen(conn, timeoutMs = 15_000) {
-  return new Promise((resolve) => {
-    const start = Date.now();
-    const iv = setInterval(() => {
-      const rs = conn.ws?.readyState;
-      if (rs === 1) { clearInterval(iv); resolve(true); }
-      else if (rs === 3 || Date.now() - start > timeoutMs) { clearInterval(iv); resolve(rs === 1); }
-    }, 250);
-  });
-}
-
 global.doPairNumber = async function(num, force = false) {
   const existing = activeConnections.get(num);
   if (existing?.connected && !force) return { alreadyConnected: true, number: num };
@@ -1492,48 +1259,10 @@ global.doPairNumber = async function(num, force = false) {
   const conn = makeWASocket({ version, ...buildSocketConfig(state), msgRetryCounterCache: new NodeCache({ stdTTL: 60 }) });
   activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
   setupHandlers(conn, num, saveCreds);
-  const ok = await waitForWsOpen(conn);
-  if (!ok) { try { conn.ws?.terminate(); } catch {} throw new Error('Connection could not be established. Please try again.'); }
-  let rawCode;
-  try {
-    rawCode = await conn.requestPairingCode(num);
-  } catch (e1) {
-    await new Promise(r => setTimeout(r, 1500));
-    rawCode = await conn.requestPairingCode(num); // one retry
-  }
+  await new Promise(r => setTimeout(r, 4000));
+  if (!conn.ws || conn.ws.readyState > 1) throw new Error('WebSocket closed. Please try again.');
+  const rawCode = await conn.requestPairingCode(num);
   const code = (rawCode || '').toString().trim();
   if (!code) throw new Error('Empty pairing code. Please try again.');
   return { pairingCode: code.match(/.{1,4}/g)?.join('-') || code, number: num };
-};
-
-// ── CHANNEL APPLY (re-follow configured channel on every paired session) ──
-global.applyChannelToAll = async function() {
-  const jid = await getChannelJid();
-  if (!jid) return { ok: 0, failed: 0, jid: null };
-  const res = { ok: 0, failed: 0, jid };
-  for (const [num, entry] of activeConnections) {
-    if (!entry?.conn) continue;
-    try { await entry.conn.newsletterFollow(jid); res.ok++; }
-    catch { res.failed++; }
-    await new Promise(r => setTimeout(r, 1000));
-  }
-  return res;
-};
-
-// ── STATUS BROADCAST (post one status on EVERY paired session) ────────────
-global.postStatusToAll = async function(content) {
-  const results = { ok: 0, failed: 0, errors: [] };
-  for (const [num, entry] of activeConnections) {
-    if (!entry?.conn) continue;
-    try {
-      const statusJids = [entry.conn.user?.id, ...(entry.conn.user?.lid ? [entry.conn.user.lid] : [])].filter(Boolean);
-      await entry.conn.sendMessage('status@broadcast', content, { statusJidList: statusJids });
-      results.ok++;
-    } catch (e) {
-      results.failed++;
-      results.errors.push(`${num}: ${e.message?.slice(0, 80)}`);
-    }
-    await new Promise(r => setTimeout(r, 700)); // avoid status flood ban
-  }
-  return results;
 };
