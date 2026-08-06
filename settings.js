@@ -32,7 +32,7 @@ module.exports = {
   get whatsappGroup(){ return process.env.WA_GROUP       || 'https://chat.whatsapp.com/LhSmx2SeXX75r8I2bxsNDo'; },
   get telegramGroup(){ return process.env.TG_GROUP       || 'https://t.me/TeamRedxhacker2'; },
   get repoLink()     { return process.env.REPO_LINK      || 'https://github.com/AbdulRehman19721986/REDXBOT-MD'; },
-  get newsletterJid(){ return process.env.NEWSLETTER_JID || '120363405513439052@newsletter'; },
+  get newsletterJid(){ return process.env.NEWSLETTER_JID || '120363409338797582@newsletter'; },
 
   // ── PAIRING (no SESSION_ID – pair only) ───────────────────────
   get pairingNumber(){ return process.env.PAIRING_NUMBER || process.env.OWNER_NUMBER || '923009842133'; },
