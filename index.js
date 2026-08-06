@@ -1037,71 +1037,153 @@ app.get('/api/config', (req,res)=>res.json({
   deployId: DEPLOY_ID, platform: detectPlatform(),
 }));
 
-app.post('/api/pair', async (req, res) => {
-  let conn;
+// ── FAVICON ────────────────────────────────────────────────────
+// ✅ FIX: no favicon file existed → every page load logged a 404.
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+// ── PAIRING CODE CACHE ─────────────────────────────────────────
+// WhatsApp rate-limits pairing-code requests (≈2 per 5 min per number).
+// Caching the last code lets the frontend poll GET /api/code (page refresh /
+// reconnect) without re-requesting, and avoids repeated 500 "Too many
+// requests" errors when the user taps Pair again.
+const pairingCodes = new Map(); // number -> { code, ts }
+const PAIR_CODE_TTL = 5 * 60 * 1000;
+
+const parsePairNumber = (v) => (v || '').replace(/\D/g, '');
+
+// Fallback if fetchLatestBaileysVersion (GitHub call) fails — use the version
+// of the locally installed package instead of crashing the pair request.
+function resolveBaileysVersion() {
   try {
-    const { number, force } = req.body;
-    if (!number) return res.status(400).json({ error: 'Phone number required' });
-    const num = number.replace(/\D/g,'');
-    if (num.length < 7) return res.status(400).json({ error: 'Invalid phone number (include country code, no + sign)' });
+    const pkg = require('@whiskeysockets/baileys/package.json');
+    const v = (pkg.version || '7.0.0').split('.').map(n => parseInt(n, 10) || 0);
+    return { version: v };
+  } catch {
+    return { version: [7, 0, 0] };
+  }
+}
 
-    console.log(`📱 Pair request: ${num} force=${!!force}`);
+// Shared pairing logic for POST /api/pair and GET /api/pair
+async function startPairing(num, force) {
+  console.log(`📱 Pair request: ${num} force=${!!force}`);
 
-    const existing = activeConnections.get(num);
-    if (existing?.connected && !force) {
-      return res.status(409).json({ error: 'Already connected!', hint: 'Send force:true to re-pair or use Logout first.', alreadyConnected: true });
-    }
+  // 1) Reuse an active, unexpired code while the session is still waiting to
+  //    be linked (avoids WhatsApp's pairing-code rate limit → 500s).
+  const cached = pairingCodes.get(num);
+  const active = activeConnections.get(num);
+  if (!force && cached && (Date.now() - cached.ts) < PAIR_CODE_TTL && active && !active.connected) {
+    return { success: true, pairingCode: cached.code, code: cached.code, number: num, reused: true };
+  }
 
-    if (existing) {
-      try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
-      destroyPresenceManager(num);
-      activeConnections.delete(num);
-      await new Promise(r => setTimeout(r, 1500)); // safe cleanup delay
-    }
+  // 2) Already live → refuse unless forced.
+  const existing = activeConnections.get(num);
+  if (existing?.connected && !force) {
+    return { error: 'Already connected!', hint: 'Send force:true to re-pair or use Logout first.', alreadyConnected: true };
+  }
 
-    const sessionDir = path.join(SESSIONS_DIR, num);
-    if (force && fs.existsSync(sessionDir)) {
-      try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
-    }
-    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
+  // 3) Tear down any stale connection.
+  if (existing) {
+    try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
+    destroyPresenceManager(num);
+    activeConnections.delete(num);
+    await new Promise(r => setTimeout(r, 1500)); // safe cleanup delay
+  }
 
-    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-    const { version }          = await fetchLatestBaileysVersion();
+  const sessionDir = path.join(SESSIONS_DIR, num);
 
-    conn = makeWASocket({
-      version,
-      ...buildSocketConfig(state),
-      msgRetryCounterCache: new NodeCache({ stdTTL: 60, checkperiod: 120 }),
-    });
+  // 4) Existing session on disk? Reload it instead of pairing — calling
+  //    requestPairingCode on an already-registered number makes Baileys throw
+  //    ("Bad Request"), which surfaced as the 500 in /api/pair.
+  if (!force && fs.existsSync(path.join(sessionDir, 'creds.json'))) {
+    try { await initConnection(num); } catch (e) { console.error('[pair] session reload:', e.message); }
+    return { success: true, alreadyConnected: true, message: 'Existing session found — reconnecting it. Use force:true to generate a new pairing code.', number: num };
+  }
 
-    activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
-    setupHandlers(conn, num, saveCreds);
+  // 5) force → wipe the session so a fresh code can be issued.
+  if (force && fs.existsSync(sessionDir)) {
+    try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
+  }
+  if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
-    // ✅ FIX: wait for WS to actually open (polling) before requesting the code
-    const wsOk = await waitForWsOpen(conn);
-    if (!wsOk) {
-      throw new Error('WebSocket closed before pairing code could be requested. Please try again.');
-    }
+  // 6) Fresh pairing flow.
+  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+  const { version } = await fetchLatestBaileysVersion().catch(resolveBaileysVersion);
 
-    let rawCode;
+  let conn = makeWASocket({
+    version,
+    ...buildSocketConfig(state),
+    msgRetryCounterCache: new NodeCache({ stdTTL: 60, checkperiod: 120 }),
+  });
+
+  activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
+  setupHandlers(conn, num, saveCreds);
+
+  // ✅ FIX: wait for WS to actually open (polling) before requesting the code
+  const wsOk = await waitForWsOpen(conn);
+  if (!wsOk) {
+    throw new Error('WebSocket closed before pairing code could be requested. Please try again.');
+  }
+
+  // ✅ FIX: up to 3 attempts with backoff — WhatsApp intermittently rejects
+  // pairing requests; one retry wasn't always enough.
+  let rawCode = null;
+  let lastErr = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
       rawCode = await conn.requestPairingCode(num);
-    } catch (e1) {
-      await new Promise(r => setTimeout(r, 1500));
-      rawCode = await conn.requestPairingCode(num); // one retry
+      break;
+    } catch (e) {
+      lastErr = e;
+      if (attempt < 2) await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
     }
-    const code    = (rawCode || '').toString().trim();
-    if (!code) throw new Error('Empty pairing code received. Please try again.');
-    const formatted = code.match(/.{1,4}/g)?.join('-') || code;
+  }
+  if (!rawCode) {
+    throw new Error(lastErr?.message || 'Failed to get pairing code. Please try again.');
+  }
 
-    console.log(`✅ Code for ${num}: ${formatted}`);
-    return res.json({ success: true, pairingCode: formatted, code: formatted, number: num });
+  const code = (rawCode || '').toString().trim();
+  if (!code) throw new Error('Empty pairing code received. Please try again.');
+  const formatted = code.match(/.{1,4}/g)?.join('-') || code;
+  pairingCodes.set(num, { code: formatted, ts: Date.now() });
 
+  console.log(`✅ Code for ${num}: ${formatted}`);
+  return { success: true, pairingCode: formatted, code: formatted, number: num };
+}
+
+const pairRoute = async (numRaw, force, res) => {
+  const num = parsePairNumber(numRaw);
+  if (!numRaw) return res.status(400).json({ error: 'Phone number required' });
+  if (num.length < 7) return res.status(400).json({ error: 'Invalid phone number (include country code, no + sign)' });
+  try {
+    const result = await startPairing(num, force);
+    if (result.error) return res.status(409).json(result);
+    return res.json(result);
   } catch (err) {
     console.error('❌ /api/pair:', err.message);
-    if (conn) { try { conn.ev.removeAllListeners(); conn.ws?.terminate(); } catch {} }
-    return res.status(500).json({ error: err.message || 'Failed to get pairing code. Please try again.' });
+    const msg = err.message || 'Failed to get pairing code. Please try again.';
+    // ✅ WhatsApp rate-limits pairing codes (~2 per 5 min per number). Return a
+    // clear 429 with a retry hint instead of a confusing generic 500.
+    if (/too many|rate.?limit|429|busy|flood/i.test(msg)) {
+      return res.status(429).json({ error: 'WhatsApp is rate-limiting pairing codes for this number. Please wait 5 minutes and try again (or re-tap to reuse the last code).', retryAfter: 300 });
+    }
+    return res.status(500).json({ error: msg });
   }
+};
+
+app.post('/api/pair', (req, res) => pairRoute(req.body?.number, !!req.body?.force, res));
+app.get('/api/pair', (req, res) => pairRoute(req.query?.number, req.query?.force === 'true' || req.query?.force === '1', res));
+
+// ✅ FIX: the pairing frontend polls this endpoint for the code after the
+// pair request (page refresh / reconnect). It returns the cached code issued
+// by POST/GET /api/pair.
+app.get('/api/code', (req, res) => {
+  const num = parsePairNumber(req.query?.number);
+  if (!num) return res.status(400).json({ error: 'Phone number required' });
+  const c = pairingCodes.get(num);
+  if (!c || (Date.now() - c.ts) > PAIR_CODE_TTL) {
+    return res.status(404).json({ error: 'No active pairing code — start pairing first' });
+  }
+  return res.json({ success: true, pairingCode: c.code, code: c.code, number: num });
 });
 
 app.post('/api/logout', async (req,res) => {

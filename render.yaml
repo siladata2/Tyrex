@@ -27,3 +27,9 @@ services:
         value: "true"
       - key: AUTO_STATUS_REACT
         value: "true"
+      # MongoDB (optional): paste your Atlas connection string
+      # (mongodb+srv://user:pass@cluster.mongodb.net/...). Whitelist Render's
+      # IP under Atlas → Network Access, or allow 0.0.0.0/0 for testing.
+      # Leave empty to use memory + JSON file storage.
+      - key: MONGO_URL
+        value: ""
