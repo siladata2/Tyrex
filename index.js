@@ -121,6 +121,14 @@ let bgmCheckAndPlay = async () => false;
 try { antilinkCheck = require('./plugins/antilink').handleLinkDetection || antilinkCheck; } catch(e) { console.warn('⚠️ antilink load error:', e.message); }
 try { antibotCheck = require('./plugins/antibot').handleAntibotCheck || antibotCheck; } catch(e) { console.warn('⚠️ antibot load error:', e.message); }
 try { antibadwordCheck = require('./plugins/antibadword').checkAntiBadword || antibadwordCheck; } catch(e) { console.warn('⚠️ antibadword load error:', e.message); }
+let antibadwordMuteCheck = async () => false;
+try { antibadwordMuteCheck = require('./plugins/antibadword').checkMuted || antibadwordMuteCheck; } catch(e) {}
+// ✅ NEW: lib/selectionHandler.js was fully wired (plugins already call
+// registerHandler on load) but nothing in index.js ever called
+// handleSelection — so no plain "1".."9" reply ever reached it. Wiring it
+// here is what makes the movie downloader's numbered picker (and anything
+// else built on this registry) actually work.
+const { handleSelection } = require('./lib/selectionHandler');
 try {
   const bgmPlugin = require('./plugins/bgm');
   bgmCheckAndPlay = bgmPlugin.checkAndPlay || bgmCheckAndPlay;
@@ -729,10 +737,21 @@ async function handleMessage(conn, msg, sessionId) {
   // message didn't start with the prefix, so none of these ever ran on real
   // group chatter or on bgm trigger words. Run them first.
   if (!msg.key.fromMe && isGroupChat) {
+    try { if (await antibadwordMuteCheck(conn, msg)) return; } catch(e) { console.error('[antibadword-mute]', e.message); }
     try { if (await antibadwordCheck(conn, msg)) return; } catch(e) { console.error('[antibadword]', e.message); }
     try { await antibotCheck(conn, msg, from, sender); } catch(e) { console.error('[antibot]', e.message); }
     try { await antilinkCheck(conn, from, msg, body, sender); } catch(e) { console.error('[antilink]', e.message); }
   }
+  // ✅ NEW: a bare "1".."9" reply is how numbered pickers (movie search,
+  // etc.) resolve — check that before bgm/prefix handling so it doesn't
+  // get swallowed as an unmatched trigger word or ignored entirely.
+  if (!msg.key.fromMe && /^[1-9]$/.test(body.trim())) {
+    try {
+      const handled = await handleSelection(conn, msg, { chatId: from }, parseInt(body.trim(), 10));
+      if (handled) return;
+    } catch (e) { console.error('[selection]', e.message); }
+  }
+
   // ✅ FIX: bgm.js is explicitly built to also fire on the owner's own
   // outgoing messages (self-bot use case) — gating it behind `!fromMe` (like
   // the moderation plugins above) silently killed every trigger sent from
