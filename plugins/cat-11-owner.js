@@ -1692,7 +1692,7 @@ async function updateViaZip(sock, chatId, message, zipOverride) {
 
   const [root] = fs.readdirSync(extractTo).map(n => path.join(extractTo, n));
   const srcRoot = fs.existsSync(root) && fs.lstatSync(root).isDirectory() ? root : extractTo;
-  const ignore = ['node_modules', '.git', 'session', 'tmp', 'tmp/', 'temp', 'data', 'baileys_store.json'];
+  const ignore = ['node_modules', '.git', 'sessions', 'session', 'tmp', 'tmp/', 'temp', 'data', 'baileys_store.json'];
   const copied = [];
   let preservedOwner = null;
   let preservedBotOwner = null;
@@ -1721,19 +1721,22 @@ async function updateViaZip(sock, chatId, message, zipOverride) {
 }
 
 async function restartProcess() {
+  // Give WhatsApp WS time to flush the final message before we exit
+  await new Promise(r => setTimeout(r, 2000));
+  // Try pm2 first (won't work on Render but works on VPS/Heroku with pm2)
   try {
     await run('pm2 restart all');
     return;
   } catch {}
-  // If pm2 fails, exit the process after a tiny delay to allow final message to be sent
-  setTimeout(() => {
-    process.exit(0);
-  }, 300);
+  // Render / Railway / plain Node: process.exit(0) causes Render to restart the service
+  // (Render auto-restarts web services on exit; free tier has no persistent disk so
+  //  sessions in /sessions folder are restored from Supabase on the next boot)
+  process.exit(0);
 }
 
 module.exports = {
   command: 'update',
-  aliases: ['upgrade', 'restart'],
+  aliases: ['upgrade', 'botupdate'],
   category: 'owner',
   description: 'Update bot from git or zip without stopping',
   usage: '.update [zip_url]',
@@ -1788,7 +1791,9 @@ module.exports = {
           changesSummary += `📁 Files changed: ${fileCount}`;
         }
 
-        await run('npm install --no-audit --no-fund');
+        // Only run npm install if package.json changed (saves time and avoids issues)
+      try { await run('npm install --no-audit --no-fund --prefer-offline'); }
+      catch (npmErr) { console.warn('[update] npm install warning:', npmErr.message.slice(0,200)); }
       } else {
         const zipOverride = args[0] || null;
         const { copiedFiles } = await updateViaZip(sock, chatId, message, zipOverride);

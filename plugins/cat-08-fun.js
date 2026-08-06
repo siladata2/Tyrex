@@ -436,8 +436,7 @@ try {
 /* ===== pair.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    // plugins/pair.js
-const axios = require('axios');
+    // plugins/pair.js — uses bot's OWN /api/pair endpoint (global.doPairNumber)
 
 // Simple in‑memory rate limiting map (outside handler to persist)
 const rateLimit = new Map();
@@ -446,76 +445,83 @@ module.exports = {
   command: 'pair',
   aliases: ['getcode', 'paircode'],
   category: 'general',
-  description: 'Get WhatsApp pairing code (public)',
-  usage: '.pair <phone_number> (e.g., .pair 61468259338)',
+  description: 'Get WhatsApp pairing code directly from this bot',
+  usage: '.pair <phone_number>  e.g.  .pair 923001234567',
   ownerOnly: false,
 
   async handler(sock, message, args, context) {
     const { chatId } = context;
-    const number = args[0]?.trim();
+    const number = (args[0] || '').trim().replace(/\D/g, '');
 
     if (!number) {
-      return await sock.sendMessage(chatId, {
-        text: '❌ Please provide your phone number.\nExample: .pair 61468259338'
+      return sock.sendMessage(chatId, {
+        text: '❌ Please provide your phone number with country code.\n' +
+              'Example: *.pair 923001234567*'
       }, { quoted: message });
     }
 
-    if (!/^\d+$/.test(number)) {
-      return await sock.sendMessage(chatId, {
-        text: '❌ Invalid number. Use only digits (no +, spaces, or dashes).'
+    if (number.length < 7 || number.length > 15) {
+      return sock.sendMessage(chatId, {
+        text: '❌ Invalid number length. Include country code, digits only.\n' +
+              'Example: *.pair 923001234567*'
       }, { quoted: message });
     }
 
-    // Simple rate limiting: 10 seconds per chat
+    // Rate limit: 90 seconds per number
     const now = Date.now();
-    const lastUsed = rateLimit.get(chatId);
-    if (lastUsed && now - lastUsed < 10000) {
-      return await sock.sendMessage(chatId, {
-        text: '⏳ Please wait a few seconds before requesting another code.'
+    const lastUsed = rateLimit.get(number);
+    if (lastUsed && now - lastUsed < 90_000) {
+      const wait = Math.ceil((90_000 - (now - lastUsed)) / 1000);
+      return sock.sendMessage(chatId, {
+        text: \`⏳ Please wait *\${wait}s* before requesting another code for this number.\`
       }, { quoted: message });
     }
-    rateLimit.set(chatId, now);
+    rateLimit.set(number, now);
+    setTimeout(() => rateLimit.delete(number), 90_000);
 
     await sock.sendMessage(chatId, {
-      text: `⏳ Requesting pairing code for *${number}*...`
+      text: \`⏳ Getting pairing code for *+\${number}*...\nPlease open WhatsApp → Linked Devices → Link with Phone Number and enter the code.\`
     }, { quoted: message });
 
     try {
-      const apiUrl = `https://pair-site2008-1b4dc7bc4324.herokuapp.com/code?number=${number}`;
-      const response = await axios.get(apiUrl, { timeout: 30000 });
-
-      const code = response.data?.code || response.data?.pairingCode;
-      if (!code) {
-        throw new Error('No code in response');
+      // ✅ Use the bot's own pairing function (no external API dependency)
+      if (typeof global.doPairNumber !== 'function') {
+        throw new Error('Pairing service not ready. Please try again in a few seconds.');
       }
 
-      // First message: full info
+      const result = await global.doPairNumber(number);
+
+      if (result.alreadyConnected) {
+        await sock.sendMessage(chatId, {
+          text: \`ℹ️ *+\${number}* is already connected to this bot.\nUse *.pair \${number} force* to force re-pair.\`
+        }, { quoted: message });
+        return;
+      }
+
+      const code = result.pairingCode;
+      if (!code) throw new Error('Empty pairing code received. Please try again.');
+
+      // Message 1: instructions + code
       await sock.sendMessage(chatId, {
-        text: `> *REDXBOT PAIRING COMPLETED*\n\nYour pairing code is: ${code}`
+        text: \`╭─── 🔗 *PAIRING CODE* ───╮\n│\n│  📱 *Number:* +\${number}\n│  🔑 *Code:* \${code}\n│\n├─ *Steps:*\n│  1. Open WhatsApp Settings\n│  2. Linked Devices → Link Device\n│  3. Tap "Link with phone number"\n│  4. Enter the code above\n│\n╰─────────────────────────╯\n\n> 🔥 REDX MINI MD — Pair your number now!\`
       }, { quoted: message });
 
-      // Second message: only the code (clean)
-      await sock.sendMessage(chatId, {
-        text: code
-      }, { quoted: message });
+      // Message 2: just the code (easy to copy)
+      await sock.sendMessage(chatId, { text: code }, { quoted: message });
 
     } catch (error) {
-      console.error('Pair command error:', error.message);
-      let errorMsg = '❌ Failed to get pairing code.\n';
-      if (error.response) {
-        if (error.response.status === 400) {
-          errorMsg += 'Invalid number format.';
-        } else if (error.response.status === 429) {
-          errorMsg += 'Too many requests. Please try again later.';
-        } else {
-          errorMsg += `Server error (${error.response.status}).`;
-        }
-      } else if (error.request) {
-        errorMsg += 'No response from backend. It may be down.';
+      console.error('[.pair] error:', error.message);
+      let msg = '❌ *Failed to get pairing code.*\n';
+      if (error.message.includes('wait')) {
+        msg += error.message;
+      } else if (error.message.includes('closed') || error.message.includes('WebSocket')) {
+        msg += 'Connection issue. Please try again in 30 seconds.';
+      } else if (error.message.includes('Empty')) {
+        msg += 'Received empty code. Try again in a moment.';
       } else {
-        errorMsg += error.message;
+        msg += error.message;
       }
-      await sock.sendMessage(chatId, { text: errorMsg }, { quoted: message });
+      await sock.sendMessage(chatId, { text: msg }, { quoted: message });
     }
   }
 };
