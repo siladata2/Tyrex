@@ -1,6 +1,8 @@
 // plugins/antiflood.js — REDXBOT302 Ultra Anti-Flood v2
 'use strict';
-const store = require('../lib/store');
+// ✅ FIX: was require('../lib/store') — that store has NO getSetting/saveSetting,
+// so every config read/save threw and .antiflood could never be enabled.
+const store = require('../lib/lightweight_store');
 
 const KEY = 'antiflood_v2';
 const DEFAULT = { enabled: false, maxMsgs: 7, windowSec: 5, action: 'mute', muteDurMin: 5, warnFirst: true };
@@ -15,16 +17,43 @@ setInterval(() => {
 // Mute expiry: { 'groupId:userId': expireTs }
 const muteExpiry = new Map();
 
-async function getConfig(chatId) {
-  try { return (await store.getSetting(chatId, KEY)) || { ...DEFAULT }; } catch { return { ...DEFAULT }; }
-}
-async function setConfig(chatId, cfg) { await store.setSetting(chatId, KEY, cfg); }
+// Config cache (10s TTL) — avoids a file/DB read on EVERY group message
+const cfgCache = new Map();
+const CFG_TTL = 10000;
 
-async function isBotAdmin(sock, chatId) {
+/** Normalize any JID form to a bare number (device suffix + @domain stripped) */
+function norm(jid) {
+  if (!jid) return '';
+  return String(jid).split('@')[0].split(':')[0];
+}
+
+async function getConfig(chatId) {
   try {
-    const meta = await sock.groupMetadata(chatId);
-    const botJid = sock.user?.id?.split(':')[0] + '@s.whatsapp.net';
-    return meta.participants.some(p => (p.id === botJid || p.jid === botJid) && (p.admin === 'admin' || p.admin === 'superadmin'));
+    const c = cfgCache.get(chatId);
+    if (c && Date.now() - c.ts < CFG_TTL) return c.cfg;
+    const cfg = (await store.getSetting(chatId, KEY)) || { ...DEFAULT };
+    cfgCache.set(chatId, { cfg, ts: Date.now() });
+    return cfg;
+  } catch { return { ...DEFAULT }; }
+}
+async function setConfig(chatId, cfg) {
+  cfgCache.set(chatId, { cfg, ts: Date.now() });
+  await store.saveSetting(chatId, KEY, cfg);
+}
+
+async function isBotAdmin(sock, chatId, meta) {
+  try {
+    const m = meta || await sock.groupMetadata(chatId);
+    const botIdNorm = norm(sock.user?.id);
+    const botLidNorm = norm(sock.user?.lid);
+    return m.participants.some(p => {
+      if (p.admin !== 'admin' && p.admin !== 'superadmin') return false;
+      const pIdNorm = norm(p.id);
+      const pLidNorm = norm(p.lid);
+      const pPnNorm = norm(p.phoneNumber);
+      return (botIdNorm && (botIdNorm === pIdNorm || botIdNorm === pLidNorm || (pPnNorm && botIdNorm === pPnNorm)))
+          || (botLidNorm && (botLidNorm === pIdNorm || botLidNorm === pLidNorm));
+    });
   } catch { return false; }
 }
 
@@ -43,15 +72,17 @@ async function muteMember(sock, chatId, userId, durMin) {
 }
 
 /* ── Flood check — called from messageHandler or auto ─────────── */
-async function checkFlood(sock, message, chatId, senderId) {
+async function checkFlood(sock, message, chatId, senderId, meta) {
   if (!chatId.endsWith('@g.us')) return;
   const cfg = await getConfig(chatId);
   if (!cfg.enabled) return;
 
-  // Skip admins
+  const senderNorm = norm(senderId);
+
+  // Skip admins (uses cached group metadata when available)
   try {
-    const meta = await sock.groupMetadata(chatId);
-    const p = meta.participants.find(x => x.id === senderId || x.jid === senderId);
+    const m = meta || await sock.groupMetadata(chatId);
+    const p = m.participants.find(x => norm(x.id) === senderNorm || norm(x.lid) === senderNorm);
     if (p?.admin) return;
   } catch {}
 
@@ -69,7 +100,7 @@ async function checkFlood(sock, message, chatId, senderId) {
   if (ent.count < cfg.maxMsgs) return;
 
   const tag = `@${senderId.split('@')[0]}`;
-  const canAct = await isBotAdmin(sock, chatId);
+  const canAct = await isBotAdmin(sock, chatId, meta);
 
   if (cfg.warnFirst && !ent.warned) {
     ent.warned = true;
@@ -115,6 +146,13 @@ module.exports = {
   async handler(sock, message, args, context = {}) {
     const chatId = context.chatId || message.key.remoteJid;
     if (!chatId.endsWith('@g.us')) return sock.sendMessage(chatId, { text: '❌ Groups only.' }, { quoted: message });
+
+    // ✅ Guard: group admin + bot admin required (isBotAdmin/isSenderAdmin are
+    // computed by the message handler)
+    if (context.isBotAdmin === false)
+      return sock.sendMessage(chatId, { text: '❌ *Please make the bot an admin first.*' }, { quoted: message });
+    if (!context.isSenderAdmin && !context.senderIsOwnerOrSudo)
+      return sock.sendMessage(chatId, { text: '❌ *Group admins only.*' }, { quoted: message });
 
     const sub = (args[0] || 'status').toLowerCase();
     const cfg = await getConfig(chatId);
