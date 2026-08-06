@@ -878,6 +878,26 @@ function getQuoted(msg) {
 // ======================== EXPRESS ROUTES ========================
 app.get('/', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
 app.get('/api/status', (req,res)=>res.json(getStats()));
+// ── SESSION VISIBILITY: list saved sessions ──────────────────────────────
+app.get('/api/sessions', (req,res)=>{
+  try {
+    const sessions = [];
+    if (fs.existsSync(SESSIONS_DIR)) {
+      for (const d of fs.readdirSync(SESSIONS_DIR)) {
+        const hasCreds = fs.existsSync(path.join(SESSIONS_DIR, d, 'creds.json'));
+        const conn = activeConnections.get(d);
+        sessions.push({ number: d, hasCreds, connected: !!conn?.connected });
+      }
+    }
+    const supabaseEnabled = supabaseStore.isEnabled();
+    res.json({
+      totalSaved: sessions.length,
+      sessions,
+      supabaseEnabled,
+      note: supabaseEnabled ? 'Sessions backed up to Supabase ✅' : '⚠️ Supabase not configured — sessions will be lost on Render restart! Set SUPABASE_URL and SUPABASE_KEY.'
+    });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
 app.get('/status', (req, res) => res.json({ status: 'ok', uptime: process.uptime(), bot: getStats() }));
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: Math.floor((Date.now()-START_TIME)/1000), connected: [...activeConnections.values()].some(e=>e.connected), platform: detectPlatform(), deployId: DEPLOY_ID }));
 app.get('/api/config', (req,res)=>res.json({
@@ -1158,7 +1178,7 @@ async function reloadExistingSessions() {
 
   if (supabaseStore.isEnabled()) {
     try {
-      await supabaseStore.initTables();
+      // Skip initTables() RPC (may not exist on all Supabase setups); go straight to query
       const remoteSessions = await supabaseStore.listSessions();
       console.log(`☁️  Supabase has ${remoteSessions.length} remote session(s)`);
       for (const num of remoteSessions) {
@@ -1169,11 +1189,20 @@ async function reloadExistingSessions() {
           if (creds) {
             fs.mkdirSync(sessionDir, { recursive: true });
             fs.writeFileSync(credsPath, JSON.stringify(creds, null, 2));
-            console.log(`☁️  Restored session: ${num}`);
+            console.log(`☁️  Restored session: ${num} ✅`);
           }
+        } else {
+          console.log(`📂 Local session already present: ${num}`);
         }
       }
-    } catch (e) { console.error('[SUPABASE] Session restore error:', e.message); }
+    } catch (e) {
+      console.error('[SUPABASE] Session restore error:', e.message);
+      console.warn('⚠️  Sessions will NOT persist across Render restarts without Supabase.');
+    }
+  } else {
+    console.warn('⚠️  Supabase NOT configured (no SUPABASE_URL/SUPABASE_KEY).');
+    console.warn('   Sessions WILL be lost when Render restarts/redeploys.');
+    console.warn('   → See SUPABASE_SETUP.sql and add env vars to fix this.');
   }
 
   if (!fs.existsSync(SESSIONS_DIR)) return;
