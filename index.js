@@ -727,16 +727,17 @@ async function handleMessage(conn, msg, sessionId) {
   // ✅ FIX: antilink / antibot / antibadword / bgm all watch PLAIN messages
   // (no command prefix). The old code returned above this point whenever a
   // message didn't start with the prefix, so none of these ever ran on real
-  // group chatter or on bgm trigger words. Run them first, and skip the
-  // owner/sudo bot itself.
-  if (!msg.key.fromMe) {
-    if (isGroupChat) {
-      try { if (await antibadwordCheck(conn, msg)) return; } catch(e) { console.error('[antibadword]', e.message); }
-      try { await antibotCheck(conn, msg, from, sender); } catch(e) { console.error('[antibot]', e.message); }
-      try { await antilinkCheck(conn, from, msg, body, sender); } catch(e) { console.error('[antilink]', e.message); }
-    }
-    try { if (await bgmCheckAndPlay(conn, msg, body, from, {})) return; } catch(e) { console.error('[bgm]', e.message); }
+  // group chatter or on bgm trigger words. Run them first.
+  if (!msg.key.fromMe && isGroupChat) {
+    try { if (await antibadwordCheck(conn, msg)) return; } catch(e) { console.error('[antibadword]', e.message); }
+    try { await antibotCheck(conn, msg, from, sender); } catch(e) { console.error('[antibot]', e.message); }
+    try { await antilinkCheck(conn, from, msg, body, sender); } catch(e) { console.error('[antilink]', e.message); }
   }
+  // ✅ FIX: bgm.js is explicitly built to also fire on the owner's own
+  // outgoing messages (self-bot use case) — gating it behind `!fromMe` (like
+  // the moderation plugins above) silently killed every trigger sent from
+  // the linked/owner number, which is how most people were testing it.
+  try { if (await bgmCheckAndPlay(conn, msg, body, from, {})) return; } catch(e) { console.error('[bgm]', e.message); }
 
   if (!body.startsWith(pfx)) return;
 
@@ -1087,18 +1088,36 @@ process.on('unhandledRejection',err=>console.error('unhandledRejection:',err));
 
 // ── KEEP-ALIVE ────────────────────────────────────────────────
 function startKeepAlive() {
+  // ✅ FIX: Render auto-injects RENDER_EXTERNAL_URL for every web service,
+  // but it wasn't in the detection list — so on Render this always fell
+  // through to `null` and the whole keep-alive loop silently never started,
+  // which is exactly why the service kept spinning down.
   const rawUrl = process.env.APP_URL
+    || process.env.RENDER_EXTERNAL_URL
     || (process.env.HEROKU_APP_DEFAULT_DOMAIN_NAME ? `https://${process.env.HEROKU_APP_DEFAULT_DOMAIN_NAME}` : null)
     || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null);
-  if (!rawUrl) return;
-  // ✅ ANTI-BAN: 25-min keep-alive — not too aggressive
-  setInterval(() => {
+  if (!rawUrl) {
+    console.warn('⚠️ Keep-alive disabled: no APP_URL/RENDER_EXTERNAL_URL detected. Set APP_URL manually if pings aren\'t firing.');
+    return;
+  }
+  const ping = () => {
     try {
       const mod = rawUrl.startsWith('https') ? require('https') : require('http');
       mod.get(rawUrl + '/health', res => { console.log(`💓 Keep-alive → ${res.statusCode}`); }).on('error', ()=>{});
     } catch {}
-  }, 25 * 60 * 1000);
-  console.log(`💓 Keep-alive enabled → ${rawUrl}`);
+  };
+  // ✅ FIX: Render's free tier spins a service down after ~15 min of no
+  // inbound HTTP traffic. A 25-min internal timer pings AFTER it's already
+  // asleep (and a sleeping process can't run its own setInterval to wake
+  // itself back up). 10 min keeps it under that threshold so it never
+  // sleeps in the first place.
+  setInterval(ping, 10 * 60 * 1000);
+  ping(); // fire one immediately on boot too
+  console.log(`💓 Keep-alive enabled → ${rawUrl} (every 10 min)`);
+  console.log('   NOTE: self-ping only works while the process is awake. If it ever');
+  console.log('   does fall asleep, set up a free external monitor (UptimeRobot,');
+  console.log(`   cron-job.org, etc.) to GET ${rawUrl}/health every 5-10 min — that`);
+  console.log('   is the only thing that can wake a fully-suspended Render instance.');
 }
 
 // ── START ─────────────────────────────────────────────────────
