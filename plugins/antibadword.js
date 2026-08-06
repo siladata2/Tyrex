@@ -46,6 +46,7 @@ const EXTRA_BAD_WORDS = [
 /* ═══ Settings helpers ══════════════════════════════════════════════ */
 const SETTING_KEY = 'antibadword_v3';
 const WARNS_KEY   = 'abw_warns';
+const MUTES_KEY   = 'abw_mutes';
 
 async function getSettings(chatId) {
   const s = await store.getSetting(chatId, SETTING_KEY);
@@ -56,6 +57,8 @@ async function getSettings(chatId) {
     whitelist: [],       // JIDs exempt from filter
     extraWords: [],      // admin-added custom words
     removedWords: [],    // words removed from default list
+    muteMinutes: 15,     // ✅ NEW: how long "mute" action silences a user
+    exemptAdmins: true,  // ✅ NEW: group admins are skipped by default
   };
 }
 
@@ -70,6 +73,50 @@ async function getWarns(chatId) {
 
 async function saveWarns(chatId, warns) {
   await store.saveSetting(chatId, WARNS_KEY, warns);
+}
+
+// ✅ NEW: real per-user mute state (timed), since WhatsApp has no native
+// per-participant mute — this is enforced by deleting every message the
+// muted user sends until their mute expires.
+async function getMutes(chatId) {
+  const m = await store.getSetting(chatId, MUTES_KEY);
+  return m || {};
+}
+async function saveMutes(chatId, mutes) {
+  await store.saveSetting(chatId, MUTES_KEY, mutes);
+}
+async function muteUser(chatId, jid, minutes) {
+  const mutes = await getMutes(chatId);
+  mutes[jid] = Date.now() + minutes * 60 * 1000;
+  await saveMutes(chatId, mutes);
+}
+/** Call this on EVERY group message (not just ones with a bad word) to
+ * enforce active mutes. Returns true if the message was deleted. */
+async function checkMuted(sock, message) {
+  const chatId = message.key.remoteJid;
+  if (!chatId?.endsWith('@g.us')) return false;
+  const senderId = message.key.participant || message.key.remoteJid;
+  const mutes = await getMutes(chatId);
+  const until = mutes[senderId];
+  if (!until) return false;
+  if (Date.now() > until) { delete mutes[senderId]; await saveMutes(chatId, mutes); return false; }
+  try { await sock.sendMessage(chatId, { delete: message.key }); } catch {}
+  return true;
+}
+
+async function isGroupAdmin(sock, chatId, jid) {
+  try {
+    const meta = await sock.groupMetadata(chatId);
+    const p = meta.participants?.find(x => x.id === jid);
+    return !!(p && (p.admin === 'admin' || p.admin === 'superadmin'));
+  } catch { return false; }
+}
+async function botIsAdmin(sock, chatId) {
+  try {
+    const meta = await sock.groupMetadata(chatId);
+    const me = meta.participants?.find(x => x.id === sock.user?.id?.split(':')[0] + '@s.whatsapp.net' || x.id === sock.user?.id);
+    return !!(me && (me.admin === 'admin' || me.admin === 'superadmin'));
+  } catch { return false; }
 }
 
 /* ═══ Word list build ═══════════════════════════════════════════════ */
@@ -88,11 +135,15 @@ function buildWordSet(settings) {
 /* ═══ Text normalizer ═══════════════════════════════════════════════ */
 const LEET = { '0':'o','1':'i','3':'e','4':'a','@':'a','$':'s','!':'i','5':'s','7':'t','8':'b' };
 function normalize(text) {
+  // ✅ FIX: these were written as `\\s` (double backslash) inside a regex
+  // literal, which matches a literal backslash + "s" instead of whitespace
+  // — so whitespace runs never actually collapsed. Single backslash is the
+  // real whitespace shorthand.
   return text.toLowerCase()
     .split('').map(c => LEET[c] || c).join('')
     .replace(/(.)\1{2,}/g, '$1$1')
-    .replace(/[^a-z0-9\\s]/g, ' ')
-    .replace(/\\s+/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -122,6 +173,11 @@ async function checkAntiBadword(sock, message) {
   // Skip whitelisted
   if ((settings.whitelist || []).some(jid => senderId.includes(jid.replace(/[^0-9]/g, '')))) return false;
 
+  // ✅ NEW: skip group admins by default — a strict filter that catches
+  // admins too usually isn't what group owners want, and it also avoids
+  // the bot trying (and failing) to kick someone it can't remove.
+  if (settings.exemptAdmins !== false && await isGroupAdmin(sock, chatId, senderId)) return false;
+
   const text = (
     message.message?.conversation ||
     message.message?.extendedTextMessage?.text ||
@@ -142,6 +198,11 @@ async function checkAntiBadword(sock, message) {
     const mention   = `@${senderNum}`;
 
     const action = settings.action || 'warn';
+    // ✅ FIX: kick/warn-limit-kick were fired blind — if the bot isn't a
+    // group admin, groupParticipantsUpdate silently fails (caught and
+    // swallowed) while the bot still announced "removed". Check first and
+    // say so honestly instead of lying about the outcome.
+    const canKick = (action === 'kick' || (action === 'warn')) ? await botIsAdmin(sock, chatId) : true;
 
     if (action === 'delete') {
       await sock.sendMessage(chatId, {
@@ -152,6 +213,10 @@ async function checkAntiBadword(sock, message) {
     }
 
     if (action === 'kick') {
+      if (!canKick) {
+        await sock.sendMessage(chatId, { text: `🚫 Message deleted — banned word from ${mention}.\n⚠️ I need to be a group admin to remove members.`, mentions: [senderId] });
+        return true;
+      }
       await sock.groupParticipantsUpdate(chatId, [senderId], 'remove').catch(() => {});
       await sock.sendMessage(chatId, {
         text: `⛔ ${mention} was removed — banned word detected.\n> REDXBOT302`,
@@ -161,9 +226,10 @@ async function checkAntiBadword(sock, message) {
     }
 
     if (action === 'mute') {
-      // Mute by demoting if admin, or just warn
+      const minutes = settings.muteMinutes || 15;
+      await muteUser(chatId, senderId, minutes);
       await sock.sendMessage(chatId, {
-        text: `🔇 ${mention} muted — banned word detected.\n> REDXBOT302`,
+        text: `🔇 ${mention} muted for ${minutes} min — banned word detected.\nAny message they send will be auto-deleted until then.\n> REDXBOT302`,
         mentions: [senderId],
       });
       return true;
@@ -179,6 +245,10 @@ async function checkAntiBadword(sock, message) {
     if (warnN >= limit) {
       warns[senderId] = 0;
       await saveWarns(chatId, warns);
+      if (!canKick) {
+        await sock.sendMessage(chatId, { text: `⚠️ ${mention} hit the ${limit}-warning limit, but I'm not a group admin so I can't remove them.\n> REDXBOT302`, mentions: [senderId] });
+        return true;
+      }
       await sock.groupParticipantsUpdate(chatId, [senderId], 'remove').catch(() => {});
       await sock.sendMessage(chatId, {
         text: `⛔ ${mention} kicked — reached ${limit} warnings for banned words.\n> REDXBOT302`,
@@ -324,6 +394,18 @@ module.exports = {
       return reply('❌ Usage: `.abw reset warns`');
     }
 
+    if (action === 'mute') {
+      const minutes = parseInt(args[1]);
+      if (!isNaN(minutes) && minutes > 0) {
+        settings.muteMinutes = minutes;
+        await saveSettings(chatId, settings);
+        return reply(`✅ Mute duration set to *${minutes} min*.`);
+      }
+      settings.action = 'mute';
+      await saveSettings(chatId, settings);
+      return reply(`✅ Action set to *mute* (${settings.muteMinutes || 15} min). Use \`.abw mute <minutes>\` to change duration.`);
+    }
+
     return reply(
       `❌ Unknown action.\n\n` +
       `Use \`.abw status\` for help.`
@@ -334,3 +416,4 @@ module.exports = {
 };
 
 module.exports.checkAntiBadword = checkAntiBadword;
+module.exports.checkMuted = checkMuted;

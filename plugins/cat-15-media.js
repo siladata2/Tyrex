@@ -143,16 +143,57 @@ const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
+const axios = require('axios');
 
 // ✅ FIX: WhatsApp frequently refuses to play a plain audio/mpeg (mp3) message
 // inline — clients expect ogg/opus for the audio player to render a working
-// waveform. Convert with ffmpeg (path set by lib/ffmpegSetup at boot) and
-// fall back to the raw mp3 only if conversion fails.
-async function convertToPlayableOgg(mp3Path) {
-    const oggPath = mp3Path.replace(/\.mp3$/, '.ogg');
-    const bin = process.env.FFMPEG_PATH || 'ffmpeg';
-    await exec(`"${bin}" -i "${mp3Path}" -c:a libopus -ar 24000 -b:a 32k -ac 1 -f ogg "${oggPath}" -y`);
-    return oggPath;
+// waveform. Convert with ffmpeg (path set by lib/ffmpegSetup at boot).
+// Works on a Buffer in, Buffer out — no dependency on the caller's tmp path.
+async function convertMp3BufferToOggBuffer(mp3Buffer) {
+    const tag       = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const tmpDir    = path.join(process.cwd(), 'tmp');
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+    const inPath  = path.join(tmpDir, `tts_in_${tag}.mp3`);
+    const outPath = path.join(tmpDir, `tts_out_${tag}.ogg`);
+    fs.writeFileSync(inPath, mp3Buffer);
+    try {
+        const bin = process.env.FFMPEG_PATH || 'ffmpeg';
+        await exec(`"${bin}" -i "${inPath}" -c:a libopus -ar 24000 -b:a 32k -ac 1 -f ogg "${outPath}" -y`);
+        return fs.readFileSync(outPath);
+    } finally {
+        if (fs.existsSync(inPath))  fs.unlinkSync(inPath);
+        if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
+    }
+}
+
+// ✅ FIX: gtts hits Google Translate's TTS endpoint directly, which many
+// cloud hosts (Render/Railway/Heroku shared ranges included) get rate
+// limited or blocked on — that's a hosting-IP problem, not something fixable
+// in this file alone, so it needs a real fallback provider, not just a
+// retry. StreamElements' public TTS API is a separate, independent service
+// most WhatsApp bots already rely on for exactly this reason.
+function gttsToBuffer(text, language) {
+    return new Promise((resolve, reject) => {
+        const tts = new gTTS(text, language);
+        const stream = tts.stream();
+        const chunks = [];
+        stream.on('data', (c) => chunks.push(c));
+        stream.on('end', () => resolve(Buffer.concat(chunks)));
+        stream.on('error', reject);
+    });
+}
+
+const STREAMELEMENTS_VOICES = {
+    en: 'Brian', es: 'Enrique', fr: 'Celine', de: 'Marlene', it: 'Giorgio',
+    pt: 'Ricardo', ru: 'Maxim', ja: 'Takumi', ko: 'Seoyeon', ar: 'Zeina', hi: 'Aditi'
+};
+async function streamElementsToBuffer(text, language) {
+    const voice = STREAMELEMENTS_VOICES[language] || 'Brian';
+    const { data } = await axios.get('https://api.streamelements.com/kappa/v2/speech', {
+        params: { voice, text }, responseType: 'arraybuffer', timeout: 20000
+    });
+    if (!data || !data.length) throw new Error('StreamElements returned empty audio');
+    return Buffer.from(data);
 }
 
 module.exports = {
@@ -174,33 +215,28 @@ module.exports = {
         }
 
         let language = 'en';
-        // If last argument is a 2-letter language code, use it
         if (args.length > 1 && /^[a-z]{2}$/.test(args[args.length - 1])) {
             language = args.pop();
         }
-
         const text = args.join(' ').trim();
-        const tempDir = path.join(process.cwd(), 'tmp');
-        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-        const filePath = path.join(tempDir, `tts-${Date.now()}.mp3`);
 
         try {
-            // Generate TTS file
-            await new Promise((resolve, reject) => {
-                const tts = new gTTS(text, language);
-                tts.save(filePath, (err) => {
-                    if (err) reject(err);
-                    else resolve();
-                });
-            });
-
-            // Send the audio — try converting to ogg/opus first for reliable
-            // in-app playback, fall back to raw mp3 if ffmpeg isn't available.
-            let sendPath = filePath, mimetype = 'audio/mpeg', ptt = false;
-            let oggPath = null;
+            // Primary: Google Translate TTS (gtts), straight to a buffer.
+            // Fallback: StreamElements, if gtts's endpoint is blocked/down
+            // for this host or times out.
+            let mp3Buffer;
             try {
-                oggPath = await convertToPlayableOgg(filePath);
-                sendPath = oggPath;
+                mp3Buffer = await gttsToBuffer(text, language);
+            } catch (primaryErr) {
+                console.warn('[TTS] gtts failed, falling back to StreamElements:', primaryErr.message);
+                mp3Buffer = await streamElementsToBuffer(text, language);
+            }
+
+            // Convert to ogg/opus for reliable in-app playback; fall back to
+            // sending the raw mp3 buffer if ffmpeg isn't available.
+            let audioBuffer = mp3Buffer, mimetype = 'audio/mpeg', ptt = false;
+            try {
+                audioBuffer = await convertMp3BufferToOggBuffer(mp3Buffer);
                 mimetype = 'audio/ogg; codecs=opus';
                 ptt = true;
             } catch (convErr) {
@@ -208,14 +244,12 @@ module.exports = {
             }
 
             await sock.sendMessage(chatId, {
-                audio: { url: sendPath },
+                audio: audioBuffer,
                 mimetype,
                 ptt,
                 fileName: ptt ? undefined : 'tts.mp3',
                 ...channelInfo
             }, { quoted: message });
-
-            if (oggPath && fs.existsSync(oggPath)) fs.unlinkSync(oggPath);
 
         } catch (err) {
             console.error('TTS error:', err.message);
@@ -224,11 +258,6 @@ module.exports = {
                 { text: `❌ Failed to generate TTS audio.\nReason: ${err.message}`, ...channelInfo },
                 { quoted: message }
             );
-        } finally {
-            // Clean up
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-            }
         }
     }
 };

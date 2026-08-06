@@ -72,11 +72,21 @@ async function tryRuhend(url) {
   return { url: videoUrl, title: res?.data?.title };
 }
 
+// Method 5: jawad-tech (shared multi-platform downloader — see lib/jawadDownloader.js)
+async function tryJawad(url) {
+  const { jawadDownload } = require('../lib/jawadDownloader');
+  const { media } = await jawadDownload(url);
+  const best = media.find(m => m.type === 'video') || media[0];
+  if (!best?.url) throw new Error('No URL from jawad-tech');
+  return { url: best.url, title: best.title || 'TikTok Video' };
+}
+
 const METHODS = [
   { name: 'tikwm',      fn: tryTikwm     },
   { name: 'discardapi', fn: tryDiscardApi },
   { name: 'mrnima',     fn: tryMrnima    },
   { name: 'ruhend',     fn: tryRuhend    },
+  { name: 'jawad-tech', fn: tryJawad     },
 ];
 
 module.exports = {
@@ -128,10 +138,11 @@ module.exports = {
     const igRegex = /https?:\/\/(www\.)?(instagram\.com|instagr\.am)\/(p|reel|tv|stories)\//i;
     if (!igRegex.test(url)) return sock.sendMessage(chatId, { text: '❌ Invalid Instagram link.' }, { quoted: message });
     await sock.sendMessage(chatId, { react: { text: '🔄', key: message.key } });
+    // Primary: ruhend-scraper
     try {
       if (!igdl) throw new Error('ruhend-scraper not available');
       const res = await igdl(url);
-      if (!res?.data?.length) return sock.sendMessage(chatId, { text: '❌ No media found.' }, { quoted: message });
+      if (!res?.data?.length) throw new Error('empty result');
       const seen = new Set();
       const media = res.data.filter(m => { if (!m?.url || seen.has(m.url)) return false; seen.add(m.url); return true; });
       for (const item of media.slice(0, 5)) {
@@ -139,8 +150,20 @@ module.exports = {
         if (isVideo) await sock.sendMessage(chatId, { video: { url: item.url }, caption: '📸 Instagram Video' }, { quoted: message });
         else await sock.sendMessage(chatId, { image: { url: item.url }, caption: '📸 Instagram Photo' }, { quoted: message });
       }
+      return;
     } catch (e) {
-      await sock.sendMessage(chatId, { text: `❌ Failed: ${e.message}` }, { quoted: message });
+      // ✅ FIX: fall back to jawad-tech instead of just erroring out when the
+      // primary scraper is empty/down.
+      try {
+        const { jawadDownload } = require('../lib/jawadDownloader');
+        const { media } = await jawadDownload(url);
+        for (const item of media.slice(0, 5)) {
+          if (item.type === 'video') await sock.sendMessage(chatId, { video: { url: item.url }, caption: '📸 Instagram Video' }, { quoted: message });
+          else await sock.sendMessage(chatId, { image: { url: item.url }, caption: '📸 Instagram Photo' }, { quoted: message });
+        }
+      } catch (e2) {
+        await sock.sendMessage(chatId, { text: `❌ Failed: ${e2.message}` }, { quoted: message });
+      }
     }
   }
 };
@@ -167,14 +190,24 @@ module.exports = {
     try {
       const apiUrl = `https://discardapi.dpdns.org/api/dl/twitter?apikey=guru&url=${encodeURIComponent(url)}`;
       const { data } = await axios.get(apiUrl, { timeout: 20000 });
-      if (!data?.status || !data.result?.media?.length) return sock.sendMessage(chatId, { text: '❌ No media found for this tweet.' }, { quoted: message });
+      if (!data?.status || !data.result?.media?.length) throw new Error('empty result');
       const tweet = data.result;
       const caption = `🐦 @${tweet.authorUsername} (${tweet.authorName})\n${tweet.text}\n\n❤️ ${tweet.likes} | 🔁 ${tweet.retweets} | 💬 ${tweet.replies}`.trim();
       for (const item of tweet.media) {
         if (item.type === 'video') await sock.sendMessage(chatId, { video: { url: item.url }, caption }, { quoted: message });
         else if (item.type === 'image') await sock.sendMessage(chatId, { image: { url: item.url }, caption }, { quoted: message });
       }
-    } catch (e) { await sock.sendMessage(chatId, { text: `❌ Failed: ${e.message}` }, { quoted: message }); }
+    } catch (e) {
+      // ✅ FIX: fall back to jawad-tech when the primary API is down/empty.
+      try {
+        const { jawadDownload } = require('../lib/jawadDownloader');
+        const { media } = await jawadDownload(url);
+        for (const item of media.slice(0, 5)) {
+          if (item.type === 'video') await sock.sendMessage(chatId, { video: { url: item.url }, caption: '🐦 X/Twitter' }, { quoted: message });
+          else await sock.sendMessage(chatId, { image: { url: item.url }, caption: '🐦 X/Twitter' }, { quoted: message });
+        }
+      } catch (e2) { await sock.sendMessage(chatId, { text: `❌ Failed: ${e2.message}` }, { quoted: message }); }
+    }
   }
 };
     return module.exports;
@@ -194,17 +227,14 @@ const axios = require('axios');
 let fbdl;
 try { fbdl = require('@mrnima/facebook-downloader').facebook; } catch {}
 
-// ✅ FIX (404 status): the primary scraper API this package calls
-// upstream is unofficial and goes down / changes shape without notice —
-// that's what surfaces as a bare "404". Add a second, independent public
-// API as a fallback so one dead provider doesn't take the command down.
+// ✅ FIX (ENOTFOUND): the old fallback domain (api.davidcyriltech.my.id) no
+// longer resolves at all. Swapped for the shared jawad-tech downloader,
+// which also backs tiktok/instagram/twitter below.
+const { jawadDownload } = require('../lib/jawadDownloader');
 async function fetchViaFallbackAPI(url) {
-  const { data } = await axios.get('https://api.davidcyriltech.my.id/facebook', {
-    params: { url }, timeout: 20000
-  });
-  if (!data || data.success === false) throw new Error(data?.message || 'Fallback API returned no result');
-  const links = data.result || data.data || {};
-  return links.hd || links.sd || links.high || links.low || links.url;
+  const { media } = await jawadDownload(url);
+  const best = media.find(m => m.type === 'video') || media[0];
+  return best?.url;
 }
 
 module.exports = {
