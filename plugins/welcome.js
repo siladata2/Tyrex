@@ -8,6 +8,7 @@ const DEFAULT_BOT_NAME = settings.botName || 'REDXBOT302';
 const DEFAULT_OWNER = settings.botOwner || 'Abdul Rehman Rajpoot';
 
 // Fixed image settings (no customisation)
+const WELCOME_BANNER = 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png';
 const IMAGE_API = 'https://api.some-random-api.com/welcome/img/2/';
 const IMAGE_STYLE = 'gaming3';
 const IMAGE_COLOR = 'green';
@@ -155,7 +156,20 @@ async function handleJoinEvent(sock, id, participants) {
         .replace(/{count}/g, memberCount)
         .replace(/{botname}/g, botName);
 
-      // Try to generate a welcome image
+      // Primary: fixed welcome banner image
+      try {
+        await sock.sendMessage(id, {
+          image: { url: WELCOME_BANNER },
+          caption: finalMessage,
+          mentions: [participantString],
+          ...channelInfo
+        });
+        continue; // banner sent, skip generated-card + text fallback
+      } catch (bannerError) {
+        console.log('Welcome banner failed, falling back to generated card');
+      }
+
+      // Fallback: generate a welcome image
       try {
         let profilePicUrl = '';
         if (USE_AVATAR) {

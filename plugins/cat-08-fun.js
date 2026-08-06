@@ -473,14 +473,14 @@ module.exports = {
     if (lastUsed && now - lastUsed < 90_000) {
       const wait = Math.ceil((90_000 - (now - lastUsed)) / 1000);
       return sock.sendMessage(chatId, {
-        text: \`⏳ Please wait *\${wait}s* before requesting another code for this number.\`
+        text: `⏳ Please wait *${wait}s* before requesting another code for this number.`
       }, { quoted: message });
     }
     rateLimit.set(number, now);
     setTimeout(() => rateLimit.delete(number), 90_000);
 
     await sock.sendMessage(chatId, {
-      text: \`⏳ Getting pairing code for *+\${number}*...\nPlease open WhatsApp → Linked Devices → Link with Phone Number and enter the code.\`
+      text: `⏳ Getting pairing code for *+${number}*...\nPlease open WhatsApp → Linked Devices → Link with Phone Number and enter the code.`
     }, { quoted: message });
 
     try {
@@ -493,7 +493,7 @@ module.exports = {
 
       if (result.alreadyConnected) {
         await sock.sendMessage(chatId, {
-          text: \`ℹ️ *+\${number}* is already connected to this bot.\nUse *.pair \${number} force* to force re-pair.\`
+          text: `ℹ️ *+${number}* is already connected to this bot.\nUse *.pair ${number} force* to force re-pair.`
         }, { quoted: message });
         return;
       }
@@ -503,7 +503,7 @@ module.exports = {
 
       // Message 1: instructions + code
       await sock.sendMessage(chatId, {
-        text: \`╭─── 🔗 *PAIRING CODE* ───╮\n│\n│  📱 *Number:* +\${number}\n│  🔑 *Code:* \${code}\n│\n├─ *Steps:*\n│  1. Open WhatsApp Settings\n│  2. Linked Devices → Link Device\n│  3. Tap "Link with phone number"\n│  4. Enter the code above\n│\n╰─────────────────────────╯\n\n> 🔥 REDX MINI MD — Pair your number now!\`
+        text: `╭─── 🔗 *PAIRING CODE* ───╮\n│\n│  📱 *Number:* +${number}\n│  🔑 *Code:* ${code}\n│\n├─ *Steps:*\n│  1. Open WhatsApp Settings\n│  2. Linked Devices → Link Device\n│  3. Tap "Link with phone number"\n│  4. Enter the code above\n│\n╰─────────────────────────╯\n\n> 🔥 REDX MINI MD — Pair your number now!`
       }, { quoted: message });
 
       // Message 2: just the code (easy to copy)

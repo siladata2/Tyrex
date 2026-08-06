@@ -127,43 +127,94 @@ const axios = require('axios');
 let igdl;
 try { igdl = require('ruhend-scraper').igdl; } catch {}
 
+// ✅ FIX: detect real media type instead of trusting a ".mp4 in the URL"
+// guess — CDN links rarely carry a file extension, which was causing
+// videos to get sent with `image:` (WhatsApp then shows a broken/blank
+// picture). We check the API's own type field first, then fall back to
+// a lightweight HEAD request to read the real Content-Type.
+async function resolveIsVideo(item) {
+  const t = (item.type || item.mediaType || '').toString().toLowerCase();
+  if (t.includes('video') || t === 'reel') return true;
+  if (t.includes('image') || t === 'photo') return false;
+  if (/\.(mp4|mov|m4v)(\?|$)/i.test(item.url)) return true;
+  if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(item.url)) return false;
+  try {
+    const head = await axios.head(item.url, { timeout: 8000 });
+    return (head.headers['content-type'] || '').includes('video');
+  } catch {
+    return false; // safest default when we truly can't tell
+  }
+}
+
+// Primary provider: nexray (handles posts, reels & stories more reliably
+// than the old scraper, which was 404-ing on a lot of links).
+async function nexrayDownload(url) {
+  const { data } = await axios.get('https://api.nexray.eu.cc/downloader/instagram', {
+    params: { url }, timeout: 25000
+  });
+  const list = data?.result?.data || data?.result || data?.data || [];
+  const arr = Array.isArray(list) ? list : [list];
+  const media = arr
+    .map(m => ({ url: m.url || m.download_url || m.link, type: m.type || m.mediaType }))
+    .filter(m => m.url);
+  if (!media.length) throw new Error('nexray returned no media');
+  return media;
+}
+
 module.exports = {
   command: 'instagram', aliases: ['ig', 'igdl', 'insta'],
-  category: 'download', description: 'Download Instagram posts, reels & videos',
+  category: 'download', description: 'Download Instagram posts, reels, stories & videos',
   usage: '.ig <instagram link>',
   async handler(sock, message, args, context = {}) {
     const chatId = context.chatId || message.key.remoteJid;
     const url = args.join(' ').trim() || message.message?.conversation || message.message?.extendedTextMessage?.text || '';
-    if (!url) return sock.sendMessage(chatId, { text: '📸 *Instagram Downloader*\n\nUsage: .ig <post | reel | video link>' }, { quoted: message });
+    if (!url) return sock.sendMessage(chatId, { text: '📸 *Instagram Downloader*\n\nUsage: .ig <post | reel | story | video link>' }, { quoted: message });
     const igRegex = /https?:\/\/(www\.)?(instagram\.com|instagr\.am)\/(p|reel|tv|stories)\//i;
     if (!igRegex.test(url)) return sock.sendMessage(chatId, { text: '❌ Invalid Instagram link.' }, { quoted: message });
     await sock.sendMessage(chatId, { react: { text: '🔄', key: message.key } });
-    // Primary: ruhend-scraper
+
+    let media = null;
+    let lastErr = null;
+
+    // Primary: nexray (heavier/more reliable API, fixes the 404s on stories)
     try {
-      if (!igdl) throw new Error('ruhend-scraper not available');
-      const res = await igdl(url);
-      if (!res?.data?.length) throw new Error('empty result');
-      const seen = new Set();
-      const media = res.data.filter(m => { if (!m?.url || seen.has(m.url)) return false; seen.add(m.url); return true; });
+      media = await nexrayDownload(url);
+    } catch (e) {
+      lastErr = e;
+    }
+
+    // Fallback 1: ruhend-scraper
+    if (!media) {
+      try {
+        if (!igdl) throw new Error('ruhend-scraper not available');
+        const res = await igdl(url);
+        if (!res?.data?.length) throw new Error('empty result');
+        const seen = new Set();
+        media = res.data.filter(m => { if (!m?.url || seen.has(m.url)) return false; seen.add(m.url); return true; });
+      } catch (e) { lastErr = e; }
+    }
+
+    // Fallback 2: jawad-tech
+    if (!media) {
+      try {
+        const { jawadDownload } = require('../lib/jawadDownloader');
+        const { media: jMedia } = await jawadDownload(url);
+        media = jMedia;
+      } catch (e) { lastErr = e; }
+    }
+
+    if (!media || !media.length) {
+      return sock.sendMessage(chatId, { text: `❌ Failed to fetch: ${lastErr?.message || 'no providers returned media (link may be private/expired)'}` }, { quoted: message });
+    }
+
+    try {
       for (const item of media.slice(0, 5)) {
-        const isVideo = item.url.includes('.mp4') || item.type === 'video';
+        const isVideo = await resolveIsVideo(item);
         if (isVideo) await sock.sendMessage(chatId, { video: { url: item.url }, caption: '📸 Instagram Video' }, { quoted: message });
         else await sock.sendMessage(chatId, { image: { url: item.url }, caption: '📸 Instagram Photo' }, { quoted: message });
       }
-      return;
-    } catch (e) {
-      // ✅ FIX: fall back to jawad-tech instead of just erroring out when the
-      // primary scraper is empty/down.
-      try {
-        const { jawadDownload } = require('../lib/jawadDownloader');
-        const { media } = await jawadDownload(url);
-        for (const item of media.slice(0, 5)) {
-          if (item.type === 'video') await sock.sendMessage(chatId, { video: { url: item.url }, caption: '📸 Instagram Video' }, { quoted: message });
-          else await sock.sendMessage(chatId, { image: { url: item.url }, caption: '📸 Instagram Photo' }, { quoted: message });
-        }
-      } catch (e2) {
-        await sock.sendMessage(chatId, { text: `❌ Failed: ${e2.message}` }, { quoted: message });
-      }
+    } catch (e2) {
+      await sock.sendMessage(chatId, { text: `❌ Failed to send media: ${e2.message}` }, { quoted: message });
     }
   }
 };
