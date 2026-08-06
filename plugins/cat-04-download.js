@@ -189,11 +189,24 @@ try {
     const module = {exports: {}}; const exports = module.exports;
 'use strict';
 const axios = require('axios');
-// ✅ FIX: this package exports a named `facebook` function, not a callable
-// module — `require(...)` returned `{ facebook }`, so `fbdl(url)` threw
-// "fbdl is not a function". Destructure the real function instead.
+// ✅ FIX (fbdl is not a function): package exports a named `facebook`
+// function, not a callable module — destructure the real function.
 let fbdl;
 try { fbdl = require('@mrnima/facebook-downloader').facebook; } catch {}
+
+// ✅ FIX (404 status): the primary scraper API this package calls
+// upstream is unofficial and goes down / changes shape without notice —
+// that's what surfaces as a bare "404". Add a second, independent public
+// API as a fallback so one dead provider doesn't take the command down.
+async function fetchViaFallbackAPI(url) {
+  const { data } = await axios.get('https://api.davidcyriltech.my.id/facebook', {
+    params: { url }, timeout: 20000
+  });
+  if (!data || data.success === false) throw new Error(data?.message || 'Fallback API returned no result');
+  const links = data.result || data.data || {};
+  return links.hd || links.sd || links.high || links.low || links.url;
+}
+
 module.exports = {
   command: 'facebook', aliases: ['fb', 'fbdl'],
   category: 'download', description: 'Download Facebook video',
@@ -203,15 +216,31 @@ module.exports = {
     const url = args.join(' ').trim();
     if (!url) return sock.sendMessage(chatId, { text: '📘 *Facebook Downloader*\n\nUsage: .fb <Facebook video URL>' }, { quoted: message });
     await sock.sendMessage(chatId, { text: '⏳ Fetching Facebook video...' }, { quoted: message });
+
+    let videoUrl = null, title = '', lastErr = null;
+
+    // Primary provider
     try {
       if (typeof fbdl !== 'function') throw new Error('@mrnima/facebook-downloader not installed');
       const res = await fbdl(url);
-      // Response shape: { status, result: { title, links: { HD, SD } } }
       const links = res?.result?.links || res?.links || {};
-      const videoUrl = links.HD || links.hd || links.SD || links.sd || res?.result?.hd || res?.result?.sd || res?.hd || res?.sd || res?.url;
-      if (!videoUrl) throw new Error('No video URL found — link may be private or expired.');
-      await sock.sendMessage(chatId, { video: { url: videoUrl }, caption: `📘 *Facebook Video*\n${res?.result?.title || res?.title || ''}`.trim() }, { quoted: message });
-    } catch (e) { await sock.sendMessage(chatId, { text: `❌ Failed: ${e.message}` }, { quoted: message }); }
+      videoUrl = links.HD || links.hd || links.SD || links.sd || res?.result?.hd || res?.result?.sd || res?.hd || res?.sd || res?.url;
+      title = res?.result?.title || res?.title || '';
+      if (!videoUrl) throw new Error('No video URL in response');
+    } catch (e) { lastErr = e; }
+
+    // Fallback provider if primary failed (e.g. 404 from a dead upstream endpoint)
+    if (!videoUrl) {
+      try { videoUrl = await fetchViaFallbackAPI(url); }
+      catch (e2) { lastErr = e2; }
+    }
+
+    if (!videoUrl) {
+      return sock.sendMessage(chatId, { text: `❌ Failed: ${lastErr?.message || 'No video URL found'}\n\nThe link may be private/expired, or both download providers are temporarily down. Try again in a bit.` }, { quoted: message });
+    }
+    try {
+      await sock.sendMessage(chatId, { video: { url: videoUrl }, caption: `📘 *Facebook Video*\n${title}`.trim() }, { quoted: message });
+    } catch (e) { await sock.sendMessage(chatId, { text: `❌ Failed to send video: ${e.message}` }, { quoted: message }); }
   }
 };
     return module.exports;
