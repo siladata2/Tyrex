@@ -275,7 +275,9 @@ async function doPair() {
   flash('pairFlash','<span class="spin"></span> Generating...','info',0);
   try{
     const res = await fetch('/api/pair',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:num})});
-    const d = await res.json();
+    // ✅ FIX: tolerate non-JSON error responses (proxy/HTML 500s) so the user
+    // sees the real message instead of a raw "Unexpected token < in JSON".
+    const d = await res.json().catch(()=>({error:'Server returned an invalid response — please try again.'}));
     if(!res.ok) throw new Error(d.error||'Pair failed');
     const code = d.pairingCode||'----';
     document.getElementById('codeDigits').textContent = code.match(/.{1,4}/g)?.join('-') || code;
