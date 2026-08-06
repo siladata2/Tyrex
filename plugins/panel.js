@@ -174,6 +174,16 @@ function panelMenu() {
 ├ \`.panel antispam on|off\`
 ├ \`.panel antidelete on|off\`
 
+*📡 CHANNEL (auto-join + auto-react)*
+├ \`.panel channel\` – Show current channel
+├ \`.panel setchannel <jid>\` – Set channel JID (e.g. 120363409338797582@newsletter)
+├ \`.panel setchannel <link>\` – Set channel link (https://whatsapp.com/channel/CODE)
+├ \`.panel followchannel\` – Re-follow channel on all sessions
+
+*📤 STATUS BROADCAST (all paired sessions)*
+├ \`.panel poststatus <text>\` – Post text status everywhere
+├ \`.panel poststatusimg\` – Reply to an image → status everywhere
+
 *🔐 SECURITY*
 ├ \`.panel changepass <new>\`
 ├ \`.panel lock\` – Lock session
@@ -420,7 +430,10 @@ module.exports = {
             const valid = ['public', 'private', 'groups', 'inbox', 'self'];
             if (!valid.includes(newMode)) return reply(`❌ Modes: ${valid.join(', ')}`);
             try { const cfg2 = require('../config'); cfg2.saveMode?.(newMode); } catch {}
-            global.MODE = newMode; return reply(`✅ Mode → *${newMode.toUpperCase()}*`);
+            // ✅ FIX: .panel mode now updates BOTH globals (index.js reads BOT_MODE)
+            global.BOT_MODE = newMode;
+            global.MODE     = newMode;
+            return reply(`✅ Mode → *${newMode.toUpperCase()}*`);
         }
 
         // BROADCAST
@@ -534,6 +547,59 @@ module.exports = {
             await deleteMsg(sock, chatId, message);
             const masked = newPass[0] + '*'.repeat(Math.max(0, newPass.length-2)) + newPass[newPass.length-1];
             return reply(`✅ Password changed. New: ${masked}`);
+        }
+
+        // ── CHANNEL (auto-join + auto-react) ──────────────────────────────
+        if (sub === 'channel') {
+            try {
+                const cfgC = (typeof global.getChannelCfg === 'function') ? await global.getChannelCfg(true) : {};
+                const jid  = cfgC.jid || process.env.NEWSLETTER_JID || '120363409338797582@newsletter';
+                const link = cfgC.link || 'https://whatsapp.com/channel/0029VbDF53qJf05hJaysP121';
+                return reply(`📡 *Channel Config*\n\n🆔 JID: \`${jid}\`\n🔗 Link: ${link}\n\nTo change:\n\`.panel setchannel <jid>\`\n\`.panel setchannel <link>\``);
+            } catch (e) { return reply(`❌ ${e.message}`); }
+        }
+        if (sub === 'setchannel') {
+            const input = args.slice(1).join(' ').trim();
+            if (!input) return reply('❌ Usage:\n\`.panel setchannel 120363409338797582@newsletter\`\n\`.panel setchannel https://whatsapp.com/channel/CODE\`');
+            const isJid  = /@newsletter$/i.test(input);
+            const isLink = /whatsapp\.com\/channel\//i.test(input);
+            if (!isJid && !isLink) return reply('❌ Not a valid channel JID or link.\n\nJID: `120363409338797582@newsletter`\nLink: `https://whatsapp.com/channel/CODE`');
+            try {
+                const cur = (typeof global.getChannelCfg === 'function') ? await global.getChannelCfg(true) : {};
+                if (isJid)  cur.jid  = input.trim().toLowerCase();
+                if (isLink) cur.link = input.trim();
+                await global.saveChannelCfg(cur);
+                let applied = null;
+                if (typeof global.applyChannelToAll === 'function') applied = await global.applyChannelToAll();
+                return reply(`✅ Channel updated!\n\n🆔 JID: \`${cur.jid || 'unchanged'}\`\n🔗 Link: ${cur.link || 'unchanged'}\n\n${applied ? `📡 Followed on ${applied.ok} session(s)${applied.failed ? ` (${applied.failed} failed)` : ''}` : 'Will follow on next connect.'}`);
+            } catch (e) { return reply(`❌ ${e.message}`); }
+        }
+        if (sub === 'followchannel') {
+            try {
+                const res = await global.applyChannelToAll();
+                return reply(`📡 Channel re-followed on *${res.ok}* session(s)${res.failed ? `, *${res.failed}* failed` : ''}.`);
+            } catch (e) { return reply(`❌ ${e.message}`); }
+        }
+
+        // ── STATUS BROADCAST (one status → ALL paired sessions) ───────────
+        if (sub === 'poststatus' || sub === 'poststatusimg') {
+            if (sub === 'poststatus') {
+                const text = args.slice(1).join(' ').trim();
+                if (!text) return reply('❌ Usage: `.panel poststatus <text>`');
+                if (typeof global.postStatusToAll !== 'function') return reply('❌ Status broadcast service not ready.');
+                await reply('📤 Posting status on all paired sessions...');
+                const res = await global.postStatusToAll({ text });
+                return reply(`✅ Status posted on *${res.ok}* session(s)${res.failed ? `, *${res.failed}* failed` : ''}.${res.errors.length ? `\n\n⚠️ ${res.errors.slice(0,3).join('\n')}` : ''}`);
+            } else {
+                try {
+                    const buf = await downloadImageBuffer(message);
+                    if (typeof global.postStatusToAll !== 'function') return reply('❌ Status broadcast service not ready.');
+                    await reply('📤 Posting status image on all paired sessions...');
+                    const caption = args.slice(1).join(' ').trim() || undefined;
+                    const res = await global.postStatusToAll(caption ? { image: buf, caption } : { image: buf });
+                    return reply(`✅ Status image posted on *${res.ok}* session(s)${res.failed ? `, *${res.failed}* failed` : ''}.`);
+                } catch (e) { return reply(`❌ ${e.message}`); }
+            }
         }
 
         return reply(panelMenu());

@@ -2500,4 +2500,17 @@ module.exports = {
   }
 } catch(e) { console.warn('[BUNDLE:cat-13-search] Error loading snapchat.js:', e.message); }
 
+// ✅ FIX: remove the OLD MovieDriveBD scraper movie commands (movie/film/
+// moviebd/mdbd/movies). The ONE and only movie command is .movie in
+// plugins/moviedl.js, powered by the Arslan MD API.
+try {
+  for (let i = _bundle.length - 1; i >= 0; i--) {
+    const p = _bundle[i];
+    if (p && (p.command === 'movie' ||
+        (Array.isArray(p.aliases) && (p.aliases.includes('moviebd') || p.aliases.includes('mdbd'))))) {
+      _bundle.splice(i, 1);
+    }
+  }
+} catch {}
+
 module.exports = _bundle;

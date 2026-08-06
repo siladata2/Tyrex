@@ -196,6 +196,19 @@ async function streamElementsToBuffer(text, language) {
     return Buffer.from(data);
 }
 
+// ✅ Third provider: direct Google Translate REST endpoint (tw-ob client).
+// Different network path than the gtts package — works when gtts's own
+// HTTP stack is blocked but a plain axios GET isn't.
+async function googleRestToBuffer(text, language) {
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text.slice(0, 200))}&tl=${language}&client=tw-ob&ttsspeed=1`;
+    const { data } = await axios.get(url, {
+        responseType: 'arraybuffer', timeout: 15000,
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', Referer: 'https://translate.google.com/' }
+    });
+    if (!data || !data.length) throw new Error('Google REST TTS returned empty audio');
+    return Buffer.from(data);
+}
+
 module.exports = {
     command: 'tts',
     aliases: ['texttospeech', 'speak'],
@@ -221,16 +234,25 @@ module.exports = {
         const text = args.join(' ').trim();
 
         try {
-            // Primary: Google Translate TTS (gtts), straight to a buffer.
-            // Fallback: StreamElements, if gtts's endpoint is blocked/down
-            // for this host or times out.
-            let mp3Buffer;
+            // Primary: Google Translate TTS (gtts) → StreamElements →
+            // Google REST. Any provider that returns audio wins, so .tts
+            // keeps working even when one upstream is blocked.
+            let mp3Buffer, providerUsed = 'unknown';
             try {
                 mp3Buffer = await gttsToBuffer(text, language);
-            } catch (primaryErr) {
-                console.warn('[TTS] gtts failed, falling back to StreamElements:', primaryErr.message);
-                mp3Buffer = await streamElementsToBuffer(text, language);
+                providerUsed = 'gtts';
+            } catch (e1) {
+                try {
+                    console.warn('[TTS] gtts failed, trying StreamElements:', e1.message);
+                    mp3Buffer = await streamElementsToBuffer(text, language);
+                    providerUsed = 'streamelements';
+                } catch (e2) {
+                    console.warn('[TTS] StreamElements failed, trying Google REST:', e2.message);
+                    mp3Buffer = await googleRestToBuffer(text, language);
+                    providerUsed = 'google-rest';
+                }
             }
+            if (!mp3Buffer || !mp3Buffer.length) throw new Error('All TTS providers returned empty audio');
 
             // Convert to ogg/opus for reliable in-app playback; fall back to
             // sending the raw mp3 buffer if ffmpeg isn't available.
@@ -3259,7 +3281,7 @@ const soundEffects = {
 
 module.exports = {
   command: 'sound',
-  aliases: ['audio', 'gaalisound', 'bol', 'tts'],
+  aliases: ['audio', 'gaalisound', 'bol'], // ✅ FIX: removed 'tts' alias — conflicts with the real .tts command
   category: 'fun',
   description: '🎵 Play sound effects and gaalis as audio',
   usage: '.sound [gaali/slap/thappad/etc]',

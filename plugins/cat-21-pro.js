@@ -126,52 +126,13 @@ _bundle.push({
 });
 
 /* ══════════════════════════════════════════════════════════════════
-   3. .tts  — Multi-language Text-to-Speech (Google TTS + fallback)
+   3. .tts — REMOVED (duplicate).
+   ✅ FIX: three plugins registered .tts (this one, cat-15-media tts.js,
+   and sound2's 'tts' alias). The last file loaded won, so .tts was the
+   raw-MP3 version with dead fallbacks → unplayable audio. The single
+   canonical .tts now lives in cat-15-media (gtts → StreamElements →
+   Google REST, converted to ogg/opus so WhatsApp actually plays it).
 ══════════════════════════════════════════════════════════════════ */
-_bundle.push({
-    command: 'tts', aliases: ['speak', 'texttospeech', 'voice'],
-    category: 'tools', description: 'Convert text to speech in any language',
-    usage: '.tts [lang] <text>\n.tts ur Hello World  (Urdu)\n.tts hi Namaste  (Hindi)',
-    async handler(sock, message, args, context = {}) {
-        const chatId = context.chatId || message.key.remoteJid;
-        if (!args.length) return sock.sendMessage(chatId, {
-            text: `🎙️ *Text to Speech*\n\nUsage: \`.tts [lang] <text>\`\n\nLang codes:\n• \`en\` — English\n• \`ur\` — Urdu\n• \`hi\` — Hindi\n• \`ar\` — Arabic\n• \`fr\` — French\n• \`es\` — Spanish\n• \`de\` — German\n• \`zh\` — Chinese\n• \`ja\` — Japanese\n• \`ko\` — Korean\n• \`tr\` — Turkish\n• \`bn\` — Bengali\n\nDefault: English`
-        }, { quoted: message });
-
-        const LANGS = ['en','ur','hi','ar','fr','es','de','zh','ja','ko','tr','bn','pt','ru','id','ms'];
-        let lang = 'en', text;
-        if (LANGS.includes(args[0]?.toLowerCase())) { lang = args[0].toLowerCase(); text = args.slice(1).join(' ').trim(); }
-        else text = args.join(' ').trim();
-        if (!text) return sock.sendMessage(chatId, { text: '❌ Provide text to speak.' }, { quoted: message });
-        if (text.length > 200) return sock.sendMessage(chatId, { text: '❌ Max 200 characters.' }, { quoted: message });
-
-        try {
-            await sock.sendMessage(chatId, { react: { text: '🎙️', key: message.key } });
-            // Google TTS (no key needed)
-            const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
-            const { data: audioBuf } = await axios.get(ttsUrl, {
-                responseType: 'arraybuffer',
-                headers: { 'User-Agent': 'Mozilla/5.0', Referer: 'https://translate.google.com' },
-                timeout: 15000
-            });
-            await sock.sendMessage(chatId, {
-                audio: Buffer.from(audioBuf), mimetype: 'audio/mpeg', ptt: true
-            }, { quoted: message });
-        } catch (e) {
-            // Fallback: discardapi tts
-            try {
-                const { data } = await axios.get('https://discardapi.dpdns.org/api/tools/tts', {
-                    params: { apikey: 'guru', text, lang }, timeout: 20000
-                });
-                const audioUrl = data?.result?.audio || data?.audio;
-                if (!audioUrl) throw new Error('No TTS audio URL');
-                await sock.sendMessage(chatId, { audio: { url: audioUrl }, mimetype: 'audio/mpeg', ptt: true }, { quoted: message });
-            } catch (e2) {
-                await sock.sendMessage(chatId, { text: `❌ TTS failed: ${e2.message}` }, { quoted: message });
-            }
-        }
-    }
-});
 
 /* ══════════════════════════════════════════════════════════════════
    4. .scrapeweb — Deep web scraper: title, meta, links, images

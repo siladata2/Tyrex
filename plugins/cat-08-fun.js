@@ -489,7 +489,10 @@ module.exports = {
         throw new Error('Pairing service not ready. Please try again in a few seconds.');
       }
 
-      const result = await global.doPairNumber(number);
+      // ✅ FIX: forward the optional "force" flag (`.pair <num> force`) —
+      // previously it was ignored, so re-pairing an existing session failed.
+      const isForce = (args[1] || '').toLowerCase() === 'force';
+      const result = await global.doPairNumber(number, isForce);
 
       if (result.alreadyConnected) {
         await sock.sendMessage(chatId, {

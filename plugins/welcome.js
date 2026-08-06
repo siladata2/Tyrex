@@ -1,18 +1,13 @@
 // plugins/welcome.js – Simplified & professional with poetry
 const { isWelcomeOn, getWelcome, addWelcome, delWelcome } = require('../lib/index');
-const fetch = require('node-fetch');
 const settings = require('../settings');
 
 // Default values
 const DEFAULT_BOT_NAME = settings.botName || 'REDXBOT302';
 const DEFAULT_OWNER = settings.botOwner || 'Abdul Rehman Rajpoot';
 
-// Fixed image settings (no customisation)
-const WELCOME_BANNER = 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png';
-const IMAGE_API = 'https://api.some-random-api.com/welcome/img/2/';
-const IMAGE_STYLE = 'gaming3';
-const IMAGE_COLOR = 'green';
-const USE_AVATAR = true; // always include avatar
+// ✅ FIX: welcome image = the bot's DP from settings (botDp / MENU_IMAGE).
+// The old hardcoded banner + some-random-api image generator are removed.
 
 // Professional default message with a poetic line
 const DEFAULT_MESSAGE = `🌟 *Greetings* {user}! 🌟
@@ -156,49 +151,17 @@ async function handleJoinEvent(sock, id, participants) {
         .replace(/{count}/g, memberCount)
         .replace(/{botname}/g, botName);
 
-      // Primary: fixed welcome banner image
+      // ✅ FIX: welcome image = the bot's DP from settings (botDp / MENU_IMAGE)
       try {
         await sock.sendMessage(id, {
-          image: { url: WELCOME_BANNER },
+          image: { url: settings.botDp },
           caption: finalMessage,
           mentions: [participantString],
           ...channelInfo
         });
-        continue; // banner sent, skip generated-card + text fallback
-      } catch (bannerError) {
-        console.log('Welcome banner failed, falling back to generated card');
-      }
-
-      // Fallback: generate a welcome image
-      try {
-        let profilePicUrl = '';
-        if (USE_AVATAR) {
-          try {
-            const profilePic = await sock.profilePictureUrl(participantString, 'image');
-            if (profilePic) profilePicUrl = profilePic;
-          } catch (profileError) {
-            console.log('Could not fetch profile picture');
-          }
-        }
-        if (!profilePicUrl) {
-          profilePicUrl = `https://img.pyrocdn.com/dbKUgahg.png`; // default placeholder
-        }
-
-        const apiUrl = `${IMAGE_API}${IMAGE_STYLE}?type=join&textcolor=${IMAGE_COLOR}&username=${encodeURIComponent(displayName)}&guildName=${encodeURIComponent(groupName)}&memberCount=${memberCount}&avatar=${encodeURIComponent(profilePicUrl)}`;
-
-        const response = await fetch(apiUrl);
-        if (response.ok) {
-          const imageBuffer = await response.buffer();
-          await sock.sendMessage(id, {
-            image: imageBuffer,
-            caption: finalMessage,
-            mentions: [participantString],
-            ...channelInfo
-          });
-          continue; // image sent, skip text fallback
-        }
-      } catch (imageError) {
-        console.log('Image generation failed, falling back to text');
+        continue; // image sent, skip text fallback
+      } catch (imgError) {
+        console.log('Welcome image send failed, falling back to text');
       }
 
       // Text fallback
