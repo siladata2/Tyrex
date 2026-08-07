@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 /**
  * 🔥 REDX MINI MD — ANTI-BAN EDITION v9.0
  * ✅ Fixed: forwardingScore spam, browser fingerprint, presence abuse,
@@ -88,6 +88,38 @@ const {
 const NodeCache = require('node-cache');
 const P = require('pino');
 const QRCode = require('qrcode');
+
+// ✅ SPEED FIX: fetchLatestBaileysVersion() is a network request to GitHub.
+// It was fired on EVERY initConnection / pair / reconnect. On restore of many
+// sessions this serialized dozens of network calls before any bot could come
+// online (slow restart), and every reconnect paid the cost again. Cache it for
+// 6h and share one in-flight promise so concurrent connects don't duplicate it.
+let _cachedWaVersion = null;
+let _cachedWaVersionTs = 0;
+let _waVersionInflight = null;
+const _WA_VERSION_TTL = 6 * 60 * 60 * 1000; // 6h
+async function getCachedBaileysVersion() {
+  const now = Date.now();
+  if (_cachedWaVersion && (now - _cachedWaVersionTs) < _WA_VERSION_TTL) {
+    return { version: _cachedWaVersion };
+  }
+  if (_waVersionInflight) return _waVersionInflight;
+  _waVersionInflight = (async () => {
+    try {
+      const { version } = await fetchLatestBaileysVersion();
+      _cachedWaVersion = version;
+      _cachedWaVersionTs = Date.now();
+      return { version };
+    } catch (e) {
+      // Fall back to last-known version if we have one, else let Baileys use its bundled default.
+      if (_cachedWaVersion) return { version: _cachedWaVersion };
+      throw e;
+    } finally {
+      _waVersionInflight = null;
+    }
+  })();
+  return _waVersionInflight;
+}
 
 // ── CHANNEL REACTION POOL ────────────────────────────────────
 const CHANNEL_REACTIONS = ['🔥','❤️','👏','💯','🚀','⚡','🎯','😍','🙌','💪'];
@@ -493,7 +525,7 @@ async function initConnection(number) {
   if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-  const { version }          = await fetchLatestBaileysVersion();
+  const { version }          = await getCachedBaileysVersion();
 
   const msgRetryCounterCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
   const _msgStore = new Map();
@@ -512,6 +544,20 @@ async function initConnection(number) {
     },
   });
 
+  // ✅ SPEED FIX: wrap conn.groupMetadata with the shared 5-min TTL cache so
+  // EVERY call site (isAdmin, antilink, antibadword, antitag, welcome, ~50
+  // spots across plugins) benefits automatically — previously each of these
+  // fired a live WA query per message, a major cause of slow group replies.
+  const _origGroupMetadata = conn.groupMetadata.bind(conn);
+  conn.groupMetadata = async (jid, ...rest) => {
+    const now = Date.now();
+    const cached = groupMetaCache.get(jid);
+    if (cached && now - cached.ts < GROUP_CACHE_TTL) return cached.meta;
+    const meta = await _origGroupMetadata(jid, ...rest);
+    if (meta) groupMetaCache.set(jid, { meta, ts: now });
+    return meta;
+  };
+
   // Bind message store (needed for group retry)
   conn.ev.on('messages.upsert', ({ messages }) => {
     for (const msg of messages) {
@@ -524,8 +570,11 @@ async function initConnection(number) {
     }
   });
 
-  // Invalidate group cache on participant change
+  // Invalidate group cache on participant change / group settings change
   conn.ev.on('group-participants.update', ({ id }) => { groupMetaCache.delete(id); });
+  conn.ev.on('groups.update', (updates) => {
+    for (const u of (updates || [])) if (u?.id) groupMetaCache.delete(u.id);
+  });
 
   const prev = activeConnections.get(number) || {};
   activeConnections.set(number, { conn, saveCreds, connected: false, hasWelcomed: prev.hasWelcomed||false, reconnectAttempts: prev.reconnectAttempts||0 });
@@ -1195,7 +1244,7 @@ app.post('/api/pair', async (req, res) => {
     if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-    const { version }          = await fetchLatestBaileysVersion();
+    const { version }          = await getCachedBaileysVersion();
 
     conn = makeWASocket({
       version,
@@ -1266,7 +1315,7 @@ app.post('/api/qr', async (req, res) => {
     if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
 
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-    const { version }          = await fetchLatestBaileysVersion();
+    const { version }          = await getCachedBaileysVersion();
 
     conn = makeWASocket({
       version,
@@ -1599,7 +1648,7 @@ async function reloadExistingSessions() {
     if (fs.existsSync(path.join(SESSIONS_DIR,num,'creds.json'))) {
       console.log(`🔄 Reloading: ${num}`);
       try { await initConnection(num); } catch(e){ console.error(`Reload ${num}: ${e.message}`); }
-      if (i < dirs.length - 1) await new Promise(r => setTimeout(r, 3000)); // 3s between each
+      if (i < dirs.length - 1) await new Promise(r => setTimeout(r, 800)); // ✅ SPEED FIX: 0.8s stagger (was 3s) — much faster restart, still avoids burst
     }
   }
   broadcastStats();
@@ -1637,7 +1686,7 @@ global.doPairNumber = async function(num, force = false) {
   if (force && fs.existsSync(sessionDir)) { try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {} }
   if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
   const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-  const { version }          = await fetchLatestBaileysVersion();
+  const { version }          = await getCachedBaileysVersion();
   const conn = makeWASocket({ version, ...buildSocketConfig(state), msgRetryCounterCache: new NodeCache({ stdTTL: 60 }) });
   activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
   setupHandlers(conn, num, saveCreds);
@@ -1649,3 +1698,4 @@ global.doPairNumber = async function(num, force = false) {
   startPairWaitLog(num);
   return { pairingCode: code.match(/.{1,4}/g)?.join('-') || code, number: num };
 };
+
