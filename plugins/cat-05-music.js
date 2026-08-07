@@ -48,12 +48,46 @@ async function cobaltFallback(url, isAudio = true) {
     return { downloadUrl: dlUrl, title: 'Song' };
 }
 
+/* ─── Extra public API fallbacks (used before giving up) ──────────────────── */
+async function siputzxFallback(url, isAudio = true) {
+    const ep = isAudio ? 'https://api.siputzx.my.id/api/d/ytmp3' : 'https://api.siputzx.my.id/api/d/ytmp4';
+    const { data } = await axios.get(ep, { params: { url }, timeout: 60000 });
+    const dl = data?.data?.dl || data?.data?.url || data?.data?.download || data?.result?.download;
+    if (!dl) throw new Error('siputzx: no url');
+    return { downloadUrl: dl, title: data?.data?.title || 'audio' };
+}
+
+async function ytdlpApiFallback(url, isAudio = true) {
+    // Well-known community youtube downloader mirror
+    const { data } = await axios.get('https://api.vreden.my.id/api/ytmp3', {
+        params: { url }, timeout: 60000
+    }).catch(async () => {
+        return await axios.get(`https://api.zenzxz.dpdns.org/downloader/ytmp3`, { params: { url }, timeout: 60000 });
+    });
+    const dl = data?.result?.download?.url || data?.result?.url || data?.download || data?.result?.audio;
+    if (!dl) throw new Error('vreden: no url');
+    return { downloadUrl: dl, title: data?.result?.title || 'audio' };
+}
+
 async function downloadAny(url, format = 'mp3') {
-    try { return await downloadWithRetry(url, format); }
-    catch (e) {
-        console.log(`[YTDL] Primary failed: ${e.message} — trying cobalt`);
-        return await cobaltFallback(url, format === 'mp3');
+    const isAudio = format === 'mp3';
+    const chain = [
+        { name: 'qasimdev',  fn: () => downloadWithRetry(url, format, 2) },
+        { name: 'siputzx',   fn: () => siputzxFallback(url, isAudio) },
+        { name: 'vreden',    fn: () => ytdlpApiFallback(url, isAudio) },
+        { name: 'cobalt',    fn: () => cobaltFallback(url, isAudio) },
+    ];
+    let lastErr = null;
+    for (const step of chain) {
+        try {
+            const r = await step.fn();
+            if (r?.downloadUrl) return r;
+        } catch (e) {
+            lastErr = e;
+            console.log(`[YTDL] ${step.name} failed: ${e.message}`);
+        }
     }
+    throw lastErr || new Error('All download sources failed');
 }
 
 async function ytSearch(query) {
