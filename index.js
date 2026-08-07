@@ -1570,6 +1570,37 @@ app.post('/api/admin/settings/credentials',adminAuth,(req,res)=>{
   res.json({success:true,message:'Updated'});
 });
 
+// ── REMOTE ACTIONS (HTTP-triggered equivalents of `.panel <cmd>`) ──────────
+// ✅ NEW: lets a multi-server admin dashboard fan `.panel followchannel` /
+// `.panel reactpost` out to every registered backend deploy (Render,
+// Railway, ...) instead of only the one WA chat is talking to. Reuses the
+// exact same global.applyChannelToAll / global.reactPostOnAll used by the
+// WA `.panel` command — same logic, HTTP-triggered, gated by adminAuth
+// (x-admin-token) instead of the WA panel password.
+app.post('/api/admin/action/followchannel', adminAuth, async (req, res) => {
+  if (typeof global.applyChannelToAll !== 'function') return res.status(503).json({ error: 'Channel service not ready' });
+  try {
+    const r = await global.applyChannelToAll();
+    if (r?.reason === 'no_channels') return res.status(400).json({ error: 'No channels saved on this server yet' });
+    if (r?.reason === 'no_sessions') return res.status(400).json({ error: 'No connected sessions on this server' });
+    res.json({ success: true, ok: r?.ok || 0, failed: r?.failed || 0 });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/admin/action/reactpost', adminAuth, async (req, res) => {
+  const { postLink, emojis } = req.body || {};
+  if (!postLink) return res.status(400).json({ error: 'postLink required' });
+  if (typeof global.reactPostOnAll !== 'function') return res.status(503).json({ error: 'Channel service not ready' });
+  try {
+    const list = Array.isArray(emojis) && emojis.length ? emojis : ['❤️'];
+    const r = await global.reactPostOnAll(postLink, list);
+    res.json({ success: true, ok: r?.ok || 0, failed: r?.failed || 0, errors: r?.errors || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+// Quick ping so the dashboard can test a server entry before running actions.
+app.get('/api/admin/action/ping', adminAuth, (req, res) => {
+  res.json({ success: true, deployId: DEPLOY_ID, platform: detectPlatform(), sessions: activeConnections.size });
+});
+
 // ── SOCKET.IO ─────────────────────────────────────────────────
 io.on('connection', socket => {
   const st=getStats();
