@@ -153,16 +153,26 @@ td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
   <div id="pair-section" class="container-sm">
     <div style="background:linear-gradient(135deg,var(--s1),var(--s2));border:1px solid rgba(0,245,255,.2);border-radius:var(--rl);padding:32px;margin-bottom:40px">
       <div class="pair-card-title" style="font-family:var(--ff-head);font-size:.8rem;letter-spacing:.15em;text-align:center;margin-bottom:24px">⚡ GENERATE PAIRING CODE</div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px">
+        <button class="btn btn-neon" id="tabCodeBtn" onclick="setPairMode('code')" style="flex:1">🔢 Pairing Code</button>
+        <button class="btn btn-ghost" id="tabQrBtn" onclick="setPairMode('qr')" style="flex:1">📷 QR Code</button>
+      </div>
       <div class="field">
         <label>WhatsApp Number (country code, no +)</label>
         <input type="tel" id="pairPhone" placeholder="923001234567" style="font-size:1rem;font-family:var(--ff-mono)">
       </div>
       <div class="flash" id="pairFlash"></div>
-      <button class="btn btn-fire btn-full" onclick="doPair()">GET PAIRING CODE</button>
+      <button class="btn btn-fire btn-full" id="pairActionBtn" onclick="doPair()">GET PAIRING CODE</button>
       <div class="code-box" id="codeBox">
         <div class="code-box-label" style="font-size:.63rem;letter-spacing:.2em;color:var(--neon);margin-bottom:14px">Your Pairing Code</div>
         <div class="code-digits" id="codeDigits">— — — —</div>
         <div class="code-hint" style="font-size:.78rem;margin-top:14px">Open WhatsApp → ⋮ → Linked Devices → Link a Device → Enter this code</div>
+      </div>
+      <div class="code-box" id="qrBox" style="display:none;text-align:center">
+        <div class="code-box-label" style="font-size:.63rem;letter-spacing:.2em;color:var(--neon);margin-bottom:14px">Scan This QR Code</div>
+        <img id="qrImg" src="" alt="WhatsApp QR code" style="width:220px;height:220px;background:#fff;border-radius:12px;padding:8px;margin:0 auto;display:block">
+        <div class="code-hint" style="font-size:.78rem;margin-top:14px">Open WhatsApp → ⋮ → Linked Devices → Link a Device → Scan this code</div>
+        <div style="font-size:.7rem;color:var(--t2);margin-top:8px" id="qrExpireNote">QR refreshes automatically every ~20s until scanned.</div>
       </div>
       <div class="deploy-reveal" id="deployReveal" style="margin-top:20px;background:rgba(255,215,64,.04);border:1px solid rgba(255,215,64,.2);border-radius:var(--rs);padding:16px;text-align:center;display:none">
         <div class="deploy-label" style="font-size:.62rem;text-transform:uppercase;color:var(--amber)">Your Deploy ID — Save This!</div>
@@ -269,7 +279,21 @@ function showPage(name) { document.querySelectorAll('.page').forEach(p=>p.classL
 function toggleDrawer() { document.getElementById('burgerBtn').classList.toggle('open'); document.getElementById('drawer').classList.toggle('open'); }
 
 // ========== PAIR ==========
+let pairMode = 'code';
+let qrPollTimer = null;
+
+function setPairMode(mode) {
+  pairMode = mode;
+  document.getElementById('tabCodeBtn').className = mode === 'code' ? 'btn btn-neon' : 'btn btn-ghost';
+  document.getElementById('tabQrBtn').className = mode === 'qr' ? 'btn btn-neon' : 'btn btn-ghost';
+  document.getElementById('pairActionBtn').textContent = mode === 'code' ? 'GET PAIRING CODE' : 'GET QR CODE';
+  document.getElementById('codeBox').classList.remove('show');
+  document.getElementById('qrBox').style.display = 'none';
+  if (qrPollTimer) { clearInterval(qrPollTimer); qrPollTimer = null; }
+}
+
 async function doPair() {
+  if (pairMode === 'qr') return doPairQr();
   const num = document.getElementById('pairPhone').value.replace(/\D/g,'');
   if(num.length<7) { flash('pairFlash','❌ Enter valid number with country code','err'); return; }
   flash('pairFlash','<span class="spin"></span> Generating...','info',0);
@@ -284,6 +308,41 @@ async function doPair() {
     flash('pairFlash','✅ Code ready! Enter in WhatsApp → Linked Devices','ok');
   } catch(e){ flash('pairFlash','❌ '+e.message,'err'); }
 }
+
+async function doPairQr() {
+  const num = document.getElementById('pairPhone').value.replace(/\D/g,'');
+  if(num.length<7) { flash('pairFlash','❌ Enter valid number with country code','err'); return; }
+  flash('pairFlash','<span class="spin"></span> Generating QR...','info',0);
+  try{
+    const res = await fetch('/api/qr',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:num})});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error||'QR generation failed');
+    document.getElementById('qrImg').src = d.qr;
+    document.getElementById('qrBox').style.display = 'block';
+    flash('pairFlash','✅ Scan the QR in WhatsApp → Linked Devices','ok');
+    // Keep polling for a fresh frame every few seconds — Baileys rotates the
+    // QR ~every 20s until it's scanned, and the socket.io 'qr' event below
+    // also updates it live for clients that stay connected.
+    if (qrPollTimer) clearInterval(qrPollTimer);
+    qrPollTimer = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/qr/${num}`);
+        const dd = await r.json();
+        if (dd?.connected) { clearInterval(qrPollTimer); qrPollTimer=null; flash('pairFlash','✅ Paired successfully!','ok'); return; }
+        if (dd?.qr) document.getElementById('qrImg').src = dd.qr;
+      } catch {}
+    }, 4000);
+  } catch(e){ flash('pairFlash','❌ '+e.message,'err'); }
+}
+
+// Live QR push over socket.io (faster than the 4s poll above).
+socket.on('qr', (d) => {
+  const num = document.getElementById('pairPhone')?.value.replace(/\D/g,'');
+  if (pairMode === 'qr' && d?.qr && (!num || d.number === num)) {
+    document.getElementById('qrImg').src = d.qr;
+    document.getElementById('qrBox').style.display = 'block';
+  }
+});
 
 // ========== USER DASHBOARD (Deploy Key) ==========
 async function loadUserDashboard() {
