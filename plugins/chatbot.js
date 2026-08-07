@@ -33,11 +33,16 @@ const chatMemory = {
 // Render-hosted reverse proxies that sleep, get abandoned, or change
 // shape without notice. That's why the chatbot silently stopped
 // replying — ALL FOUR were down at once, which is common for this class
-// of API. GEMINI_API_KEY (Google's actual, documented, free-tier API)
-// is now tried FIRST when set; the old proxies stay as last-resort
-// fallbacks only, so the bot still works with zero config, just less
-// reliably.
+// of API. GEMINI_API_KEY and GROQ_API_KEY (real, documented, free-tier
+// APIs — no card required for either) are tried FIRST when set; the old
+// proxies stay as last-resort fallbacks only, so the bot still works
+// with zero config, just less reliably.
+//
+// Get free keys (no credit card):
+//   Gemini → https://aistudio.google.com/apikey
+//   Groq   → https://console.groq.com/keys
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GROQ_API_KEY   = process.env.GROQ_API_KEY   || '';
 
 const API_ENDPOINTS = [
     ...(GEMINI_API_KEY ? [{
@@ -55,6 +60,26 @@ const API_ENDPOINTS = [
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+        }
+    }] : []),
+    ...(GROQ_API_KEY ? [{
+        name: 'Groq',
+        official: true,
+        call: async (prompt) => {
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: 'llama-3.3-70b-versatile',
+                    messages: [{ role: 'user', content: prompt }]
+                })
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            return data?.choices?.[0]?.message?.content || null;
         }
     }] : []),
     {
@@ -335,7 +360,9 @@ module.exports = {
             return sock.sendMessage(chatId, {
                 text: `*🤖 CHATBOT SETUP*\n\n` +
                       `*Storage:* ${HAS_DB ? 'Database' : 'File System'}\n` +
-                      `*APIs:* ${API_ENDPOINTS.length} endpoints with fallback\n\n` +
+                      `*APIs:* ${API_ENDPOINTS.length} endpoints with fallback\n` +
+                      `*Gemini key:* ${GEMINI_API_KEY ? '✅ set' : '❌ not set — get free at aistudio.google.com/apikey'}\n` +
+                      `*Groq key:* ${GROQ_API_KEY ? '✅ set' : '❌ not set — get free at console.groq.com/keys'}\n\n` +
                       `*Commands:*\n` +
                       `• \`.chatbot on\` - Enable chatbot\n` +
                       `• \`.chatbot off\` - Disable chatbot\n\n` +
