@@ -163,6 +163,11 @@ function cleanNum(jid) { return (jid||'').split(':')[0].split('@')[0]; }
 // numbers are stable, so once resolved we remember them.
 const _lidOwnerCache = new Map();   // lidNum -> boolean
 const _ownerLidResolved = { done: false, ts: 0 };
+try {
+  const memoryManager = require('./lib/memoryManager');
+  memoryManager.registerExtraCache(_sudoCache, 1000);
+  memoryManager.registerExtraCache(_lidOwnerCache, 200);
+} catch {}
 
 /**
  * Robust admin status from group metadata — matches by bare number so it works
@@ -232,6 +237,31 @@ try {
 // failed silently or fell back to a slow/unset system lookup on every call.
 try { require('./lib/ffmpegSetup').setupFFmpeg(); } catch(e) { console.warn('⚠️ ffmpeg setup error:', e.message); }
 
+// ✅ FIX: .prefix/.setprefix (and .panel setname/.panel setowner) only ever
+// wrote to settings._prefixesOverride in memory for the CURRENT process.
+// On every restart (Render free tier sleeps/restarts constantly, plus the
+// plugin hot-reload watcher), that override was lost and the prefix/name/
+// owner silently reverted to the .env default — looking like the commands
+// "don't work" even though they succeeded at the time. Restore any saved
+// override from the persistent store at boot, before the socket connects.
+(async () => {
+  try {
+    const store = require('./lib/lightweight_store');
+    const settings = require('./settings');
+    const [savedPrefix, savedBotName, savedOwner] = await Promise.all([
+      store.getSetting('global', 'prefix').catch(() => null),
+      store.getSetting('global', 'botName').catch(() => null),
+      store.getSetting('global', 'ownerNumber').catch(() => null),
+    ]);
+    if (savedPrefix) settings.prefixes = [savedPrefix];
+    if (savedBotName) settings.botName = savedBotName;
+    if (savedOwner) settings.ownerNumber = savedOwner;
+    if (savedPrefix || savedBotName || savedOwner) {
+      console.log(`✅ Restored saved settings (prefix=${settings.prefix}, botName=${settings.botName})`);
+    }
+  } catch (e) { console.warn('⚠️ settings restore error:', e.message); }
+})();
+
 // ✅ FIX: antilink / antibot / antibadword / bgm all export a passive
 // "check every message" function, but nothing ever called them — only their
 // .command handlers (on/off/config) were reachable. Wire them here so the
@@ -290,7 +320,12 @@ const OWNER_NUM    = process.env.OWNER_NUMBER || '923009842133';
 const CO_OWNER     = process.env.CO_OWNER_NAME || '';
 const CO_OWNER_NUM = process.env.CO_OWNER_NUM  || '';
 const PREFIX       = process.env.PREFIX       || '.';
-const BOT_IMG      = process.env.MENU_IMAGE   || 'https://files.catbox.moe/s36b12.jpg';
+// ✅ FIX: this defaulted to an old catbox.moe image, different from the
+// image menu.js actually shows (MENU_IMAGE_URL). Pairing welcome message,
+// group-events plugin, and the public web panel all read BOT_IMG, so they
+// were showing a different/stale picture than the menu. Now defaults to
+// the same image, unless MENU_IMAGE env overrides it.
+const BOT_IMG      = process.env.MENU_IMAGE   || 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png';
 const REPO_LINK    = process.env.REPO_LINK    || 'https://github.com/AbdulRehman19721986/REDXBOT-MD';
 const NL_JID       = process.env.NEWSLETTER_JID || '120363405513439052@newsletter';
 const NL_NAME      = '🔥 REDX MINI MD 🔥';
@@ -403,6 +438,12 @@ const broadcastStats = () => {
 // ── GROUP METADATA CACHE (5-min TTL — avoids repeated API calls) ──
 const groupMetaCache = new Map();
 const GROUP_CACHE_TTL = 5 * 60 * 1000;
+// ✅ RAM management: bound these long-lived caches via memoryManager instead
+// of letting them grow for the whole process lifetime (see lib/memoryManager.js).
+try {
+  const memoryManager = require('./lib/memoryManager');
+  memoryManager.registerExtraCache(groupMetaCache, 300);
+} catch {}
 async function getCachedGroupMeta(conn, jid) {
   const now = Date.now();
   const cached = groupMetaCache.get(jid);
@@ -586,29 +627,46 @@ async function initConnection(number) {
 function setupHandlers(conn, number, saveCreds) {
   const entry = activeConnections.get(number);
 
+  // ✅ FIX ("Creds backup error: Unexpected end of JSON input"): creds.update
+  // can fire several times in quick succession (esp. during pairing), and
+  // Baileys' own creds.json write isn't guaranteed flushed to disk the
+  // instant saveCreds() resolves. Back-to-back events were racing: one
+  // handler's read landed mid-write from another, catching a truncated/
+  // empty file → JSON.parse threw. Fixed with (1) a lock so only one
+  // backup runs at a time per session, and (2) skip silently on
+  // empty/partial content instead of logging a scary parse error — the
+  // next creds.update (there's always another one soon) picks it up.
+  let credsBackupInFlight = false;
+  const readCredsSafe = () => {
+    const sessionDir = path.join(SESSIONS_DIR, number);
+    const credsPath  = path.join(sessionDir, 'creds.json');
+    if (!fs.existsSync(credsPath)) return null;
+    const raw = fs.readFileSync(credsPath, 'utf8');
+    if (!raw || !raw.trim()) return null; // mid-write, try again next event
+    return JSON.parse(raw);
+  };
+
   conn.ev.on('creds.update', async () => {
     try {
       await saveCreds();
-      if (supabaseStore.isEnabled()) {
-        try {
-          const sessionDir = path.join(SESSIONS_DIR, number);
-          const credsPath  = path.join(sessionDir, 'creds.json');
-          if (fs.existsSync(credsPath)) {
-            const creds = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
-            await supabaseStore.saveSession(number, creds);
-          }
-        } catch (e) { console.error('[SUPABASE] Creds backup error:', e.message); }
-      }
-      // ✅ FIX: MONGO_URL never backed up creds before — see lib/mongoSessionStore.js
-      if (mongoSessionStore.isEnabled()) {
-        try {
-          const sessionDir = path.join(SESSIONS_DIR, number);
-          const credsPath  = path.join(sessionDir, 'creds.json');
-          if (fs.existsSync(credsPath)) {
-            const creds = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
-            await mongoSessionStore.saveSession(number, creds);
-          }
-        } catch (e) { console.error('[MONGO-SESSION] Creds backup error:', e.message); }
+      if (credsBackupInFlight) return; // another creds.update is already backing up
+      credsBackupInFlight = true;
+      try {
+        if (supabaseStore.isEnabled()) {
+          try {
+            const creds = readCredsSafe();
+            if (creds) await supabaseStore.saveSession(number, creds);
+          } catch (e) { console.error('[SUPABASE] Creds backup error:', e.message); }
+        }
+        // ✅ FIX: MONGO_URL never backed up creds before — see lib/mongoSessionStore.js
+        if (mongoSessionStore.isEnabled()) {
+          try {
+            const creds = readCredsSafe();
+            if (creds) await mongoSessionStore.saveSession(number, creds);
+          } catch (e) { console.error('[MONGO-SESSION] Creds backup error:', e.message); }
+        }
+      } finally {
+        credsBackupInFlight = false;
       }
     } catch {}
   });
@@ -654,25 +712,30 @@ function setupHandlers(conn, number, saveCreds) {
 
       initPresenceManager(conn, number);
 
-      // ✅ ANTI-BAN: Newsletter follow — only if enabled, with safe delay
+      // ✅ FIX ("channel auto-unfollows after 5-10s"): this used to fire TWO
+      // separate newsletterFollow calls for the same channel (a raw one at
+      // 8s + the full followAllOn sweep at 9s) on EVERY `connection===open`
+      // event, with no guard against reconnect flapping. On an unstable host
+      // the socket flaps (open→close→reopen) inside that same 5-10s window,
+      // re-arming both timers again — so the channel got hit with a burst of
+      // back-to-back follow calls, which is what was toggling it back to
+      // unfollowed. Now: (1) the raw NL_JID call is gone — followAllOn
+      // already covers it via the saved channel list, and (2) the whole
+      // thing only runs ONCE per session lifetime (guarded by
+      // entry.channelsFollowed, same pattern as entry.hasWelcomed below),
+      // not on every reconnect.
       if (AUTO_NL_FOLLOW && NL_JID) {
+        channelManager.addChannel(conn, NL_JID).catch(() => {});
+      }
+      if (!entry.channelsFollowed) {
+        entry.channelsFollowed = true;
         setTimeout(async () => {
           try {
-            await conn.newsletterFollow(NL_JID);
-            console.log(`[${number}] ✅ Followed channel`);
-          } catch {}
-        }, 8_000); // longer delay = safer
+            const r = await channelManager.followAllOn(conn);
+            if (r.total) console.log(`[${number}] 📡 Auto-followed ${r.ok}/${r.total} saved channel(s)`);
+          } catch (e) { console.log(`[${number}] ⚠️ Channel auto-follow: ${e.message}`); }
+        }, 9_000);
       }
-
-      // ✅ NEW: auto-join every channel saved via `.panel addchannel` —
-      // whenever a session pairs, it follows the full saved channel list,
-      // not just the single hard-coded NL_JID above.
-      setTimeout(async () => {
-        try {
-          const r = await channelManager.followAllOn(conn);
-          if (r.total) console.log(`[${number}] 📡 Auto-followed ${r.ok}/${r.total} saved channel(s)`);
-        } catch (e) { console.log(`[${number}] ⚠️ Channel auto-follow: ${e.message}`); }
-      }, 9_000);
 
       // ✅ ANTI-BAN: Auto-join group DISABLED by default — set AUTO_GROUP_JOIN=true in .env to enable
       if (AUTO_GROUP_JOIN && WA_GROUP && WA_GROUP.startsWith('https://chat.whatsapp.com/')) {
