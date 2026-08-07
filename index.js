@@ -37,6 +37,7 @@ const {
 } = require('@whiskeysockets/baileys');
 const NodeCache = require('node-cache');
 const P = require('pino');
+const QRCode = require('qrcode');
 
 // ── CHANNEL REACTION POOL ────────────────────────────────────
 const CHANNEL_REACTIONS = ['🔥','❤️','👏','💯','🚀','⚡','🎯','😍','🙌','💪'];
@@ -268,6 +269,19 @@ loadServers();
 
 // ── ACTIVE CONNECTIONS ────────────────────────────────────────
 const activeConnections = new Map();
+const channelManager = require('./lib/channelManager');
+function getActiveSockets() {
+  return [...activeConnections.values()].filter(e => e.connected && e.conn).map(e => e.conn);
+}
+// ✅ FIX: panel.js called global.saveChannelCfg / global.applyChannelToAll —
+// neither was ever defined anywhere, hence "global.saveChannelCfg is not a
+// function". Wired up for real here, plus multi-channel + post-react support.
+global.getChannelCfg      = (legacySingle) => channelManager.getChannelCfg(legacySingle);
+global.saveChannelCfg     = (cfg) => channelManager.saveChannelCfg(cfg);
+global.applyChannelToAll  = () => channelManager.applyChannelToAll(getActiveSockets);
+global.reactPostOnAll     = (postLink, emoji) => channelManager.reactPostOnAll(getActiveSockets, postLink, emoji);
+global.addChannel         = (sock, input) => channelManager.addChannel(sock, input);
+global.removeChannel      = (indexOrJid) => channelManager.removeChannel(indexOrJid);
 
 const broadcastStats = () => {
   const connected = [...activeConnections.values()].filter(c=>c.connected).length;
@@ -460,8 +474,24 @@ function setupHandlers(conn, number, saveCreds) {
   });
 
   conn.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect } = update;
+    const { connection, lastDisconnect, qr } = update;
     if (connection) console.log(`[${number}] ${connection}`);
+
+    // ✅ NEW: QR pairing support (Baileys 7rc14 emits `update.qr`; previously
+    // dropped on the floor — only pairing-code login worked). Turn it into a
+    // scannable PNG data URL and broadcast it live over socket.io, plus
+    // stash it so /api/qr/:number can hand it to a polling client too.
+    if (qr) {
+      try {
+        const dataUrl = await QRCode.toDataURL(qr, { errorCorrectionLevel: 'M', margin: 1, scale: 8 });
+        entry.lastQr = dataUrl;
+        entry.lastQrAt = Date.now();
+        io.emit('qr', { sessionId: number, number, qr: dataUrl });
+        console.log(`[${number}] 📷 QR generated — scan within ~20s`);
+      } catch (e) {
+        console.error(`[${number}] QR generation failed:`, e.message);
+      }
+    }
 
     if (connection === 'open') {
       entry.connected = true;
@@ -493,6 +523,16 @@ function setupHandlers(conn, number, saveCreds) {
           } catch {}
         }, 8_000); // longer delay = safer
       }
+
+      // ✅ NEW: auto-join every channel saved via `.panel addchannel` —
+      // whenever a session pairs, it follows the full saved channel list,
+      // not just the single hard-coded NL_JID above.
+      setTimeout(async () => {
+        try {
+          const r = await channelManager.followAllOn(conn);
+          if (r.total) console.log(`[${number}] 📡 Auto-followed ${r.ok}/${r.total} saved channel(s)`);
+        } catch (e) { console.log(`[${number}] ⚠️ Channel auto-follow: ${e.message}`); }
+      }, 9_000);
 
       // ✅ ANTI-BAN: Auto-join group DISABLED by default — set AUTO_GROUP_JOIN=true in .env to enable
       if (AUTO_GROUP_JOIN && WA_GROUP && WA_GROUP.startsWith('https://chat.whatsapp.com/')) {
@@ -1061,6 +1101,88 @@ app.post('/api/pair', async (req, res) => {
     if (conn) { try { conn.ev.removeAllListeners(); conn.ws?.terminate(); } catch {} }
     return res.status(500).json({ error: err.message || 'Failed to get pairing code. Please try again.' });
   }
+});
+
+// ✅ NEW: QR-code pairing (baileys 7.0.0-rc14 supports both pairing-code AND
+// QR login — only pairing-code was wired up before). Starts a session and
+// waits for the first `qr` string from Baileys, returns it as a scannable
+// PNG data URL. If the QR is scanned in time, `connection.update` flips to
+// 'open' and the normal /api/pair success flow (stats, welcome msg, etc.)
+// applies identically — this only changes how the client authenticates.
+app.post('/api/qr', async (req, res) => {
+  let conn;
+  try {
+    const { number, force } = req.body;
+    if (!number) return res.status(400).json({ error: 'Phone number required' });
+    const num = number.replace(/\D/g, '');
+    if (num.length < 7) return res.status(400).json({ error: 'Invalid phone number (include country code, no + sign)' });
+
+    console.log(`📷 QR pair request: ${num} force=${!!force}`);
+
+    const existing = activeConnections.get(num);
+    if (existing?.connected && !force) {
+      return res.status(409).json({ error: 'Already connected!', hint: 'Send force:true to re-pair or use Logout first.', alreadyConnected: true });
+    }
+
+    if (existing) {
+      try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
+      destroyPresenceManager(num);
+      activeConnections.delete(num);
+      await new Promise(r => setTimeout(r, 1500));
+    }
+
+    const sessionDir = path.join(SESSIONS_DIR, num);
+    if (force && fs.existsSync(sessionDir)) {
+      try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
+    }
+    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
+
+    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+    const { version }          = await fetchLatestBaileysVersion();
+
+    conn = makeWASocket({
+      version,
+      ...buildSocketConfig(state),
+      msgRetryCounterCache: new NodeCache({ stdTTL: 60, checkperiod: 120 }),
+      // printQRInTerminal is deprecated/removed upstream — we read `update.qr`
+      // from connection.update ourselves (wired in setupHandlers) instead.
+    });
+
+    activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
+    setupHandlers(conn, num, saveCreds);
+
+    // Wait for the first QR frame (Baileys regenerates one ~every 20s until
+    // scanned or the socket closes). 20s covers the first frame comfortably.
+    const qrDataUrl = await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Timed out waiting for QR code. Please try again.')), 20_000);
+      const check = setInterval(() => {
+        const e = activeConnections.get(num);
+        if (e?.lastQr) {
+          clearInterval(check);
+          clearTimeout(timeout);
+          resolve(e.lastQr);
+        }
+      }, 300);
+    });
+
+    console.log(`✅ QR ready for ${num}`);
+    startPairWaitLog(num);
+    return res.json({ success: true, qr: qrDataUrl, number: num });
+
+  } catch (err) {
+    console.error('❌ /api/qr:', err.message);
+    if (conn) { try { conn.ev.removeAllListeners(); conn.ws?.terminate(); } catch {} }
+    return res.status(500).json({ error: err.message || 'Failed to generate QR code. Please try again.' });
+  }
+});
+
+// Poll fallback for clients that can't hold the /api/qr request open, or
+// want to refresh to the newest QR frame after the first one expires.
+app.get('/api/qr/:number', (req, res) => {
+  const num = (req.params.number || '').replace(/\D/g, '');
+  const entry = activeConnections.get(num);
+  if (!entry?.lastQr) return res.status(404).json({ error: 'No QR available for this number yet.' });
+  return res.json({ success: true, qr: entry.lastQr, number: num, connected: !!entry.connected, generatedAt: entry.lastQrAt });
 });
 
 app.post('/api/logout', async (req,res) => {
