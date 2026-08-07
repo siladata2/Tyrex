@@ -20,24 +20,33 @@ const store = require('../lib/lightweight_store');
 const axios = require('axios');
 const { sendInteractiveMessage } = require('gifted-btns');
 
-const MENU_IMAGE_URL = 'https://files.catbox.moe/dfseqs.jpg';
+const MENU_IMAGE_URL = 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png';
 
 // ✅ SPEED FIX: cache the menu image buffer — old code downloaded it on EVERY
-// .menu call (1-10s network hit). 30-min TTL, keyed by URL.
+// .menu call (1-10s network hit). 6-hour TTL, keyed by URL. We ALSO warm the
+// cache at load so the very first .menu is instant on Render free tier.
 let _imgCache = { url: null, buf: null, ts: 0 };
-const IMG_TTL = 30 * 60 * 1000;
+const IMG_TTL = 6 * 60 * 60 * 1000;
+let _imgInflight = null;
 async function getMenuImage(url) {
     const now = Date.now();
     if (_imgCache.buf && _imgCache.url === url && now - _imgCache.ts < IMG_TTL) return _imgCache.buf;
-    try {
-        const res = await axios.get(url, { responseType: 'arraybuffer', timeout: 8000 });
-        _imgCache = { url, buf: Buffer.from(res.data), ts: now };
-        return _imgCache.buf;
-    } catch {
-        if (url !== MENU_IMAGE_URL) return getMenuImage(MENU_IMAGE_URL);
-        return _imgCache.buf || null; // stale is better than nothing
-    }
+    // De-dupe concurrent downloads (many .menu calls at once → one network hit).
+    if (_imgInflight) { try { return await _imgInflight; } catch {} }
+    _imgInflight = (async () => {
+        try {
+            const res = await axios.get(url, { responseType: 'arraybuffer', timeout: 8000 });
+            _imgCache = { url, buf: Buffer.from(res.data), ts: now };
+            return _imgCache.buf;
+        } catch {
+            if (url !== MENU_IMAGE_URL) return getMenuImage(MENU_IMAGE_URL);
+            return _imgCache.buf || null; // stale is better than nothing
+        } finally { _imgInflight = null; }
+    })();
+    return _imgInflight;
 }
+// Warm the image cache in the background at startup (non-blocking).
+getMenuImage(MENU_IMAGE_URL).catch(() => {});
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -138,12 +147,70 @@ const STYLES = {
         catClose: () => `\n`,
         footer: '```[© REDX BOT] session secured — 0 errors```',
     },
+    6: {
+        name: 'FIRE BLAZE',
+        emoji: '🔥',
+        header: (i) =>
+            `🔥🔥🔥 *${i.botName}* 🔥🔥🔥\n\n` +
+            `╔═🔥═════════════╗\n` +
+            `║ 👑 Owner   » ${i.owner}\n` +
+            `║ 🔢 Commands » ${i.total}\n` +
+            `║ ⏱️ Uptime   » ${i.uptime}\n` +
+            `║ 🌐 Platform » ${i.platform}\n` +
+            `║ 📛 Prefix   » ${i.prefix}\n` +
+            `║ ⚙️ Mode     » ${i.mode}\n` +
+            `║ 🏷️ Version  » ${i.version}\n` +
+            `╚═════════════🔥═╝\n\n`,
+        catOpen: (c) => `🔥━━❰ *${c}* ❱━━🔥\n`,
+        cmd: (c) => `🔸 ${c}\n`,
+        catClose: () => `━━━━━━━━━━━━━\n\n`,
+        footer: `🔥 *© REDX BOT — FIRE EDITION* 🔥`,
+    },
+    7: {
+        name: 'OCEAN WAVE',
+        emoji: '🌊',
+        header: (i) =>
+            `🌊〜〜 *${i.botName}* 〜〜🌊\n\n` +
+            `╭┈┈┈┈ 🐚 *INFO* 🐚 ┈┈┈┈╮\n` +
+            `┊ 👑 Owner   ~ ${i.owner}\n` +
+            `┊ 🔢 Commands ~ ${i.total}\n` +
+            `┊ ⏱️ Uptime  ~ ${i.uptime}\n` +
+            `┊ 🌐 Platform ~ ${i.platform}\n` +
+            `┊ 📛 Prefix  ~ ${i.prefix}\n` +
+            `┊ ⚙️ Mode    ~ ${i.mode}\n` +
+            `┊ 🏷️ Version ~ ${i.version}\n` +
+            `╰┈┈┈┈┈┈┈┈┈┈┈┈┈┈╯\n\n`,
+        catOpen: (c) => `🌊 *${c}*\n╭┈┈┈┈┈┈┈┈┈┈╮\n`,
+        cmd: (c) => `┊ 💧 ${c}\n`,
+        catClose: () => `╰┈┈┈┈┈┈┈┈┈┈╯\n\n`,
+        footer: `🌊 *© REDX BOT — OCEAN EDITION* 🌊`,
+    },
+    8: {
+        name: 'GALAXY STAR',
+        emoji: '🌌',
+        header: (i) =>
+            `✦ ⋆ ˚｡⋆ *${i.botName}* ⋆｡˚ ⋆ ✦\n\n` +
+            `┌─────『 🌌 *COSMOS* 🌌 』─────┐\n` +
+            `│ ⭐ Owner    : ${i.owner}\n` +
+            `│ ☄️ Commands : ${i.total}\n` +
+            `│ 🌠 Uptime   : ${i.uptime}\n` +
+            `│ 🛸 Platform : ${i.platform}\n` +
+            `│ 🔭 Prefix   : ${i.prefix}\n` +
+            `│ 🪐 Mode     : ${i.mode}\n` +
+            `│ 🌟 Version  : ${i.version}\n` +
+            `└──────────────────────┘\n\n`,
+        catOpen: (c) => `☄️ *${c}* ☄️\n`,
+        cmd: (c) => `✧ ${c}\n`,
+        catClose: () => `⋆｡˚ ⋆｡˚ ⋆｡˚\n\n`,
+        footer: `🌌 *© REDX BOT — GALAXY EDITION* 🌌`,
+    },
 };
+const STYLE_COUNT = Object.keys(STYLES).length;
 
 async function getStyleNumber() {
     const raw = await store.getSetting('global', 'menuStyle');
     const n = parseInt(raw, 10);
-    return (n >= 1 && n <= 5) ? n : 1;
+    return (n >= 1 && n <= STYLE_COUNT) ? n : 1;
 }
 
 function buildMenuText(styleNo, info) {
@@ -161,26 +228,19 @@ function buildMenuText(styleNo, info) {
     return text;
 }
 
-// Animated loading frames (message-edit based — supported by Baileys)
-const FRAMES = (styleName, emoji) => [
-    `${emoji} Booting *${styleName}* menu…\n▰▱▱▱▱▱▱▱ 10%`,
-    `${emoji} Loading commands…\n▰▰▰▱▱▱▱▱ 45%`,
-    `${emoji} Rendering interface…\n▰▰▰▰▰▰▱▱ 80%`,
-];
-
 const menuCommand = {
     command: 'menu',
     aliases: ['help', 'cmd'],
     category: 'main',
-    description: 'Show the command menu (5 styles — see .menustyle)',
-    usage: '.menu [1-5]',
+    description: 'Show the command menu (8 styles — see .menustyle)',
+    usage: '.menu [1-8]',
 
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
         try {
             // Optional one-shot style override: .menu 3
             let styleNo = parseInt(args?.[0], 10);
-            if (!(styleNo >= 1 && styleNo <= 5)) styleNo = await getStyleNumber();
+            if (!(styleNo >= 1 && styleNo <= STYLE_COUNT)) styleNo = await getStyleNumber();
             const style = STYLES[styleNo];
 
             const [prefix, botName, botDesc, botDp, botMode] = await Promise.all([
@@ -194,7 +254,7 @@ const menuCommand = {
             const up = process.uptime();
             const info = {
                 botName: botName || settings.botName,
-                owner: `${settings.botOwner} & ${settings.secondOwner}`,
+                owner: `${settings.botOwner}${settings.secondOwner ? ' & ' + settings.secondOwner : ''}`,
                 total: commandHandler.commands.size,
                 uptime: `${Math.floor(up / 3600)}h ${Math.floor((up % 3600) / 60)}m ${Math.floor(up % 60)}s`,
                 platform: (settings.platform || 'cloud').toUpperCase(),
@@ -206,43 +266,27 @@ const menuCommand = {
 
             const menuText = buildMenuText(styleNo, info);
 
-            // ── Animated render: quick edit frames, then final menu ──
-            let anim = null;
-            try {
-                anim = await sock.sendMessage(chatId, { text: FRAMES(style.name, style.emoji)[0], ...channelInfo }, { quoted: message });
-                for (const frame of FRAMES(style.name, style.emoji).slice(1)) {
-                    await sleep(450);
-                    await sock.sendMessage(chatId, { text: frame, edit: anim.key });
-                }
-                await sleep(350);
-            } catch { anim = null; /* edits unsupported → just send final */ }
-
-            // Fetch image from cache (fast after first call)
+            // ✅ SPEED FIX: NO loading animation. The menu image is served from an
+            // in-memory cache (warmed at startup), so the menu is delivered in one
+            // shot with zero fake "booting…" delay.
             const imgUrl = (botDp && botDp !== 'uploaded via image') ? botDp : MENU_IMAGE_URL;
             const imageBuffer = await getMenuImage(imgUrl);
 
             if (imageBuffer) {
-                // Finish the animation, then deliver the image menu
-                if (anim) { try { await sock.sendMessage(chatId, { text: `${style.emoji} *${style.name}* ready — 100% ✅`, edit: anim.key }); } catch {} }
                 await sock.sendMessage(chatId, { image: imageBuffer, caption: menuText, ...channelInfo }, { quoted: message });
-            } else if (anim) {
-                // No image → morph the animation message itself into the menu
-                await sock.sendMessage(chatId, { text: menuText, edit: anim.key });
             } else {
                 await sock.sendMessage(chatId, { text: menuText, ...channelInfo }, { quoted: message });
             }
 
-            // Quick-link buttons (best-effort)
-            try {
-                await sendInteractiveMessage(sock, chatId, {
-                    text: '🔗 *JOIN OUR COMMUNITIES*\n\nTap the buttons below to join our WhatsApp and Telegram groups.',
-                    footer: `Style ${styleNo}/5 — ${style.name} • change with .menustyle`,
-                    interactiveButtons: [
-                        { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: '👥 WhatsApp Group', url: settings.whatsappGroup || 'https://chat.whatsapp.com/LhSmx2SeXX75r8I2bxsNDo' }) },
-                        { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: '💬 Telegram Group', url: settings.telegramGroup || 'https://t.me/TeamRedxhacker2' }) },
-                    ],
-                }, { quoted: message });
-            } catch {}
+            // Quick-link buttons (best-effort, non-blocking so it never slows the menu)
+            sendInteractiveMessage(sock, chatId, {
+                text: '🔗 *JOIN OUR COMMUNITIES*\n\nTap the buttons below to join our WhatsApp and Telegram groups.',
+                footer: `Style ${styleNo}/${STYLE_COUNT} — ${style.name} • change with .menustyle`,
+                interactiveButtons: [
+                    { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: '👥 WhatsApp Group', url: settings.whatsappGroup || 'https://chat.whatsapp.com/LhSmx2SeXX75r8I2bxsNDo' }) },
+                    { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: '💬 Telegram Group', url: settings.telegramGroup || 'https://t.me/TeamRedxhacker2' }) },
+                ],
+            }, { quoted: message }).catch(() => {});
         } catch (error) {
             console.error('Error in menu command:', error);
             await sock.sendMessage(chatId, { text: '❌ An error occurred while displaying the menu.', ...channelInfo }, { quoted: message });
@@ -254,14 +298,14 @@ const menuStyleCommand = {
     command: 'menustyle',
     aliases: ['setmenu', 'menutheme'],
     category: 'main',
-    description: 'Choose your menu style (1-5)',
-    usage: '.menustyle <1-5>',
+    description: 'Choose your menu style (1-8)',
+    usage: '.menustyle <1-8>',
 
     async handler(sock, message, args, context) {
         const { chatId, channelInfo } = context;
         try {
             const n = parseInt(args?.[0], 10);
-            if (n >= 1 && n <= 5) {
+            if (n >= 1 && n <= STYLE_COUNT) {
                 await store.saveSetting('global', 'menuStyle', String(n));
                 const s = STYLES[n];
                 await sock.sendMessage(chatId, {

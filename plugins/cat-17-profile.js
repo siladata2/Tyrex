@@ -933,7 +933,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     module.exports = {
     command: 'setgname',
-    aliases: ['setname', 'groupname'],
+    aliases: ['groupname'],
     category: 'admin',
     description: 'Change group name',
     usage: '.setgname <new name>',

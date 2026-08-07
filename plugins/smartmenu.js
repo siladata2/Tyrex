@@ -47,6 +47,12 @@ module.exports = {
         const channelInfo = context.channelInfo || {};
 
         try {
+            // ✅ FIX: was reading settings.botName only — after `.botname <new>`
+            // saves to the DB, this stayed on the old default forever within
+            // the same process. Check the saved value first, same as menu.js.
+            const store = require('../lib/lightweight_store');
+            const dynamicBotName = await store.getSetting('global', 'botName') || settings.botName;
+
             const categories = Array.from(CommandHandler.categories.keys());
             const query = args.join(' ').trim().toLowerCase();
 
@@ -87,7 +93,7 @@ module.exports = {
             const prefix = settings.prefixes?.[0] || '.';
 
             let menuText = `${LOGO}\n\n`;
-            menuText += `📱 *Bot:* ${settings.botName || 'REDXBOT302'}\n`;
+            menuText += `📱 *Bot:* ${dynamicBotName}\n`;
             menuText += `👤 *Owner:* ${settings.botOwner || 'Abdul Rehman'}\n`;
             menuText += `🔖 *Prefix:* ${prefix}\n`;
             menuText += `⏰ *Time:* ${formatTime()}\n`;

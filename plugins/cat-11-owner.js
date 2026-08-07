@@ -174,9 +174,7 @@ const DEFAULT_NAME = process.env.BOT_NAME || 'REDX BOT';
 
 module.exports = {
     command: 'botname',
-    aliases: ['setbotname'],
-    category: 'owner',
-    description: 'Change bot profile name',
+    aliases: ['setbotname', 'setname'],
     usage: '.botname <new name>',
     ownerOnly: true,
 
