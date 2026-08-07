@@ -97,6 +97,19 @@ async function ytSearch(query) {
     return videos[0];
 }
 
+/* ─── Direct local download (no 3rd-party API needed) ─────────────────────
+ * lib/ytdl.js wraps @distube/ytdl-core + ffmpeg and downloads/encodes the
+ * mp3 locally. This doesn't depend on any free public API staying alive,
+ * so it's used as the FIRST attempt. The qasimdev/siputzx/vreden/cobalt
+ * chain (downloadAny, above) is kept as a fallback in case YouTube's
+ * player signature blocks direct extraction on this host.
+ * ───────────────────────────────────────────────────────────────────────── */
+async function downloadAudioLocal(url) {
+    const ytdlLocal = require('../lib/ytdl');
+    const result = await ytdlLocal.downloadAudio(url, true); // { path, title, duration, size }
+    return result;
+}
+
 /* ─── .play (MEGA-MDX exact logic) ────────────────────────────────────────── */
 const _play = {
     command: 'play', aliases: ['plays', 'playsong'],
@@ -106,45 +119,49 @@ const _play = {
         const chatId = context.chatId || message.key.remoteJid;
         const query  = args.join(' ').trim();
         if (!query) return sock.sendMessage(chatId, { text: '*Which song do you want to play?*\nUsage: .play <song name>' }, { quoted: message });
+        let localFile = null;
         try {
             await sock.sendMessage(chatId, { text: '🔍 *Searching...*' }, { quoted: message });
             const video = await ytSearch(query);
 
             await sock.sendMessage(chatId, {
-                text: `✅ *Found:* ${video.title}\n⏱️ ${video.timestamp}\n👤 ${video.author.name}\n\n⏳ *Downloading... (may take up to 30s)*`
+                image: { url: video.thumbnail },
+                caption: `✅ *Found:* ${video.title}\n⏱️ ${video.timestamp}\n👤 ${video.author.name}\n\n⏳ *Downloading... (may take up to 30s)*`
             }, { quoted: message });
 
-            const songData = await downloadAny(video.url, 'mp3');
+            let audioUrl, fileName, sendBuffer = false;
 
-            let thumbnailBuffer;
-            const thumbUrl = songData.thumbnail || video.thumbnail;
-            if (thumbUrl) {
-                try {
-                    const img = await axios.get(thumbUrl, { responseType: 'arraybuffer', timeout: 15000 });
-                    thumbnailBuffer = Buffer.from(img.data);
-                } catch {}
+            // 1) Direct local download — most reliable, no 3rd-party API dependency
+            try {
+                const local = await downloadAudioLocal(video.url);
+                localFile = local.path;
+                fileName = `${(local.title || video.title || 'song').slice(0, 60)}.mp3`;
+                sendBuffer = true;
+            } catch (localErr) {
+                console.log('[PLAY] local ytdl-core failed, falling back to API chain:', localErr.message);
+                // 2) Fallback: remote API chain (qasimdev → siputzx → vreden → cobalt)
+                const songData = await downloadAny(video.url, 'mp3');
+                audioUrl = songData.downloadUrl;
+                fileName = `${(songData.title || video.title || 'song').slice(0, 60)}.mp3`;
             }
 
             await sock.sendMessage(chatId, {
-                audio: { url: songData.downloadUrl },
+                audio: sendBuffer ? require('fs').readFileSync(localFile) : { url: audioUrl },
                 mimetype: 'audio/mpeg',
-                fileName: `${songData.title || video.title}.mp3`,
-                contextInfo: thumbnailBuffer ? {
-                    externalAdReply: {
-                        title: songData.title || video.title,
-                        body: `${video.author.name} • ${video.timestamp}`,
-                        thumbnail: thumbnailBuffer,
-                        mediaType: 2,
-                        sourceUrl: video.url
-                    }
-                } : undefined
+                fileName,
+                ptt: false
             }, { quoted: message });
+
         } catch (err) {
             console.error('[PLAY]', err.message);
             const reason = err.response?.status === 408 ? 'Download timed out. Try again.'
                 : err.response?.status === 429 ? 'Rate limited. Wait a minute.'
                 : err.message;
             await sock.sendMessage(chatId, { text: `❌ *Failed:* ${reason}` }, { quoted: message });
+        } finally {
+            if (localFile) {
+                try { require('fs').unlinkSync(localFile); } catch (_) {}
+            }
         }
     }
 };

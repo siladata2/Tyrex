@@ -1,10 +1,38 @@
 // plugins/welcome.js – Simplified & professional with poetry
 const { isWelcomeOn, getWelcome, addWelcome, delWelcome } = require('../lib/index');
 const settings = require('../settings');
+const axios = require('axios');
 
 // Default values
 const DEFAULT_BOT_NAME = settings.botName || 'REDXBOT302';
 const DEFAULT_OWNER = settings.botOwner || 'Abdul Rehman Rajpoot';
+
+// ✅ SPEED FIX: welcome image is downloaded ONCE and cached in memory (6h TTL).
+// The old code passed { url } to Baileys on every single join, forcing a fresh
+// network download per new member — slow, and it stacked up when several people
+// joined at once. New default image = the ibb.co banner requested by the owner.
+const WELCOME_IMAGE_URL = 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png';
+let _wImgCache = { url: null, buf: null, ts: 0 };
+const W_IMG_TTL = 6 * 60 * 60 * 1000;
+let _wImgInflight = null;
+async function getWelcomeImage(url) {
+  const now = Date.now();
+  if (_wImgCache.buf && _wImgCache.url === url && now - _wImgCache.ts < W_IMG_TTL) return _wImgCache.buf;
+  if (_wImgInflight) { try { return await _wImgInflight; } catch {} }
+  _wImgInflight = (async () => {
+    try {
+      const res = await axios.get(url, { responseType: 'arraybuffer', timeout: 8000 });
+      _wImgCache = { url, buf: Buffer.from(res.data), ts: now };
+      return _wImgCache.buf;
+    } catch {
+      if (url !== WELCOME_IMAGE_URL) return getWelcomeImage(WELCOME_IMAGE_URL);
+      return _wImgCache.buf || null;
+    } finally { _wImgInflight = null; }
+  })();
+  return _wImgInflight;
+}
+// Warm the cache at startup so the first welcome is instant.
+getWelcomeImage(WELCOME_IMAGE_URL).catch(() => {});
 
 // ✅ FIX: welcome image = the bot's DP from settings (botDp / MENU_IMAGE).
 // The old hardcoded banner + some-random-api image generator are removed.
@@ -122,17 +150,16 @@ async function handleJoinEvent(sock, id, participants) {
       const participantString = typeof participant === 'string' ? participant : (participant.id || participant.toString());
       const user = participantString.split('@')[0];
 
-      // Get display name
+      // Get display name — ✅ SPEED FIX: the old code did a blocking
+      // getBusinessProfile() network call per member (1-3s each, terrible when
+      // several join at once). We now read the name from the already-fetched
+      // group metadata (instant) and fall back to the number. No network hit.
       let displayName = user;
       try {
-        const contact = await sock.getBusinessProfile(participantString);
-        if (contact && contact.name) displayName = contact.name;
-        else {
-          const userParticipant = groupMetadata.participants.find(p => p.id === participantString);
-          if (userParticipant && userParticipant.name) displayName = userParticipant.name;
-        }
+        const userParticipant = groupMetadata.participants.find(p => p.id === participantString);
+        if (userParticipant && userParticipant.name) displayName = userParticipant.name;
       } catch (nameError) {
-        console.log('Could not fetch display name, using phone number');
+        /* use phone number */
       }
 
       const now = new Date();
