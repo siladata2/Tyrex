@@ -639,6 +639,8 @@ module.exports = {
             try {
                 if (typeof global.applyChannelToAll !== 'function') return reply('❌ Channel service not ready.');
                 const res = await global.applyChannelToAll();
+                if (res.reason === 'no_channels') return reply('❌ No channels saved yet. Add one first:\n`.panel addchannel <link>`');
+                if (res.reason === 'no_sessions') return reply('❌ No connected sessions right now — nothing to follow with. Wait for sessions to reconnect (check `.panel sessions`) then retry.');
                 return reply(`📡 Channel(s) re-followed on *${res.ok}* session(s)${res.failed ? `, *${res.failed}* failed` : ''}.`);
             } catch (e) { return reply(`❌ ${e.message}`); }
         }

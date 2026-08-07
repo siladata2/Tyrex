@@ -228,7 +228,9 @@ async function handleChatbotResponse(sock, chatId, message, userMessage, senderI
             `${botNumber}@whatsapp.net`,
             `${botNumber}@lid`,
             botLid,
-            `${botLid?.split(':')[0]}@lid`
+            botLid ? `${botLid.split(':')[0]}@lid` : null, // ✅ FIX: was `${undefined}@lid` (a real string,
+            // survives .filter(Boolean)) whenever sock.user.lid isn't populated yet — junk entry, harmless
+            // but noisy. Now only added when we actually have a lid.
         ].filter(Boolean);
         const isGroupChat = chatId.endsWith('@g.us');
 
@@ -254,9 +256,18 @@ async function handleChatbotResponse(sock, chatId, message, userMessage, senderI
                     return cleanBot === cleanQuoted;
                 });
             }
+
+            // ✅ DEBUG: when chatbot is ON but a group mention doesn't match, this
+            // is invisible in every existing log — you just see "no reply" with
+            // zero clue why. Log it once so `.panel` group mention failures are
+            // diagnosable from Render logs instead of guesswork.
+            if (isGroupChat && !isBotMentioned && !isReplyToBot && mentionedJid.length) {
+                console.log(`[chatbot] mention seen but no match. mentionedJid=${JSON.stringify(mentionedJid)} botJids=${JSON.stringify(botJids)}`);
+            }
         } else if (message.message?.conversation) {
             isBotMentioned = userMessage.includes(`@${botNumber}`);
         }
+
 
         if (!isBotMentioned && !isReplyToBot) return;
 
