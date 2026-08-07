@@ -16,6 +16,7 @@ const crypto   = require('crypto');
 require('dotenv').config();
 
 const supabaseStore = require('./lib/supabaseStore');
+const mongoSessionStore = require('./lib/mongoSessionStore');
 
 const {
   initPresenceManager,
@@ -282,6 +283,8 @@ global.applyChannelToAll  = () => channelManager.applyChannelToAll(getActiveSock
 global.reactPostOnAll     = (postLink, emoji) => channelManager.reactPostOnAll(getActiveSockets, postLink, emoji);
 global.addChannel         = (sock, input) => channelManager.addChannel(sock, input);
 global.removeChannel      = (indexOrJid) => channelManager.removeChannel(indexOrJid);
+// Used by `.panel sessions` to mark which saved sessions are live right now.
+global.__activeConnectionNums = () => [...activeConnections.entries()].filter(([,e]) => e.connected && e.conn).map(([n]) => n);
 
 const broadcastStats = () => {
   const connected = [...activeConnections.values()].filter(c=>c.connected).length;
@@ -469,6 +472,17 @@ function setupHandlers(conn, number, saveCreds) {
             await supabaseStore.saveSession(number, creds);
           }
         } catch (e) { console.error('[SUPABASE] Creds backup error:', e.message); }
+      }
+      // ✅ FIX: MONGO_URL never backed up creds before — see lib/mongoSessionStore.js
+      if (mongoSessionStore.isEnabled()) {
+        try {
+          const sessionDir = path.join(SESSIONS_DIR, number);
+          const credsPath  = path.join(sessionDir, 'creds.json');
+          if (fs.existsSync(credsPath)) {
+            const creds = JSON.parse(fs.readFileSync(credsPath, 'utf8'));
+            await mongoSessionStore.saveSession(number, creds);
+          }
+        } catch (e) { console.error('[MONGO-SESSION] Creds backup error:', e.message); }
       }
     } catch {}
   });
@@ -1195,9 +1209,21 @@ app.post('/api/logout', async (req,res) => {
       destroyPresenceManager(num);
       activeConnections.delete(num);
       try{fs.rmSync(path.join(SESSIONS_DIR,num),{recursive:true,force:true});}catch{}
+      // ✅ FIX: logout only ever wiped local disk — the DB-backed copy (Supabase
+      // and/or Mongo) survived, so `.panel sessions` / reloadExistingSessions
+      // kept "restoring" a session the user had just logged out of.
+      if (supabaseStore.isEnabled()) supabaseStore.deleteSession(num).catch(()=>{});
+      if (mongoSessionStore.isEnabled()) mongoSessionStore.deleteSession(num).catch(()=>{});
       io.emit('unlinked',{sessionId:num,number:num});
     } else {
-      for(const[n,e]of activeConnections){ if(e?.conn){try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{}} destroyPresenceManager(n); try{fs.rmSync(path.join(SESSIONS_DIR,n),{recursive:true,force:true});}catch{} io.emit('unlinked',{sessionId:n,number:n}); }
+      for(const[n,e]of activeConnections){
+        if(e?.conn){try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{}}
+        destroyPresenceManager(n);
+        try{fs.rmSync(path.join(SESSIONS_DIR,n),{recursive:true,force:true});}catch{}
+        if (supabaseStore.isEnabled()) supabaseStore.deleteSession(n).catch(()=>{});
+        if (mongoSessionStore.isEnabled()) mongoSessionStore.deleteSession(n).catch(()=>{});
+        io.emit('unlinked',{sessionId:n,number:n});
+      }
       activeConnections.clear();
     }
     broadcastStats(); io.emit('botStatus',{connected:false,number:''});
@@ -1416,8 +1442,35 @@ async function reloadExistingSessions() {
     }
   } else {
     console.warn('⚠️  Supabase NOT configured (no SUPABASE_URL/SUPABASE_KEY).');
+  }
+
+  // ✅ FIX: MONGO_URL was fully wired for bot settings/chat data but never
+  // for session creds — sessions saved to Mongo were never restored here,
+  // so a Mongo-only deploy lost every pairing on every Render restart.
+  if (mongoSessionStore.isEnabled()) {
+    try {
+      const remoteSessions = await mongoSessionStore.listSessions();
+      console.log(`🍃 Mongo has ${remoteSessions.length} remote session(s)`);
+      for (const num of remoteSessions) {
+        const sessionDir = path.join(SESSIONS_DIR, num);
+        const credsPath  = path.join(sessionDir, 'creds.json');
+        if (!fs.existsSync(credsPath)) {
+          const creds = await mongoSessionStore.loadSession(num);
+          if (creds) {
+            fs.mkdirSync(sessionDir, { recursive: true });
+            fs.writeFileSync(credsPath, JSON.stringify(creds, null, 2));
+            console.log(`🍃 Restored session: ${num} ✅`);
+          }
+        } else {
+          console.log(`📂 Local session already present: ${num}`);
+        }
+      }
+    } catch (e) {
+      console.error('[MONGO-SESSION] Session restore error:', e.message);
+    }
+  } else if (!supabaseStore.isEnabled()) {
     console.warn('   Sessions WILL be lost when Render restarts/redeploys.');
-    console.warn('   → See SUPABASE_SETUP.sql and add env vars to fix this.');
+    console.warn('   → Set MONGO_URL or SUPABASE_URL/SUPABASE_KEY to fix this.');
   }
 
   if (!fs.existsSync(SESSIONS_DIR)) return;
