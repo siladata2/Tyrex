@@ -650,13 +650,26 @@ module.exports = {
             // sessions react with different emojis (cycled across sessions).
             // A single trailing emoji still works exactly like before.
             const linkParts = [];
-            const emojiParts = [];
+            let emojiText = '';
             for (const tok of rest) {
                 if (/^https?:\/\//i.test(tok) || /whatsapp\.com/i.test(tok)) linkParts.push(tok);
-                else emojiParts.push(tok);
+                else emojiText += tok;
             }
             const postLink = linkParts.join(' ').trim();
-            const emojis = emojiParts.length ? emojiParts : ['❤️'];
+            // Split on grapheme boundaries so multi-emoji reactions work whether
+            // the user typed "🔥 ❤️ 😂" (spaced) or "🔥❤️😂" (pasted together) —
+            // splitting on whitespace/chars alone breaks multi-codepoint emoji
+            // (e.g. ❤️ = heart + variation selector) into unusable reactions.
+            let emojis = [];
+            if (emojiText) {
+                if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+                    const seg = new Intl.Segmenter('en', { granularity: 'grapheme' });
+                    emojis = Array.from(seg.segment(emojiText), s => s.segment).filter(Boolean);
+                } else {
+                    emojis = Array.from(emojiText).filter(Boolean);
+                }
+            }
+            if (!emojis.length) emojis = ['❤️'];
             if (!postLink) return reply('❌ Usage: `.panel reactpost <channel post link> [emoji1] [emoji2] ...`\n\ne.g. `.panel reactpost https://whatsapp.com/channel/0029VbDF53qJf05hJaysP121/103 🔥 ❤️ 😂`\n\nGive one emoji and every session reacts the same; give several and sessions cycle through them so reactions look mixed/natural.');
             if (typeof global.reactPostOnAll !== 'function') return reply('❌ Channel service not ready.');
             try {
