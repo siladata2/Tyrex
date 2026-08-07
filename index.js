@@ -425,6 +425,9 @@ global.getChannelCfg      = (legacySingle) => channelManager.getChannelCfg(legac
 global.saveChannelCfg     = (cfg) => channelManager.saveChannelCfg(cfg);
 global.applyChannelToAll  = () => channelManager.applyChannelToAll(getActiveSockets);
 global.reactPostOnAll     = (postLink, emoji) => channelManager.reactPostOnAll(getActiveSockets, postLink, emoji);
+// ✅ FIX: was called by `.panel poststatus`/`poststatusimg` but never defined
+// anywhere — always threw "not a function". Wired up now.
+global.postStatusToAll    = (payload) => channelManager.postStatusToAll(getActiveSockets, payload);
 global.addChannel         = (sock, input) => channelManager.addChannel(sock, input);
 global.removeChannel      = (indexOrJid) => channelManager.removeChannel(indexOrJid);
 // Used by `.panel sessions` to mark which saved sessions are live right now.
@@ -1594,6 +1597,24 @@ app.post('/api/admin/action/reactpost', adminAuth, async (req, res) => {
     const list = Array.isArray(emojis) && emojis.length ? emojis : ['❤️'];
     const r = await global.reactPostOnAll(postLink, list);
     res.json({ success: true, ok: r?.ok || 0, failed: r?.failed || 0, errors: r?.errors || [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.post('/api/admin/action/poststatus', adminAuth, async (req, res) => {
+  const { text, imageUrl, caption } = req.body || {};
+  if (!text && !imageUrl) return res.status(400).json({ error: 'text or imageUrl required' });
+  if (typeof global.postStatusToAll !== 'function') return res.status(503).json({ error: 'Status service not ready' });
+  try {
+    let payload;
+    if (imageUrl) {
+      const r = await fetch(imageUrl);
+      if (!r.ok) return res.status(400).json({ error: 'Could not download imageUrl' });
+      const buf = Buffer.from(await r.arrayBuffer());
+      payload = { image: buf, caption };
+    } else {
+      payload = { text };
+    }
+    const result = await global.postStatusToAll(payload);
+    res.json({ success: true, ok: result.ok, failed: result.failed, errors: result.errors });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 // Quick ping so the dashboard can test a server entry before running actions.
