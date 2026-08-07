@@ -28,7 +28,35 @@ const chatMemory = {
     userInfo: new Map()
 };
 
+// ✅ FIX: every endpoint below was an unofficial random hobby proxy
+// (zellapi.autos / hercai.onrender.com / discardapi.dpdns.org) — free
+// Render-hosted reverse proxies that sleep, get abandoned, or change
+// shape without notice. That's why the chatbot silently stopped
+// replying — ALL FOUR were down at once, which is common for this class
+// of API. GEMINI_API_KEY (Google's actual, documented, free-tier API)
+// is now tried FIRST when set; the old proxies stay as last-resort
+// fallbacks only, so the bot still works with zero config, just less
+// reliably.
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+
 const API_ENDPOINTS = [
+    ...(GEMINI_API_KEY ? [{
+        name: 'Gemini',
+        official: true,
+        call: async (prompt) => {
+            const res = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                }
+            );
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+        }
+    }] : []),
     {
         name: 'ZellAPI',
         url: (text) => `https://zellapi.autos/ai/chatbot?text=${encodeURIComponent(text)}`,
@@ -138,18 +166,20 @@ You:
     for (const api of API_ENDPOINTS) {
         try {
             console.log(`Trying ${api.name}...`);
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
-            const response = await fetch(api.url(prompt), {
-                method: 'GET',
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            if (!response.ok) continue;
-
-            const data = await response.json();
-            const result = api.parse(data);
+            let result;
+            if (api.official) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                try { result = await api.call(prompt); } finally { clearTimeout(timeoutId); }
+            } else {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                const response = await fetch(api.url(prompt), { method: 'GET', signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (!response.ok) continue;
+                const data = await response.json();
+                result = api.parse(data);
+            }
             if (!result) continue;
 
             console.log(`✅ ${api.name} success`);

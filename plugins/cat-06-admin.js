@@ -831,8 +831,14 @@ try {
   adminOnly: true,
   
   async handler(sock, message, args, context) {
-    const { chatId } = context;
+    const { chatId, isBotAdmin } = context;
     const durationInMinutes = args[0] ? parseInt(args[0]) : undefined;
+
+    if (!isBotAdmin) {
+      return sock.sendMessage(chatId, {
+        text: '❌ I need to be a *group admin* to mute this group.'
+      }, { quoted: message });
+    }
 
     try {
       await sock.groupSettingUpdate(chatId, 'announcement');
@@ -889,8 +895,15 @@ try {
   adminOnly: true,
   
   async handler(sock, message, args, context) {
-    const { chatId, channelInfo } = context;
-    
+    const { chatId, channelInfo, isBotAdmin } = context;
+
+    if (!isBotAdmin) {
+      return sock.sendMessage(chatId, {
+        text: '❌ I need to be a *group admin* to unmute this group.',
+        ...channelInfo
+      }, { quoted: message });
+    }
+
     try {
       await sock.groupSettingUpdate(chatId, 'not_announcement');
       await sock.sendMessage(chatId, { 

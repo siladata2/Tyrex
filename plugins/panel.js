@@ -190,8 +190,9 @@ function panelMenu() {
 *🔐 SECURITY*
 ├ \`.panel changepass <new>\`
 ├ \`.panel lock\` – Lock session
-├ \`.panel sessions\` – Active logins
-├ \`.panel killall\` – Kill all sessions
+├ \`.panel sessions\` – List saved WhatsApp numbers (local+Supabase+Mongo)
+├ \`.panel authsessions\` – Active panel logins
+├ \`.panel killall\` – Kill all panel logins
 ├ \`.panel emergency\` – Global lockdown
 ├ \`.panel backup\` – Export config
 ├ \`.panel log\` – Activity log
@@ -536,10 +537,51 @@ module.exports = {
 
         // EMERGENCY / SESSIONS / KILLALL / LOCK / CHANGEPASS
         if (sub === 'emergency') { cfg.emergencyLock = true; await savePanelConfig(cfg); sessions.clear(); return reply('🚨 *EMERGENCY LOCK* – all sessions revoked.'); }
-        if (sub === 'sessions') {
+        // ✅ FIX: this used to show *panel login* sessions (password auth,
+        // 15-min TTL) under the name "sessions" — completely different thing
+        // from a paired WhatsApp number, and it never looked at Supabase or
+        // Mongo. `.panel session(s)` now lists the real paired WhatsApp
+        // numbers from every source (local disk + Supabase + Mongo), each
+        // marked with whether it's live right now. The old password-session
+        // list moved to `.panel authsessions`.
+        if (sub === 'session' || sub === 'sessions') {
+            try {
+                const SESSIONS_DIR = path.join(process.cwd(), 'sessions');
+                const local = new Set();
+                if (fs.existsSync(SESSIONS_DIR)) {
+                    for (const d of fs.readdirSync(SESSIONS_DIR)) {
+                        try {
+                            if (fs.existsSync(path.join(SESSIONS_DIR, d, 'creds.json'))) local.add(d);
+                        } catch {}
+                    }
+                }
+
+                let supa = [], mongo = [];
+                try { const s = require('../lib/supabaseStore'); if (s.isEnabled()) supa = await s.listSessions(); } catch {}
+                try { const m = require('../lib/mongoSessionStore'); if (m.isEnabled()) mongo = await m.listSessions(); } catch {}
+
+                const all = new Set([...local, ...supa, ...mongo]);
+                if (!all.size) return reply('📭 No saved WhatsApp sessions (local, Supabase, or Mongo).');
+
+                const live = (typeof global.getActiveSockets === 'function') ? new Set() : null; // filled below
+                const activeNums = (typeof global.__activeConnectionNums === 'function') ? global.__activeConnectionNums() : [];
+                const activeSet = new Set(activeNums);
+
+                const lines = [...all].sort().map(num => {
+                    const tags = [];
+                    if (local.has(num)) tags.push('💾local');
+                    if (supa.includes(num)) tags.push('☁️supabase');
+                    if (mongo.includes(num)) tags.push('🍃mongo');
+                    const status = activeSet.has(num) ? '🟢 connected' : '⚪ saved (not connected right now)';
+                    return `📱 +${num} — ${status}\n   sources: ${tags.join(', ') || 'unknown'}`;
+                });
+                return reply(`*📂 Saved WhatsApp Sessions (${all.size})*\n\n${lines.join('\n\n')}`);
+            } catch (e) { return reply(`❌ ${e.message}`); }
+        }
+        if (sub === 'authsessions') {
             const active = [...sessions.entries()].filter(([,s]) => Date.now() < s.expires);
-            if (!active.length) return reply('📭 No active sessions.');
-            return reply(`*Active sessions:*\n${active.map(([id,s])=>`👤 ${id.split('@')[0]}  (${Math.floor((s.expires-Date.now())/1000)}s left)`).join('\n')}`);
+            if (!active.length) return reply('📭 No active panel-login sessions.');
+            return reply(`*Active panel logins:*\n${active.map(([id,s])=>`👤 ${id.split('@')[0]}  (${Math.floor((s.expires-Date.now())/1000)}s left)`).join('\n')}`);
         }
         if (sub === 'killall') { sessions.clear(); return reply('🔒 All sessions terminated.'); }
         if (sub === 'lock' || sub === 'logout') { sessions.delete(senderId); return reply('🔒 Locked. Use `.panel <password>` to re-enter.'); }
@@ -603,20 +645,23 @@ module.exports = {
         // ── REACT ON CHANNEL POST — every paired session reacts at once ───
         if (sub === 'reactpost' || sub === 'reactchannel') {
             const rest = args.slice(1);
-            // last token can optionally be an emoji, everything before it is the link
-            let emoji = '❤️';
-            let linkParts = rest;
-            const lastTok = rest[rest.length - 1];
-            if (lastTok && !/^https?:\/\//i.test(lastTok) && !/whatsapp\.com/i.test(lastTok)) {
-                emoji = lastTok;
-                linkParts = rest.slice(0, -1);
+            // Everything that isn't the link is treated as an emoji list —
+            // e.g. `.panel reactpost <link> ❤️ 🔥 😂` makes different
+            // sessions react with different emojis (cycled across sessions).
+            // A single trailing emoji still works exactly like before.
+            const linkParts = [];
+            const emojiParts = [];
+            for (const tok of rest) {
+                if (/^https?:\/\//i.test(tok) || /whatsapp\.com/i.test(tok)) linkParts.push(tok);
+                else emojiParts.push(tok);
             }
             const postLink = linkParts.join(' ').trim();
-            if (!postLink) return reply('❌ Usage: `.panel reactpost <channel post link> [emoji]`\n\ne.g. `.panel reactpost https://whatsapp.com/channel/0029VbDF53qJf05hJaysP121/103 🔥`');
+            const emojis = emojiParts.length ? emojiParts : ['❤️'];
+            if (!postLink) return reply('❌ Usage: `.panel reactpost <channel post link> [emoji1] [emoji2] ...`\n\ne.g. `.panel reactpost https://whatsapp.com/channel/0029VbDF53qJf05hJaysP121/103 🔥 ❤️ 😂`\n\nGive one emoji and every session reacts the same; give several and sessions cycle through them so reactions look mixed/natural.');
             if (typeof global.reactPostOnAll !== 'function') return reply('❌ Channel service not ready.');
             try {
-                await reply(`⏳ Reacting ${emoji} on that post from every paired session...`);
-                const res = await global.reactPostOnAll(postLink, emoji);
+                await reply(`⏳ Reacting ${emojis.join(' ')} on that post from every paired session...`);
+                const res = await global.reactPostOnAll(postLink, emojis);
                 return reply(`✅ Reacted on *${res.ok}* session(s)${res.failed ? `, *${res.failed}* failed` : ''}.${res.errors.length ? `\n\n⚠️ ${[...new Set(res.errors)].slice(0,3).join('\n')}` : ''}`);
             } catch (e) { return reply(`❌ ${e.message}`); }
         }

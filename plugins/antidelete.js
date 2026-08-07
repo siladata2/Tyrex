@@ -29,7 +29,18 @@ const { writeFile } = require('fs/promises');
 const store = require('../lib/lightweight_store');
 
 const messageStore   = new Map();
-const MAX_STORE_SIZE = 1000; // bumped — more coverage
+// Insertion-ordered list of {messageId, phoneKey} pairs, ONE entry per stored
+// message (not per Map key). Used so eviction removes both companion keys
+// of the same message together — evicting only `messageStore.keys().next()`
+// used to strand the paired key, silently halving real capacity and causing
+// "not in store" on messages that were, in fact, recent.
+const storeOrder      = [];
+const MAX_STORE_SIZE  = 4000; // messages tracked (not Map keys)
+// How long a message is kept before it's swept even if under the size cap.
+// Render free tier restarts/redeploys frequently — this alone can't survive
+// a restart (that requires DB persistence, handled below), but it stops the
+// in-memory map from silently growing forever between restarts.
+const STORE_TTL_MS    = 6 * 60 * 60 * 1000; // 6h
 
 const CONFIG_PATH    = path.join(__dirname, '../data/antidelete.json');
 const TEMP_MEDIA_DIR = path.join(__dirname, '../tmp');
@@ -82,6 +93,18 @@ setInterval(() => {
     } catch {}
 }, 5 * 60_000);
 
+// Sweep messages older than STORE_TTL_MS regardless of size cap — keeps the
+// in-memory map from holding onto stale entries for messages nobody will
+// ever delete, which matters on Render free tier's limited RAM.
+setInterval(() => {
+    const cutoff = Date.now() - STORE_TTL_MS;
+    while (storeOrder.length && storeOrder[0].ts < cutoff) {
+        const old = storeOrder.shift();
+        messageStore.delete(old.messageId);
+        if (old.phoneKey) messageStore.delete(old.phoneKey);
+    }
+}, 10 * 60_000);
+
 /* ─── Config ─────────────────────────────────────────────────────────────── */
 async function loadAntideleteConfig() {
     try {
@@ -112,10 +135,6 @@ async function storeMessage(sock, message) {
         // We have no way to know if antidelete will be enabled by the time
         // someone deletes a message. Check enabled only at report time.
 
-        if (messageStore.size >= MAX_STORE_SIZE) {
-            messageStore.delete(messageStore.keys().next().value);
-        }
-
         const messageId = message.key.id;
         const sender    = message.key.participant || message.key.remoteJid;
 
@@ -143,7 +162,28 @@ async function storeMessage(sock, message) {
         // FIX 4: dual-key store — primary + phone:id fallback for @lid drift
         messageStore.set(messageId, meta);
         const senderPhone = phoneNum(sender);
-        if (senderPhone) messageStore.set(`${senderPhone}:${messageId}`, meta);
+        const phoneKey = senderPhone ? `${senderPhone}:${messageId}` : null;
+        if (phoneKey) messageStore.set(phoneKey, meta);
+
+        // Evict as ONE unit (both keys of the same message together) so a
+        // stray single-key delete can't orphan the other lookup path.
+        storeOrder.push({ messageId, phoneKey, ts: meta.timestamp });
+        while (storeOrder.length > MAX_STORE_SIZE) {
+            const old = storeOrder.shift();
+            messageStore.delete(old.messageId);
+            if (old.phoneKey) messageStore.delete(old.phoneKey);
+        }
+
+        // Persist a lightweight copy to the DB (mongo/postgres/mysql/sqlite,
+        // whichever is configured) so deletions still resolve after a Render
+        // restart, not just the (empty) in-memory map. `fullMessage` is kept
+        // out of the DB copy — the raw protobuf isn't needed to build the
+        // "message was deleted" report, only to lazily re-download media.
+        if (HAS_DB) {
+            store.saveSetting(`antidel:${messageId}`, 'meta', {
+                content, mediaType, sender, group: meta.group, timestamp: meta.timestamp,
+            }).catch(() => {});
+        }
 
         // View-once: download immediately
         const isViewOnce = !!(voC?.imageMessage || voC?.videoMessage);
@@ -241,6 +281,16 @@ async function handleMessageRevocation(sock, revocationMessage) {
                 revocationMessage.key?.remoteJid
             );
             if (fromPhone) original = messageStore.get(`${fromPhone}:${messageId}`);
+        }
+
+        // FIX 5: DB fallback — the in-memory map is empty after every Render
+        // restart/redeploy (free tier respawns often). If a DB is configured,
+        // check it before giving up; it survives restarts, the Map doesn't.
+        if (!original && HAS_DB) {
+            try {
+                const saved = await store.getSetting(`antidel:${messageId}`, 'meta');
+                if (saved) original = saved; // no fullMessage → media re-download is skipped, text/type still reported
+            } catch {}
         }
 
         if (!original) {
