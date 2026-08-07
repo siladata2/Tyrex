@@ -15,6 +15,55 @@ const fs       = require('fs');
 const crypto   = require('crypto');
 require('dotenv').config();
 
+// ── LOG NOISE FILTER ─────────────────────────────────────────
+// ✅ FIX: libsignal (used by Baileys) spams the log with harmless
+// decryption churn on every multi-device/retry message: "Bad MAC",
+// "MessageCounterError: Key used already or never filled",
+// "Closing session"/"Closing open session in favor of incoming prekey
+// bundle", giant "SessionEntry { ... }" buffer dumps, and "Failed to
+// decrypt message with any known session". None of these mean the bot
+// is broken — WhatsApp resends and the message still arrives — but they
+// bury the real logs and make the service look like it's on fire.
+// Suppress ONLY these known-noisy lines; everything else passes through.
+(() => {
+  const NOISE = [
+    /Bad MAC/i,
+    /MessageCounterError/i,
+    /Key used already or never filled/i,
+    /Closing (open )?session/i,
+    /Closing session in favor/i,
+    /incoming prekey bundle/i,
+    /Failed to decrypt message with any known session/i,
+    /Decrypted message with closed session/i,
+    /Session error/i,
+    /session_cipher\.js/i,
+    /libsignal/i,
+    /queue_job\.js/i,
+    /_asyncQueueExecutor/i,
+    /SessionEntry \{/,
+    /Removing old closed session/i,
+  ];
+  // Track whether we're inside a multi-line SessionEntry {...} dump so the
+  // buffer-field lines that follow (registrationId:, currentRatchet:, etc.)
+  // are swallowed too instead of leaking hundreds of hex lines.
+  let inDump = false;
+  const isNoise = (args) => {
+    const line = args.map(a => (typeof a === 'string' ? a : '')).join(' ');
+    if (inDump) {
+      if (/^\s*\}/.test(line) || line.trim() === '}') inDump = false;
+      return true;
+    }
+    if (/SessionEntry \{|currentRatchet: \{|_chains: \{/.test(line)) { inDump = true; return true; }
+    return NOISE.some(rx => rx.test(line));
+  };
+  const origLog = console.log.bind(console);
+  const origErr = console.error.bind(console);
+  const origWarn = console.warn.bind(console);
+  console.log  = (...a) => { if (!isNoise(a)) origLog(...a); };
+  console.error = (...a) => { if (!isNoise(a)) origErr(...a); };
+  console.warn = (...a) => { if (!isNoise(a)) origWarn(...a); };
+})();
+
 const supabaseStore = require('./lib/supabaseStore');
 const mongoSessionStore = require('./lib/mongoSessionStore');
 
@@ -61,10 +110,27 @@ function getLibIndex() {
   if (!_libIndex) { try { _libIndex = require('./lib/index'); } catch {} }
   return _libIndex;
 }
+// ✅ SPEED: cache sudo lookups (they hit disk/DB). 60s TTL.
+const _sudoCache = new Map(); // jid -> { val, ts }
 async function isSudoUser(jid) {
-  try { const lib = getLibIndex(); return lib ? await lib.isSudo(jid) : false; } catch { return false; }
+  try {
+    const now = Date.now();
+    const c = _sudoCache.get(jid);
+    if (c && now - c.ts < 60_000) return c.val;
+    const lib = getLibIndex();
+    const val = lib ? await lib.isSudo(jid) : false;
+    _sudoCache.set(jid, { val, ts: now });
+    return val;
+  } catch { return false; }
 }
 function cleanNum(jid) { return (jid||'').split(':')[0].split('@')[0]; }
+
+// ✅ SPEED: cache @lid → isOwner resolution so we do NOT fire a blocking
+// conn.onWhatsApp() network round-trip on EVERY message from an @lid sender
+// (the #1 cause of slow replies + "high ping" in groups). Owner/co-owner @lid
+// numbers are stable, so once resolved we remember them.
+const _lidOwnerCache = new Map();   // lidNum -> boolean
+const _ownerLidResolved = { done: false, ts: 0 };
 
 /**
  * Robust admin status from group metadata — matches by bare number so it works
@@ -162,6 +228,17 @@ try {
   bgmCheckAndPlay = bgmPlugin.checkAndPlay || bgmCheckAndPlay;
   if (bgmPlugin.loadTriggers) bgmPlugin.loadTriggers().catch(()=>{});
 } catch(e) { console.warn('⚠️ bgm load error:', e.message); }
+
+// ✅ FIX: plugins/chatbot.js's handleChatbotResponse (replies when mentioned/
+// replied-to in groups, or to any DM once enabled) was only ever called from
+// lib/messageHandler.js — a file index.js never requires or invokes for real
+// messages (index.js has its OWN handleMessage() below). So `.chatbot on`
+// always "succeeded" and the AI backend/keys could be perfectly configured,
+// but the reply function was structurally unreachable — zero responses,
+// always, regardless of API keys or mention format. Wired in for real here.
+let chatbotRespond = async () => {};
+try { chatbotRespond = require('./plugins/chatbot').handleChatbotResponse || chatbotRespond; }
+catch(e) { console.warn('⚠️ chatbot load error:', e.message); }
 
 // ── APP ─────────────────────────────────────────────────────
 const app    = express();
@@ -742,16 +819,35 @@ async function handleMessage(conn, msg, sessionId) {
 
   if (!isOwner && msg.key.fromMe) isOwner = true;
 
-  // ✅ FIX: @lid resolution now also runs for DMs, not just groups.
+  // ✅ FIX + SPEED: @lid resolution runs for DMs and groups, but is now
+  // CACHED. Previously this fired a blocking conn.onWhatsApp() network call
+  // on EVERY message from an @lid sender — which on modern WhatsApp is most
+  // messages — adding hundreds of ms of latency per message (the main cause
+  // of slow DM/group replies and "high ping"). We now:
+  //   1. check a per-lid cache first (instant), and
+  //   2. only ever query the owner's lid ONCE (cached 6h), then compare locally.
   if (!isOwner && (sNumClean.length > 15 || sender.includes('@lid'))) {
-    try {
-      const results = await conn.onWhatsApp?.(OWNER_NUM, ...(coOwnerClean ? [CO_OWNER_NUM] : []));
-      if (Array.isArray(results)) {
-        for (const r of results) {
-          if (r?.lid && cleanNum(r.lid) === sNumClean) { isOwner = true; break; }
+    if (_lidOwnerCache.has(sNumClean)) {
+      if (_lidOwnerCache.get(sNumClean)) isOwner = true;
+    } else {
+      try {
+        const now = Date.now();
+        if (!_ownerLidResolved.done || now - _ownerLidResolved.ts > 6 * 60 * 60 * 1000) {
+          const results = await conn.onWhatsApp?.(OWNER_NUM, ...(coOwnerClean ? [CO_OWNER_NUM] : []));
+          if (Array.isArray(results)) {
+            for (const r of results) {
+              if (r?.lid) _lidOwnerCache.set(cleanNum(r.lid), true);
+            }
+          }
+          _ownerLidResolved.done = true;
+          _ownerLidResolved.ts = now;
         }
-      }
-    } catch {}
+        const match = _lidOwnerCache.get(sNumClean) === true;
+        // remember negatives too so repeat senders never trigger another lookup
+        if (!_lidOwnerCache.has(sNumClean)) _lidOwnerCache.set(sNumClean, match);
+        if (match) isOwner = true;
+      } catch {}
+    }
   }
 
   if (!isOwner && from?.endsWith('@g.us')) {
@@ -848,7 +944,17 @@ async function handleMessage(conn, msg, sessionId) {
   // the linked/owner number, which is how most people were testing it.
   try { if (await bgmCheckAndPlay(conn, msg, body, from, {})) return; } catch(e) { console.error('[bgm]', e.message); }
 
-  if (!body.startsWith(pfx)) return;
+  if (!body.startsWith(pfx)) {
+    // ✅ FIX: chatbot reply logic was never reachable at all (see require
+    // above) — this is the actual call site. Runs on non-command text only,
+    // skips the bot's own messages, mirrors the intended enable/mode gating
+    // that plugins/chatbot.js already implements internally (per-chat on/off
+    // via `.chatbot on`, and it self-detects DM vs mention-in-group).
+    if (!msg.key.fromMe && body) {
+      try { await chatbotRespond(conn, from, msg, body, sender); } catch(e) { console.error('[chatbot]', e.message); }
+    }
+    return;
+  }
 
   const args = body.slice(pfx.length).trim().split(/ +/);
   const cmd  = args.shift().toLowerCase();
@@ -911,9 +1017,17 @@ async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
 
   switch(cmd) {
     case 'ping': {
+      // ✅ Real round-trip: time how long an actual message send takes, which
+      // reflects the true WhatsApp latency (not a near-zero local diff).
       const t = Date.now();
-      await conn.sendMessage(from, { react: { text: '⚡', key: msg.key } });
-      await s(`⚡ *ᴘɪɴɢ:* \`${Date.now()-t}ms\`\n\n> 🔥 ${BOT_NAME}`);
+      const sent = await conn.sendMessage(from, { text: '🏓 Pinging...' }, { quoted: msg });
+      const lat = Date.now() - t;
+      const tag = lat < 400 ? '🟢 Excellent' : lat < 900 ? '🟡 Good' : lat < 1800 ? '🟠 Okay' : '🔴 Slow';
+      try {
+        await conn.sendMessage(from, { text: `⚡ *ᴘɪɴɢ:* \`${lat}ms\` ${tag}\n\n> 🔥 ${BOT_NAME}`, edit: sent.key });
+      } catch {
+        await s(`⚡ *ᴘɪɴɢ:* \`${lat}ms\` ${tag}\n\n> 🔥 ${BOT_NAME}`);
+      }
       return true;
     }
     case 'owner':

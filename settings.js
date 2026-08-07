@@ -12,20 +12,49 @@ require('dotenv').config();
 
 module.exports = {
   // ── BOT IDENTITY ─────────────────────────────────────────────
-  get botName()      { return process.env.BOT_NAME       || '🔥 REDX MINI MD 🔥'; },
+  // ✅ FIX: these four were getter-only. Several commands do
+  // `settings.botName = value` etc. after saving to the DB — under
+  // 'use strict' (which most plugin bundles declare) that THROWS
+  // "Cannot set property X of #<Object> which has only a getter",
+  // crashing .botname / .setprefix / .panel setprefix / .panel setowner
+  // before they could send their success reply. Real get+set now, so
+  // runtime overrides actually take effect instead of throwing.
+  _prefixesOverride: null,
+  get prefixes()      { return this._prefixesOverride || [process.env.PREFIX || '.']; },
+  set prefixes(v)     { this._prefixesOverride = v; },
+  _botNameOverride: null,
+  get botName()       { return this._botNameOverride || process.env.BOT_NAME || '🔥 REDX MINI MD 🔥'; },
+  set botName(v)      { this._botNameOverride = v; },
   get botOwner()     { return process.env.OWNER_NAME     || 'Abdul Rehman Rajpoot'; },
-  get ownerNumber()  { return process.env.OWNER_NUMBER   || '923009842133'; },
+  _ownerNumberOverride: null,
+  get ownerNumber()   { return this._ownerNumberOverride || process.env.OWNER_NUMBER || '923009842133'; },
+  set ownerNumber(v)  { this._ownerNumberOverride = v; },
   get botDesc()      { return process.env.BOT_DESC       || 'Powered by REDX MINI MD 🔥'; },
   get version()      { return process.env.BOT_VERSION    || 'v9.0 ULTRA'; },
 
   // ── BOT SETTINGS ──────────────────────────────────────────────
-  get prefixes()     { return [process.env.PREFIX || '.']; },
-  get prefix()       { return process.env.PREFIX         || '.'; },
+  get prefix()       { return this.prefixes[0]; },
   get mode()         { return process.env.BOT_MODE       || 'public'; },
-  get platform()     { return process.env.PLATFORM       || 'heroku'; },
+  // ✅ FIX: was hardcoded to 'heroku' regardless of where the bot actually
+  // runs — menu/smenu always showed "Platform: HEROKU" even on Render or
+  // Railway. Auto-detects from the same env vars each host sets, same logic
+  // index.js's detectPlatform() already used elsewhere — now consistent.
+  get platform() {
+    if (process.env.PLATFORM)            return process.env.PLATFORM;
+    if (process.env.RENDER)              return 'Render';
+    if (process.env.RAILWAY_ENVIRONMENT) return 'Railway';
+    if (process.env.DYNO)                return 'Heroku';
+    return 'Local';
+  },
+  // ✅ FIX: menu/smenu referenced settings.timeZone but it was never
+  // defined here — always undefined, silently falling back to a hardcoded
+  // 'Asia/Karachi' with no way to change it. Now configurable via env.
+  get timeZone()     { return process.env.TIMEZONE       || process.env.TZ || 'Asia/Karachi'; },
 
   // ── MEDIA ─────────────────────────────────────────────────────
-  get botDp()        { return process.env.MENU_IMAGE     || 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png'; },
+  get botDp()         { return this._botDpOverride || process.env.MENU_IMAGE || 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png'; },
+  set botDp(v)        { this._botDpOverride = v; },
+  _botDpOverride: null,
   get menuImage()    { return process.env.MENU_IMAGE     || 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png'; },
 
   // ── LINKS ─────────────────────────────────────────────────────
