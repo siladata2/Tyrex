@@ -176,9 +176,12 @@ function panelMenu() {
 
 *📡 CHANNEL (auto-join + auto-react)*
 ├ \`.panel channel\` – Show current channel
-├ \`.panel setchannel <jid>\` – Set channel JID (e.g. 120363409338797582@newsletter)
-├ \`.panel setchannel <link>\` – Set channel link (https://whatsapp.com/channel/CODE)
-├ \`.panel followchannel\` – Re-follow channel on all sessions
+├ \`.panel channel\` – List saved channels (auto-followed on every pair)
+├ \`.panel addchannel <link/jid>\` – Add a channel to the auto-join list
+├ \`.panel delchannel <number>\` – Remove a channel from the list
+├ \`.panel reactpost <post link> [emoji]\` – React to a channel POST from every paired session
+├ \`.panel setchannel <jid/link>\` – Legacy alias for addchannel
+├ \`.panel followchannel\` – Re-follow all saved channels on all sessions
 
 *📤 STATUS BROADCAST (all paired sessions)*
 ├ \`.panel poststatus <text>\` – Post text status everywhere
@@ -549,35 +552,72 @@ module.exports = {
             return reply(`✅ Password changed. New: ${masked}`);
         }
 
-        // ── CHANNEL (auto-join + auto-react) ──────────────────────────────
+        // ── CHANNEL (multi-channel auto-join + auto-react-to-post) ────────
         if (sub === 'channel') {
             try {
-                const cfgC = (typeof global.getChannelCfg === 'function') ? await global.getChannelCfg(true) : {};
-                const jid  = cfgC.jid || process.env.NEWSLETTER_JID || '120363409338797582@newsletter';
-                const link = cfgC.link || 'https://whatsapp.com/channel/0029VbDF53qJf05hJaysP121';
-                return reply(`📡 *Channel Config*\n\n🆔 JID: \`${jid}\`\n🔗 Link: ${link}\n\nTo change:\n\`.panel setchannel <jid>\`\n\`.panel setchannel <link>\``);
+                const list = (typeof global.getChannelCfg === 'function') ? await global.getChannelCfg(false) : [];
+                if (!list.length) {
+                    return reply(`📡 *No channels saved yet.*\n\n➕ Add one:\n\`.panel addchannel <link or jid>\`\n\ne.g. \`.panel addchannel https://whatsapp.com/channel/0029VbDF53qJf05hJaysP121\``);
+                }
+                const lines = list.map((c, i) => `${i + 1}. ${c.name || c.jid}\n   🆔 \`${c.jid}\`${c.link ? `\n   🔗 ${c.link}` : ''}`).join('\n\n');
+                return reply(`📡 *Saved Channels (${list.length})* — auto-followed on every new pair\n\n${lines}\n\n➕ \`.panel addchannel <link>\`\n➖ \`.panel delchannel <number>\`\n😍 \`.panel reactpost <post link> [emoji]\``);
             } catch (e) { return reply(`❌ ${e.message}`); }
         }
-        if (sub === 'setchannel') {
+        if (sub === 'addchannel') {
             const input = args.slice(1).join(' ').trim();
-            if (!input) return reply('❌ Usage:\n\`.panel setchannel 120363409338797582@newsletter\`\n\`.panel setchannel https://whatsapp.com/channel/CODE\`');
-            const isJid  = /@newsletter$/i.test(input);
-            const isLink = /whatsapp\.com\/channel\//i.test(input);
-            if (!isJid && !isLink) return reply('❌ Not a valid channel JID or link.\n\nJID: `120363409338797582@newsletter`\nLink: `https://whatsapp.com/channel/CODE`');
+            if (!input) return reply('❌ Usage:\n`.panel addchannel 120363409338797582@newsletter`\n`.panel addchannel https://whatsapp.com/channel/CODE`');
+            if (typeof global.addChannel !== 'function') return reply('❌ Channel service not ready.');
             try {
-                const cur = (typeof global.getChannelCfg === 'function') ? await global.getChannelCfg(true) : {};
-                if (isJid)  cur.jid  = input.trim().toLowerCase();
-                if (isLink) cur.link = input.trim();
-                await global.saveChannelCfg(cur);
+                const res = await global.addChannel(sock, input);
                 let applied = null;
                 if (typeof global.applyChannelToAll === 'function') applied = await global.applyChannelToAll();
-                return reply(`✅ Channel updated!\n\n🆔 JID: \`${cur.jid || 'unchanged'}\`\n🔗 Link: ${cur.link || 'unchanged'}\n\n${applied ? `📡 Followed on ${applied.ok} session(s)${applied.failed ? ` (${applied.failed} failed)` : ''}` : 'Will follow on next connect.'}`);
+                return reply(`✅ Channel added! (${res.total} total)\n\n🆔 \`${res.jid}\`${res.name ? `\n📛 ${res.name}` : ''}\n\n${applied ? `📡 Followed on ${applied.ok} session(s)${applied.failed ? ` (${applied.failed} failed)` : ''}` : 'Will follow on next connect.'}`);
+            } catch (e) { return reply(`❌ ${e.message}`); }
+        }
+        if (sub === 'delchannel' || sub === 'removechannel') {
+            const target = args[1];
+            if (!target) return reply('❌ Usage: `.panel delchannel <number>` (see `.panel channel` for the list) or `.panel delchannel <jid>`');
+            if (typeof global.removeChannel !== 'function') return reply('❌ Channel service not ready.');
+            const res = await global.removeChannel(target);
+            return reply(res.removed ? `✅ Channel removed. ${res.total} remaining.` : '❌ Not found in the channel list.');
+        }
+        // Legacy single-channel setter — kept working, now just adds to the list.
+        if (sub === 'setchannel') {
+            const input = args.slice(1).join(' ').trim();
+            if (!input) return reply('❌ Usage:\n`.panel setchannel 120363409338797582@newsletter`\n`.panel setchannel https://whatsapp.com/channel/CODE`');
+            if (typeof global.addChannel !== 'function') return reply('❌ Channel service not ready.');
+            try {
+                const res = await global.addChannel(sock, input);
+                let applied = null;
+                if (typeof global.applyChannelToAll === 'function') applied = await global.applyChannelToAll();
+                return reply(`✅ Channel updated!\n\n🆔 \`${res.jid}\`\n\n${applied ? `📡 Followed on ${applied.ok} session(s)${applied.failed ? ` (${applied.failed} failed)` : ''}` : 'Will follow on next connect.'}`);
             } catch (e) { return reply(`❌ ${e.message}`); }
         }
         if (sub === 'followchannel') {
             try {
+                if (typeof global.applyChannelToAll !== 'function') return reply('❌ Channel service not ready.');
                 const res = await global.applyChannelToAll();
-                return reply(`📡 Channel re-followed on *${res.ok}* session(s)${res.failed ? `, *${res.failed}* failed` : ''}.`);
+                return reply(`📡 Channel(s) re-followed on *${res.ok}* session(s)${res.failed ? `, *${res.failed}* failed` : ''}.`);
+            } catch (e) { return reply(`❌ ${e.message}`); }
+        }
+        // ── REACT ON CHANNEL POST — every paired session reacts at once ───
+        if (sub === 'reactpost' || sub === 'reactchannel') {
+            const rest = args.slice(1);
+            // last token can optionally be an emoji, everything before it is the link
+            let emoji = '❤️';
+            let linkParts = rest;
+            const lastTok = rest[rest.length - 1];
+            if (lastTok && !/^https?:\/\//i.test(lastTok) && !/whatsapp\.com/i.test(lastTok)) {
+                emoji = lastTok;
+                linkParts = rest.slice(0, -1);
+            }
+            const postLink = linkParts.join(' ').trim();
+            if (!postLink) return reply('❌ Usage: `.panel reactpost <channel post link> [emoji]`\n\ne.g. `.panel reactpost https://whatsapp.com/channel/0029VbDF53qJf05hJaysP121/103 🔥`');
+            if (typeof global.reactPostOnAll !== 'function') return reply('❌ Channel service not ready.');
+            try {
+                await reply(`⏳ Reacting ${emoji} on that post from every paired session...`);
+                const res = await global.reactPostOnAll(postLink, emoji);
+                return reply(`✅ Reacted on *${res.ok}* session(s)${res.failed ? `, *${res.failed}* failed` : ''}.${res.errors.length ? `\n\n⚠️ ${[...new Set(res.errors)].slice(0,3).join('\n')}` : ''}`);
             } catch (e) { return reply(`❌ ${e.message}`); }
         }
 

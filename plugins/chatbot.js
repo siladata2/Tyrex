@@ -106,10 +106,10 @@ function extractUserInfo(message) {
 
 async function getAIResponse(userMessage, userContext) {
     const prompt = `
-You are a casual, friendly human chatting on WhatsApp. Always reply in English only.
+You are a casual, friendly human chatting on WhatsApp.
 
 RULES:
-1. Always respond in English only — no Hindi, Urdu, or any other language
+1. Match the user's language: if they write in Urdu (Urdu script or Roman Urdu), reply in Roman Urdu / Urdu-English mix the same way. If they write in English, reply in English. If they mix both ("Urdish"), mix naturally back — this is how most WhatsApp chats actually go.
 2. Keep responses short — 1-2 lines max
 3. Be casual and natural, not robotic
 4. Use emojis naturally
@@ -200,7 +200,13 @@ async function handleChatbotResponse(sock, chatId, message, userMessage, senderI
             botLid,
             `${botLid?.split(':')[0]}@lid`
         ].filter(Boolean);
-        let isBotMentioned = false;
+        const isGroupChat = chatId.endsWith('@g.us');
+
+        // ✅ FIX: in a DM there's no one to "@mention" — the whole point of a
+        // DM is direct conversation, so treat every message as addressed to
+        // the bot. Previously this required isBotMentioned/isReplyToBot even
+        // in DMs, so the chatbot silently never replied there.
+        let isBotMentioned = !isGroupChat;
         let isReplyToBot = false;
         if (message.message?.extendedTextMessage) {
             const mentionedJid = message.message.extendedTextMessage.contextInfo?.mentionedJid || [];
@@ -275,10 +281,9 @@ module.exports = {
     command: 'chatbot',
     aliases: ['bot', 'ai', 'achat'],
     category: 'admin',
-    description: 'Enable or disable AI chatbot for the group',
+    description: 'Enable or disable AI chatbot for this chat (group or DM)',
     usage: '.chatbot <on|off>',
-    groupOnly: true,
-    adminOnly: true,
+    adminOnly: true, // only enforced in groups — DMs are unaffected (see messageHandler)
 
     async handler(sock, message, args, context = {}) {
         const chatId = context.chatId || message.key.remoteJid;

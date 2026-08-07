@@ -75,38 +75,51 @@ module.exports = {
   usage: '.uptime',
   isPrefixless: true,
 
-  async handler(sock, message) {
-    const chatId = message.key.remoteJid;
-    const commandHandler = require('../lib/commandHandler');
-    const uptimeMs = process.uptime() * 1000;
+  async handler(sock, message, args, context = {}) {
+    const chatId = context.chatId || message.key.remoteJid;
 
-    const formatUptime = (ms) => {
-      const sec = Math.floor(ms / 1000) % 60;
-      const min = Math.floor(ms / (1000 * 60)) % 60;
-      const hr  = Math.floor(ms / (1000 * 60 * 60)) % 24;
-      const day = Math.floor(ms / (1000 * 60 * 60 * 24));
+    try {
+      const uptimeMs = process.uptime() * 1000;
 
-      let parts = [];
-      if (day) parts.push(`${day}d`);
-      if (hr) parts.push(`${hr}h`);
-      if (min) parts.push(`${min}m`);
-      parts.push(`${sec}s`);
+      const formatUptime = (ms) => {
+        const sec = Math.floor(ms / 1000) % 60;
+        const min = Math.floor(ms / (1000 * 60)) % 60;
+        const hr  = Math.floor(ms / (1000 * 60 * 60)) % 24;
+        const day = Math.floor(ms / (1000 * 60 * 60 * 24));
 
-      return parts.join(' ');
-    };
-    
-    const startedAt = new Date(Date.now() - uptimeMs).toLocaleString();
-    const ramMb = (process.memoryUsage().rss / 1024 / 1024).toFixed(1);
-    const commandCount = commandHandler.commands.size;
+        let parts = [];
+        if (day) parts.push(`${day}d`);
+        if (hr) parts.push(`${hr}h`);
+        if (min) parts.push(`${min}m`);
+        parts.push(`${sec}s`);
 
-    const text =
-      `🤖 *REDXBOT302 STATUS*\n\n` +
-      `⏱ Uptime: ${formatUptime(uptimeMs)}\n` +
-      `🚀 Started: ${startedAt}\n` +
-      `📦 Plugins: ${commandCount}\n` +
-      `💾 RAM: ${ramMb} MB`;
+        return parts.join(' ');
+      };
 
-    await sock.sendMessage(chatId, { text });
+      const startedAt = new Date(Date.now() - uptimeMs).toLocaleString();
+      const ramMb = (process.memoryUsage().rss / 1024 / 1024).toFixed(1);
+
+      // ✅ FIX: commandHandler was required lazily and its .commands.size call
+      // could throw if the module hadn't finished loading, silently killing
+      // the whole reply with no error shown to the user. Now it's optional.
+      let commandCount = 'N/A';
+      try {
+        const commandHandler = require('../lib/commandHandler');
+        commandCount = commandHandler.commands.size;
+      } catch {}
+
+      const text =
+        `🤖 *REDXBOT302 STATUS*\n\n` +
+        `⏱ Uptime: ${formatUptime(uptimeMs)}\n` +
+        `🚀 Started: ${startedAt}\n` +
+        `📦 Plugins: ${commandCount}\n` +
+        `💾 RAM: ${ramMb} MB`;
+
+      await sock.sendMessage(chatId, { text }, { quoted: message });
+    } catch (e) {
+      console.error('[UPTIME] error:', e.message);
+      await sock.sendMessage(chatId, { text: `❌ Failed to get uptime: ${e.message}` }, { quoted: message }).catch(() => {});
+    }
   }
 };
 
@@ -950,16 +963,15 @@ const pingCommand = {
     async handler(sock, message, args, context = {}) {
         const chatId = context.chatId || message.key.remoteJid;
 
+        // ✅ FIX: previously sent a placeholder, then tried to `edit` it —
+        // that's 2 network round-trips (slow, and edit fails silently on
+        // some Baileys builds, doubling latency further with the fallback
+        // send). One send, measured cleanly, is faster and 100% reliable.
         const t0 = Date.now();
-        const sent = await sock.sendMessage(chatId, { text: '🏓 Pinging...' }, { quoted: message });
+        await sock.sendMessage(chatId, { text: '🏓 Pinging...' }, { quoted: message });
         const ms = Date.now() - t0;
 
-        try {
-            // edit-in-place needs Baileys >= 6.6
-            await sock.sendMessage(chatId, { text: `🏓 Pong! \`${ms}ms\``, edit: sent.key });
-        } catch {
-            await sock.sendMessage(chatId, { text: `🏓 Pong! \`${ms}ms\`` }, { quoted: message });
-        }
+        await sock.sendMessage(chatId, { text: `🏓 Pong! \`${ms}ms\`` }, { quoted: message });
     }
 };
 

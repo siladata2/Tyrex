@@ -23,7 +23,8 @@ async handler(sock, message, args, context = {}) {
 
     try {
         const res = await axios.get(
-            `https://tikwm.com/api/feed/search?keywords=${encodeURIComponent(query)}`
+            `https://tikwm.com/api/feed/search?keywords=${encodeURIComponent(query)}`,
+            { timeout: 15000 }
         );
 
         const videos = res?.data?.data?.videos;
@@ -70,33 +71,26 @@ async handler(sock, message, args, context = {}) {
                         imageMessage: imageMsg
                     },
                     body: {
-                        text:
-
-`🎵 TikTok Video
-
-📌 Title: ${title}
-
-⏱ Duration: ${duration}
-👁 Views: ${views}
-❤️ Likes: ${likes}
-
-🔗 ${tiktokUrl}"}, footer: { text:"Page ${index + 1} of ${Math.min(videos.length, 9)}`
-},
-nativeFlowMessage: {
-buttons: [
-{
-name: "cta_url",
-buttonParamsJson: JSON.stringify({
-display_text: "Open Video",
-url: tiktokUrl,
-merchant_url: tiktokUrl
-})
-}
-]
-}
-};
-})
-);
+                        text: `🎵 TikTok Video\n\n📌 Title: ${title}\n\n⏱ Duration: ${duration}\n👁 Views: ${views}\n❤️ Likes: ${likes}\n\n🔗 ${tiktokUrl}`
+                    },
+                    footer: {
+                        text: `Page ${index + 1} of ${Math.min(videos.length, 9)}`
+                    },
+                    nativeFlowMessage: {
+                        buttons: [
+                            {
+                                name: "cta_url",
+                                buttonParamsJson: JSON.stringify({
+                                    display_text: "Open Video",
+                                    url: tiktokUrl,
+                                    merchant_url: tiktokUrl
+                                })
+                            }
+                        ]
+                    }
+                };
+            })
+        );
 
         const msg = generateWAMessageFromContent(
             chatId,
@@ -120,19 +114,33 @@ merchant_url: tiktokUrl
             {}
         );
 
-        await sock.relayMessage(
-            chatId,
-            msg.message,
-            {
-                messageId: msg.key.id
-            }
-        );
+        try {
+            await sock.relayMessage(
+                chatId,
+                msg.message,
+                {
+                    messageId: msg.key.id
+                }
+            );
+        } catch (relayErr) {
+            // Carousel/interactive messages aren't supported by every client —
+            // fall back to a plain text list instead of failing silently.
+            console.error('TikTok carousel relay error:', relayErr.message);
+            const list = videos.slice(0, 9).map((v, i) => {
+                const author = v.author?.unique_id || 'tiktok';
+                const url = `https://www.tiktok.com/@${author}/video/${v.video_id}`;
+                return `*${i + 1}.* ${v.title || 'No Title'}\n🔗 ${url}`;
+            }).join('\n\n');
+            await sock.sendMessage(chatId, {
+                text: `🎵 *TikTok Search: "${query}"*\n\n${list}`
+            }, { quoted: message });
+        }
 
     } catch (error) {
-        console.error('TikTok Search Error:', error);
+        console.error('TikTok Search Error:', error.message);
 
         await sock.sendMessage(chatId, {
-            text: '❌ Failed to fetch TikTok videos.'
+            text: '❌ Failed to fetch TikTok videos. Try again in a moment.'
         }, { quoted: message });
     }
 }
