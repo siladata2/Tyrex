@@ -25,5 +25,5 @@
     { "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git" },
     { "url": "heroku/nodejs" }
   ],
-  "stack": "heroku-22"
+  "stack": "heroku-24"
 }
