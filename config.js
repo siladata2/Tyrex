@@ -1,17 +1,17 @@
 /*****************************************************************************
- *                     Developed By Abdul Rehman Rajpoot                     *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
+ *                     Developed By Sila Tech                                *
+ *  🌐  GitHub   : https://github.com/Sila-Md                               *
+ *    © 2026 Sila Tech. All rights reserved.                               *
  *****************************************************************************/
 
 require('dotenv').config();
 
 // Session pairing config (NO session_id — pair-only bot)
 global.SESSION_ID     = '';
-global.PAIRING_NUMBER = process.env.PAIRING_NUMBER || process.env.OWNER_NUMBER || '+923009842133';
+global.PAIRING_NUMBER = process.env.PAIRING_NUMBER || process.env.OWNER_NUMBER || '255789661031';
 
 // Newsletter JID
-global.NEWSLETTER_JID = process.env.NEWSLETTER_JID || '120363409338797582@newsletter';
+global.NEWSLETTER_JID = process.env.NEWSLETTER_JID || '120363402325089913@newsletter';
 
 // External APIs used by plugins
 global.APIs = {
