@@ -3,27 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>REDXBOT302 — Portal</title>
+<title>REDXBOT302 — Neon Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 <style>
-/* ========== MODERN DARK FUSION ========== */
+/* ========== SILA X MINI NEON FUSION ========== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#020409;--s1:#060c16;--s2:#0a1628;--s3:#0f1f38;
-  --b1:rgba(255,255,255,.05);--b2:rgba(255,255,255,.1);
-  --fire:#ff4d1c;--fire2:#ff7a45;--fireglow:rgba(255,77,28,.3);
-  --neon:#00f5ff;--neon2:#00bcd4;
-  --green:#00e676;--gbg:rgba(0,230,118,.08);--gbdr:rgba(0,230,118,.25);
-  --red:#ff1744;--rbg:rgba(255,23,68,.08);--rbdr:rgba(255,23,68,.25);
-  --amber:#ffd740;--abg:rgba(255,215,64,.08);--abdr:rgba(255,215,64,.25);
-  --t1:#e8f4ff;--t2:#7a9ab5;--t3:#2a3d52;
+  --bg:#030014; /* Deep Space Black */
+  --s1:#0a0123; --s2:#12033b; --s3:#1b0558;
+  --b1:rgba(0,245,255,.15); --b2:rgba(0,245,255,.3);
+  --fire:#ff00ff; --fire2:#bd00ff; --fireglow:rgba(255,0,255,.3);
+  --neon:#00f5ff; --neon2:#00e5ff; --neonbg:rgba(0,245,255,.1);
+  --green:#00ffcc; --gbg:rgba(0,255,204,.08); --gbdr:rgba(0,255,204,.25);
+  --red:#ff004c; --rbg:rgba(255,0,76,.08); --rbdr:rgba(255,0,76,.25);
+  --amber:#fcee0a; --abg:rgba(252,238,10,.08); --abdr:rgba(252,238,10,.25);
+  --t1:#ffffff; --t2:#9bb5ff; --t3:#4d5f8a;
   --ff-head:'Orbitron',monospace;--ff-body:'Rajdhani',sans-serif;
   --ff-sub:'Inter',sans-serif;--ff-mono:'JetBrains Mono',monospace;
-  --r:12px;--rs:8px;--transition:all .25s cubic-bezier(.4,0,.2,1);
+  --r:14px;--rs:8px;--transition:all .25s cubic-bezier(.4,0,.2,1);
 }
 body{
   background:var(--bg);color:var(--t1);font-family:var(--ff-body);
@@ -31,40 +32,40 @@ body{
 }
 body::before{
   content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  opacity:.018;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.05;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size:128px;
 }
 body::after{
   content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:linear-gradient(rgba(0,245,255,.04) 1px, transparent 1px),linear-gradient(90deg, rgba(0,245,255,.04) 1px, transparent 1px);
+  background-image:linear-gradient(rgba(0,245,255,.05) 1px, transparent 1px),linear-gradient(90deg, rgba(255,0,255,.05) 1px, transparent 1px);
   background-size:48px 48px;transform:perspective(800px) rotateX(12deg);transform-origin:50% 0;
   mask-image:linear-gradient(to bottom, transparent 0%, black 20%, black 70%, transparent 100%);
 }
 .orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(120px);animation:drift 20s ease-in-out infinite}
-.orb1{width:700px;height:700px;top:-200px;right:-150px;background:radial-gradient(circle,rgba(255,77,28,.12) 0%,transparent 70%)}
-.orb2{width:600px;height:600px;bottom:-180px;left:-180px;background:radial-gradient(circle,rgba(0,245,255,.08) 0%,transparent 70%);animation-delay:-10s}
+.orb1{width:700px;height:700px;top:-200px;right:-150px;background:radial-gradient(circle,rgba(255,0,255,.15) 0%,transparent 70%)}
+.orb2{width:600px;height:600px;bottom:-180px;left:-180px;background:radial-gradient(circle,rgba(0,245,255,.15) 0%,transparent 70%);animation-delay:-10s}
 @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.05)}66%{transform:translate(-20px,30px) scale(.97)}}
-.scanlines{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.03;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.8) 2px,rgba(0,0,0,.8) 4px)}
+.scanlines{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.02;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.9) 2px,rgba(255,255,255,.9) 4px)}
 
 /* navbar */
-.navbar{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(2,4,9,.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,245,255,.1);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px;}
+.navbar{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(3,0,20,.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,245,255,.2);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px;box-shadow:0 4px 30px rgba(0,245,255,.1);}
 .nav-logo{display:flex;align-items:center;gap:12px;cursor:pointer}
-.nav-flame{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--fire),var(--ember));display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 20px var(--fireglow);}
-.nav-brand{font-family:var(--ff-head);font-size:.9rem;font-weight:700;letter-spacing:.12em;background:linear-gradient(135deg,var(--fire),var(--ember));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.nav-flame{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#00f5ff,#ff00ff);display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 0 15px var(--fireglow);}
+.nav-brand{font-family:var(--ff-head);font-size:.9rem;font-weight:700;letter-spacing:.12em;background:linear-gradient(90deg,#00f5ff,#ff00ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .nav-brand span{display:block;font-size:.6rem;color:var(--t3);}
 .nav-links{display:flex;gap:4px}
-.nav-link{padding:7px 14px;border-radius:var(--rs);font-size:.82rem;font-weight:600;color:var(--t2);cursor:pointer;border:none;background:transparent;text-transform:uppercase;}
-.nav-link.active{color:var(--neon);background:rgba(0,245,255,.1)}
+.nav-link{padding:7px 14px;border-radius:var(--rs);font-size:.82rem;font-weight:600;color:var(--t2);cursor:pointer;border:1px solid transparent;background:transparent;text-transform:uppercase;}
+.nav-link.active{color:#fff;background:var(--neonbg);border:1px solid rgba(0,245,255,.5);box-shadow:0 0 10px rgba(0,245,255,.3);}
 .nav-right{display:flex;gap:10px;align-items:center}
 .nav-status{display:flex;align-items:center;gap:6px;font-size:.7rem;background:var(--gbg);border:1px solid var(--gbdr);border-radius:50px;padding:4px 12px;color:var(--green);}
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:statusblink 2s ease-in-out infinite}
 @keyframes statusblink{0%,100%{opacity:1}50%{opacity:.4}}
 .burger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:transparent;border:none}
-.burger span{display:block;width:22px;height:2px;background:var(--t2);border-radius:2px;}
-.mobile-drawer{position:fixed;top:60px;left:0;right:0;bottom:0;z-index:999;background:rgba(2,4,9,.98);backdrop-filter:blur(30px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transform:translateX(100%);transition:transform .35s;border-top:1px solid rgba(0,245,255,.1);}
+.burger span{display:block;width:22px;height:2px;background:var(--neon);border-radius:2px;box-shadow:0 0 5px var(--neon);}
+.mobile-drawer{position:fixed;top:60px;left:0;right:0;bottom:0;z-index:999;background:rgba(3,0,20,.98);backdrop-filter:blur(30px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;transform:translateX(100%);transition:transform .35s;border-top:1px solid rgba(0,245,255,.2);}
 .mobile-drawer.open{transform:translateX(0)}
 .drawer-link{font-family:var(--ff-head);font-size:1.2rem;font-weight:600;text-transform:uppercase;color:var(--t2);cursor:pointer;padding:14px 28px;border-radius:var(--r);text-align:center;width:260px;}
-.drawer-link.active{color:var(--neon);border:1px solid rgba(0,245,255,.25);background:rgba(0,245,255,.05);}
+.drawer-link.active{color:#fff;border:1px solid rgba(0,245,255,.5);background:var(--neonbg);box-shadow:0 0 10px rgba(0,245,255,.3);}
 
 /* pages */
 .page{display:none;min-height:100vh;padding-top:60px;position:relative;z-index:1;}
@@ -73,36 +74,40 @@ body::after{
 .container-sm{max-width:640px;margin:0 auto;padding:40px 24px 80px}
 
 /* cards, forms, buttons */
-.card{background:linear-gradient(135deg,var(--s1),var(--s2));border:1px solid var(--b1);border-radius:var(--r);padding:22px;transition:var(--transition);}
+.card{background:linear-gradient(135deg,rgba(0,245,255,.05),rgba(255,0,255,.05));backdrop-filter:blur(10px);border:1px solid rgba(0,245,255,.3);border-radius:var(--r);padding:22px;transition:var(--transition);box-shadow:0 0 15px rgba(0,245,255,.05);}
+.card:hover{border-color:rgba(255,0,255,.5);box-shadow:0 0 20px rgba(255,0,255,.2);}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border:none;border-radius:var(--rs);font-family:var(--ff-head);font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:var(--transition);}
 .btn-neon{background:transparent;border:1px solid var(--neon);color:var(--neon);}
-.btn-fire{background:linear-gradient(135deg,var(--fire),var(--fire2));color:#fff;box-shadow:0 4px 20px var(--fireglow);}
+.btn-neon:hover{background:rgba(0,245,255,.1);box-shadow:0 0 10px var(--neon);}
+.btn-fire{background:linear-gradient(135deg,#00f5ff,#ff00ff);color:#000;font-weight:800;box-shadow:0 0 15px rgba(0,245,255,.5);}
+.btn-fire:hover{box-shadow:0 0 25px rgba(255,0,255,.7);}
+.btn-red{background:linear-gradient(135deg,#ff004c,#ff00ff);color:#fff;box-shadow:0 0 10px var(--rbdr);}
 .btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--t2);}
 .btn-full{width:100%;justify-content:center;}
 .field{margin-bottom:16px}
-.field label{display:block;font-size:.67rem;letter-spacing:.12em;text-transform:uppercase;color:var(--t2);margin-bottom:7px;}
-input,select,textarea{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--b2);border-radius:var(--rs);padding:12px 15px;color:var(--t1);font-family:var(--ff-sub);font-size:.88rem;outline:none;}
-input:focus{border-color:var(--neon);box-shadow:0 0 0 3px rgba(0,245,255,.12);}
+.field label{display:block;font-size:.67rem;letter-spacing:.12em;text-transform:uppercase;color:var(--neon);margin-bottom:7px;text-shadow:0 0 5px var(--neon);}
+input,select,textarea{width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(0,245,255,.3);border-radius:var(--rs);padding:12px 15px;color:#fff;font-family:var(--ff-sub);font-size:.88rem;outline:none;transition:var(--transition);}
+input:focus{border-color:var(--fire);box-shadow:0 0 0 3px rgba(255,0,255,.2);}
 .flash{padding:11px 15px;border-radius:var(--rs);font-size:.82rem;display:none;margin-bottom:14px;align-items:center;gap:8px;}
 .flash.show{display:flex;}
 .f-ok{background:var(--gbg);border:1px solid var(--gbdr);color:var(--green);}
 .f-err{background:var(--rbg);border:1px solid var(--rbdr);color:var(--red);}
-.f-info{background:rgba(0,245,255,.06);border:1px solid rgba(0,245,255,.2);color:var(--neon);}
+.f-info{background:var(--neonbg);border:1px solid rgba(0,245,255,.3);color:var(--neon);}
 .badge{display:inline-flex;padding:3px 10px;border-radius:50px;font-size:.64rem;font-weight:600;text-transform:uppercase;}
 .b-on{background:var(--gbg);border:1px solid var(--gbdr);color:var(--green);}
 .b-off{background:rgba(150,150,150,.08);border:1px solid rgba(150,150,150,.15);color:#708090;}
 .b-ban{background:var(--rbg);border:1px solid var(--rbdr);color:var(--red);}
-.code-box{background:rgba(0,10,20,.9);border:1px solid rgba(0,245,255,.2);border-radius:var(--r);padding:28px;text-align:center;margin-top:20px;display:none;}
+.code-box{background:rgba(0,0,0,.7);border:1px solid rgba(0,245,255,.5);border-radius:var(--r);padding:28px;text-align:center;margin-top:20px;display:none;box-shadow:inset 0 0 20px rgba(0,245,255,.1), 0 0 10px rgba(255,0,255,.2);}
 .code-box.show{display:block;}
-.code-digits{font-family:var(--ff-head);font-size:2.8rem;font-weight:900;letter-spacing:.3em;color:var(--t1);}
+.code-digits{font-family:var(--ff-head);font-size:2.8rem;font-weight:900;letter-spacing:.3em;color:var(--fire);text-shadow:0 0 10px var(--fire);}
 .tbl-wrap{overflow-x:auto;border-radius:var(--rs);border:1px solid var(--b1);}
 table{width:100%;border-collapse:collapse;font-size:.78rem;}
-th{padding:10px 14px;text-align:left;color:var(--t2);font-weight:600;font-size:.64rem;text-transform:uppercase;border-bottom:1px solid var(--b1);}
-td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
+th{padding:10px 14px;text-align:left;color:var(--neon);font-weight:600;font-size:.64rem;text-transform:uppercase;border-bottom:1px solid var(--b1);}
+td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.05);}
 .mono{font-family:var(--ff-mono);}
 .stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
-.stat-card{background:linear-gradient(135deg,var(--s2),var(--s3));border:1px solid var(--b1);border-radius:var(--r);padding:20px 16px;text-align:center;}
-.stat-val{font-family:var(--ff-head);font-size:2rem;font-weight:900;color:var(--neon);}
+.stat-card{background:linear-gradient(135deg,rgba(0,245,255,.1),rgba(255,0,255,.1));border:1px solid rgba(0,245,255,.3);border-radius:var(--r);padding:20px 16px;text-align:center;box-shadow:0 0 10px rgba(0,245,255,.1);}
+.stat-val{font-family:var(--ff-head);font-size:2rem;font-weight:900;color:var(--neon);text-shadow:0 0 10px var(--neon);}
 .stat-lbl{font-size:.67rem;color:var(--t3);text-transform:uppercase;}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,245,255,.15);border-top-color:rgba(0,245,255,.7);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
@@ -117,8 +122,8 @@ td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
 
 <nav class="navbar">
   <div class="nav-logo" onclick="showPage('home')">
-    <div class="nav-flame">🔥</div>
-    <div class="nav-brand">REDXBOT302<span>v6 — Pair & Deploy</span></div>
+    <div class="nav-flame">@</div>
+    <div class="nav-brand">SILA X MINI<span>Richard Besisila</span></div>
   </div>
   <div class="nav-links">
     <button class="nav-link active" onclick="showPage('home')">Home</button>
@@ -139,10 +144,10 @@ td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
 <!-- ================= PAGE HOME ================= -->
 <div class="page active" id="page-home">
   <div class="container-sm" style="text-align:center;padding-top:80px">
-    <div class="hero-eyebrow" style="display:inline-flex;gap:8px;background:rgba(0,245,255,.04);border:1px solid rgba(0,245,255,.2);border-radius:50px;padding:5px 16px;margin-bottom:20px">
-      <span class="status-dot"></span> WhatsApp MD Bot — Pair Code Only
+    <div class="hero-eyebrow" style="display:inline-flex;gap:8px;background:rgba(0,245,255,.1);border:1px solid rgba(0,245,255,.5);border-radius:50px;padding:5px 16px;margin-bottom:20px;box-shadow:0 0 10px rgba(0,245,255,.3);">
+      <span class="status-dot"></span> WhatsApp MD Bot — Tanzania
     </div>
-    <h1 style="font-family:var(--ff-head);font-size:clamp(2.2rem,7vw,4rem);font-weight:900;margin-bottom:12px">REDXBOT302<br><span style="background:linear-gradient(135deg,var(--neon),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Infinite Power</span></h1>
+    <h1 style="font-family:var(--ff-head);font-size:clamp(2.2rem,7vw,4rem);font-weight:900;margin-bottom:12px;text-shadow:0 0 20px rgba(0,245,255,.8);">SILA X MINI<br><span style="background:linear-gradient(90deg,var(--fire),var(--neon));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Infinite Power</span></h1>
     <p class="hero-sub" style="color:var(--t2);max-width:500px;margin:0 auto 32px">500+ commands, AI, group tools, and instant pairing — no QR, just code.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:48px">
       <button class="btn btn-fire" onclick="document.getElementById('pair-section').scrollIntoView({behavior:'smooth'})">⚡ Pair My Bot</button>
@@ -151,35 +156,35 @@ td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
   </div>
 
   <div id="pair-section" class="container-sm">
-    <div style="background:linear-gradient(135deg,var(--s1),var(--s2));border:1px solid rgba(0,245,255,.2);border-radius:var(--rl);padding:32px;margin-bottom:40px">
-      <div class="pair-card-title" style="font-family:var(--ff-head);font-size:.8rem;letter-spacing:.15em;text-align:center;margin-bottom:24px">⚡ GENERATE PAIRING CODE</div>
+    <div style="background:linear-gradient(135deg,rgba(0,245,255,.1),rgba(255,0,255,.1));border:1px solid rgba(0,245,255,.5);border-radius:var(--r);padding:32px;margin-bottom:40px;box-shadow:0 0 20px rgba(255,0,255,.3);backdrop-filter:blur(10px);">
+      <div class="pair-card-title" style="font-family:var(--ff-head);font-size:.8rem;letter-spacing:.15em;text-align:center;margin-bottom:24px;color:var(--neon);text-shadow:0 0 10px var(--neon);">⚡ GENERATE PAIRING CODE</div>
       <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px">
         <button class="btn btn-neon" id="tabCodeBtn" onclick="setPairMode('code')" style="flex:1">🔢 Pairing Code</button>
         <button class="btn btn-ghost" id="tabQrBtn" onclick="setPairMode('qr')" style="flex:1">📷 QR Code</button>
       </div>
       <div class="field">
         <label>WhatsApp Number (country code, no +)</label>
-        <input type="tel" id="pairPhone" placeholder="923001234567" style="font-size:1rem;font-family:var(--ff-mono)">
+        <input type="tel" id="pairPhone" placeholder="923001234567" style="font-size:1rem;font-family:var(--ff-mono);border:1px solid rgba(255,0,255,.3);">
       </div>
       <div class="flash" id="pairFlash"></div>
       <button class="btn btn-fire btn-full" id="pairActionBtn" onclick="doPair()">GET PAIRING CODE</button>
       <div class="code-box" id="codeBox">
         <div class="code-box-label" style="font-size:.63rem;letter-spacing:.2em;color:var(--neon);margin-bottom:14px">Your Pairing Code</div>
         <div class="code-digits" id="codeDigits">— — — —</div>
-        <div class="code-hint" style="font-size:.78rem;margin-top:14px">Open WhatsApp → ⋮ → Linked Devices → Link a Device → Enter this code</div>
+        <div class="code-hint" style="font-size:.78rem;margin-top:14px;color:var(--t2)">Open WhatsApp → ⋮ → Linked Devices → Link a Device → Enter this code</div>
       </div>
       <div class="code-box" id="qrBox" style="display:none;text-align:center">
         <div class="code-box-label" style="font-size:.63rem;letter-spacing:.2em;color:var(--neon);margin-bottom:14px">Scan This QR Code</div>
         <img id="qrImg" src="" alt="WhatsApp QR code" style="width:220px;height:220px;background:#fff;border-radius:12px;padding:8px;margin:0 auto;display:block">
-        <div class="code-hint" style="font-size:.78rem;margin-top:14px">Open WhatsApp → ⋮ → Linked Devices → Link a Device → Scan this code</div>
+        <div class="code-hint" style="font-size:.78rem;margin-top:14px;color:var(--t2)">Open WhatsApp → ⋮ → Linked Devices → Link a Device → Scan this code</div>
         <div style="font-size:.7rem;color:var(--t2);margin-top:8px" id="qrExpireNote">QR refreshes automatically every ~20s until scanned.</div>
       </div>
-      <div class="deploy-reveal" id="deployReveal" style="margin-top:20px;background:rgba(255,215,64,.04);border:1px solid rgba(255,215,64,.2);border-radius:var(--rs);padding:16px;text-align:center;display:none">
+      <div class="deploy-reveal" id="deployReveal" style="margin-top:20px;background:rgba(252,238,10,.05);border:1px solid rgba(252,238,10,.4);border-radius:var(--rs);padding:16px;text-align:center;display:none">
         <div class="deploy-label" style="font-size:.62rem;text-transform:uppercase;color:var(--amber)">Your Deploy ID — Save This!</div>
         <div class="deploy-val" id="deployIdVal" style="font-family:var(--ff-head);font-size:1.5rem;color:var(--amber);word-break:break-all">—</div>
         <div class="deploy-sub" style="font-size:.72rem;color:var(--t2)">Also sent to your WhatsApp. Use in "My Bot" tab.</div>
       </div>
-      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--b1);display:flex;gap:10px">
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid rgba(0,245,255,.2);display:flex;gap:10px">
         <button class="btn btn-neon btn-full" onclick="showPage('user')">👤 My Bot Portal →</button>
         <button class="btn btn-ghost btn-full" onclick="showPage('admin')">👑 Admin Panel →</button>
       </div>
@@ -191,7 +196,7 @@ td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
 <div class="page" id="page-user">
   <div id="userGate" style="min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:24px">
     <div class="card" style="max-width:460px;width:100%;padding:32px">
-      <div style="text-align:center;margin-bottom:20px">🤖 ACCESS YOUR BOT</div>
+      <div style="text-align:center;margin-bottom:20px;font-family:var(--ff-head);color:var(--neon);text-shadow:0 0 10px var(--neon);">🤖 ACCESS YOUR BOT</div>
       <div class="field"><label>Deploy Key</label><input type="password" id="deployKeyInput" placeholder="Your secret deploy key..."></div>
       <div class="flash" id="userGateFlash"></div>
       <button class="btn btn-fire btn-full" onclick="loadUserDashboard()">Open My Dashboard →</button>
@@ -200,14 +205,14 @@ td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
   </div>
   <div id="userShell" style="display:none;padding:24px 24px 60px">
     <div class="g2" style="margin-bottom:20px">
-      <div class="card"><h3 style="margin-bottom:12px">📊 Bot Status</h3>
+      <div class="card"><h3 style="margin-bottom:12px;color:var(--neon);text-shadow:0 0 5px var(--neon);">📊 Bot Status</h3>
         <div><span class="badge" id="userConnBadge">—</span> <span id="userPhone">—</span></div>
         <div style="margin-top:8px"><span class="badge b-on" id="userPairsBadge">0 pairs</span></div>
         <div style="margin-top:12px"><strong>Deploy ID:</strong> <span class="mono" id="userDeployId">—</span></div>
         <div><strong>Platform:</strong> <span id="userPlatform">—</span></div>
         <div><strong>Created:</strong> <span id="userCreated">—</span></div>
       </div>
-      <div class="card"><h3 style="margin-bottom:12px">⚙️ Settings</h3>
+      <div class="card"><h3 style="margin-bottom:12px;color:var(--neon);text-shadow:0 0 5px var(--neon);">⚙️ Settings</h3>
         <div class="field"><label>Bot Name</label><input type="text" id="userBotName"></div>
         <div class="field"><label>Owner Name</label><input type="text" id="userOwnerName"></div>
         <div class="field"><label>Prefix</label><input type="text" id="userPrefix" maxlength="3"></div>
@@ -218,7 +223,7 @@ td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
       </div>
     </div>
     <div class="card"><h3>🔑 Your Deploy Key</h3><p style="margin-bottom:8px">Keep this private. Use it to access this dashboard.</p>
-      <div class="mono" style="background:rgba(0,0,0,.3);padding:10px;border-radius:8px;text-align:center;cursor:pointer" id="userKeyDisplay" onclick="copyToClipboard(this.innerText)">—</div>
+      <div class="mono" style="background:rgba(0,0,0,.3);padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:1px solid rgba(255,0,255,.3);" id="userKeyDisplay" onclick="copyToClipboard(this.innerText)">—</div>
     </div>
   </div>
 </div>
@@ -227,7 +232,7 @@ td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
 <div class="page" id="page-admin">
   <div id="adminGate" style="min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:24px">
     <div class="card" style="max-width:400px;width:100%">
-      <div style="text-align:center;margin-bottom:20px">🛡️ ADMIN PANEL</div>
+      <div style="text-align:center;margin-bottom:20px;font-family:var(--ff-head);color:var(--fire);text-shadow:0 0 10px var(--fire);">🛡️ ADMIN PANEL</div>
       <div class="field"><label>Username</label><input type="text" id="adminUser" placeholder="Username"></div>
       <div class="field"><label>Password</label><input type="password" id="adminPass" placeholder="Password"></div>
       <div class="flash" id="adminLoginFlash"></div>
@@ -236,7 +241,7 @@ td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
   </div>
   <div id="adminShell" style="display:none;padding:24px 24px 60px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap">
-      <h2 style="font-family:var(--ff-head)">Admin Dashboard</h2>
+      <h2 style="font-family:var(--ff-head);color:var(--neon);text-shadow:0 0 10px var(--neon);">Admin Dashboard</h2>
       <button class="btn btn-ghost btn-sm" onclick="adminLogout()">Logout</button>
     </div>
     <div class="stat-grid" id="adminStatsGrid">
@@ -246,22 +251,22 @@ td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);}
       <div class="stat-card"><div class="stat-val" id="statUptime">0s</div><div class="stat-lbl">Uptime</div></div>
     </div>
     <div class="g2" style="margin-bottom:24px">
-      <div class="card"><h3>🤖 Bot Info</h3><div id="botInfo">Loading...</div></div>
-      <div class="card"><h3>⚡ Quick Actions</h3>
+      <div class="card"><h3 style="color:var(--neon);">🤖 Bot Info</h3><div id="botInfo">Loading...</div></div>
+      <div class="card"><h3 style="color:var(--neon);">⚡ Quick Actions</h3>
         <button class="btn btn-neon btn-full" onclick="reloadPlugins()">Reload Plugins</button>
         <button class="btn btn-ghost btn-full" style="margin-top:8px" onclick="forceRestart()">Restart Bot</button>
         <button class="btn btn-red btn-full" style="margin-top:8px" onclick="forceLogoutAll()">Force Logout All</button>
       </div>
     </div>
-    <div class="card"><h3>📋 All Deploys</h3><div class="flash" id="adminDeploysFlash"></div>
+    <div class="card"><h3 style="color:var(--neon);">📋 All Deploys</h3><div class="flash" id="adminDeploysFlash"></div>
       <div class="tbl-wrap"><table id="deploysTable"><thead><tr><th>Deploy ID</th><th>Phone</th><th>Pairs</th><th>Platform</th><th>Last Seen</th><th>Actions</th> </thead><tbody><tr><td colspan="6" style="text-align:center">Loading...</td></tr></tbody></table></div>
     </div>
-    <div class="card" style="margin-top:20px"><h3>🌐 Servers</h3><div class="flash" id="serverFlash"></div>
+    <div class="card" style="margin-top:20px"><h3 style="color:var(--neon);">🌐 Servers</h3><div class="flash" id="serverFlash"></div>
       <div class="g2" style="margin-bottom:16px"><div class="field"><label>Name</label><input id="srvName" placeholder="Heroku EU"></div><div class="field"><label>URL</label><input id="srvUrl" placeholder="https://app.heroku.com/..."></div><div class="field"><label>Platform</label><input id="srvPlatform" placeholder="Heroku"></div><div class="field"><label>Status</label><select id="srvStatus"><option>online</option><option>maintenance</option><option>offline</option></select></div></div>
       <button class="btn btn-neon btn-full" onclick="addAdminServer()">Add Server</button>
       <div id="serversList" style="margin-top:20px"></div>
     </div>
-    <div class="card" style="margin-top:20px"><h3>🔐 Change Admin Credentials</h3><div class="flash" id="credFlash"></div>
+    <div class="card" style="margin-top:20px"><h3 style="color:var(--neon);">🔐 Change Admin Credentials</h3><div class="flash" id="credFlash"></div>
       <div class="g2"><div class="field"><label>Current Password</label><input type="password" id="curPass"></div><div class="field"><label>New Username</label><input type="text" id="newUser"></div><div class="field"><label>New Password</label><input type="password" id="newPass"></div></div>
       <button class="btn btn-fire" onclick="updateAdminCreds()">Update Credentials</button>
     </div>
@@ -420,7 +425,7 @@ async function loadAdminData() {
     document.getElementById('statUsers').innerText = stats.stats?.totalUsers||0;
     const up = stats.stats?.uptime||0; let uptxt = up<60?up+'s': up<3600?Math.floor(up/60)+'m': Math.floor(up/3600)+'h';
     document.getElementById('statUptime').innerText = uptxt;
-    document.getElementById('botInfo').innerHTML = `<div>Bot: ${stats.botName||'REDXBOT'}</div><div>Mode: ${stats.mode||'public'}</div><div>Deploy ID: ${stats.deployId||'—'}</div>`;
+    document.getElementById('botInfo').innerHTML = `<div>Bot: ${stats.botName||'SILA X MINI'}</div><div>Mode: ${stats.mode||'public'}</div><div>Deploy ID: ${stats.deployId||'—'}</div>`;
     // deploys table
     const deploysRes = await fetch('/api/admin/deploys',{headers:{'x-admin-token':adminToken}});
     const deploys = await deploysRes.json();
@@ -438,7 +443,7 @@ async function loadServersList() {
     const d = await res.json();
     const srvDiv = document.getElementById('serversList');
     if(!d.servers?.length) { srvDiv.innerHTML='<div style="color:var(--t2)">No servers added.</div>'; return; }
-    srvDiv.innerHTML = d.servers.map(s=>`<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--b1);padding:8px 0"><span><strong>${s.name}</strong> (${s.platform||'—'}) ${s.url?`<a href="${s.url}" target="_blank" style="color:var(--neon)">link</a>`:''}</span><button class="btn btn-red btn-xs" onclick="deleteServer('${s.id}')">Remove</button></div>`).join('');
+    srvDiv.innerHTML = d.servers.map(s=>`<div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(0,245,255,.2);padding:8px 0"><span><strong>${s.name}</strong> (${s.platform||'—'}) ${s.url?`<a href="${s.url}" target="_blank" style="color:var(--neon)">link</a>`:''}</span><button class="btn btn-red btn-xs" onclick="deleteServer('${s.id}')">Remove</button></div>`).join('');
   } catch(e){}
 }
 async function addAdminServer() {
