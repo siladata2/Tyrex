@@ -1,44 +1,30 @@
 'use strict';
 /*****************************************************************************
- *                     Developed By Abdul Rehman Rajpoot                     *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
+ *                     Developed By Sila Tech                                *
+ *  🌐  GitHub   : https://github.com/Sila-Md                               *
+ *    © 2026 Sila Tech. All rights reserved.                               *
  *****************************************************************************/
 
 require('dotenv').config();
 
 module.exports = {
   // ── BOT IDENTITY ─────────────────────────────────────────────
-  // ✅ FIX: these four were getter-only. Several commands do
-  // `settings.botName = value` etc. after saving to the DB — under
-  // 'use strict' (which most plugin bundles declare) that THROWS
-  // "Cannot set property X of #<Object> which has only a getter",
-  // crashing .botname / .setprefix / .panel setprefix / .panel setowner
-  // before they could send their success reply. Real get+set now, so
-  // runtime overrides actually take effect instead of throwing.
   _prefixesOverride: null,
   get prefixes()      { return this._prefixesOverride || [process.env.PREFIX || '.']; },
   set prefixes(v)     { this._prefixesOverride = v; },
   _botNameOverride: null,
-  get botName()       { return this._botNameOverride || process.env.BOT_NAME || '🔥 REDX MINI MD 🔥'; },
+  get botName()       { return this._botNameOverride || process.env.BOT_NAME || '𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈'; },
   set botName(v)      { this._botNameOverride = v; },
-  get botOwner()     { return process.env.OWNER_NAME     || 'Abdul Rehman Rajpoot'; },
+  get botOwner()     { return process.env.OWNER_NAME     || 'Richard Besisila'; },
   _ownerNumberOverride: null,
-  get ownerNumber()   { return this._ownerNumberOverride || process.env.OWNER_NUMBER || '923009842133'; },
+  get ownerNumber()   { return this._ownerNumberOverride || process.env.OWNER_NUMBER || '255789661031'; },
   set ownerNumber(v)  { this._ownerNumberOverride = v; },
-  get botDesc()      { return process.env.BOT_DESC       || 'Powered by REDX MINI MD 🔥'; },
-  get version()      { return process.env.BOT_VERSION    || 'v9.0 ULTRA'; },
+  get botDesc()      { return process.env.BOT_DESC       || '𝐏𝐨𝐰𝐞𝐫𝐝 𝐁𝐲 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡'; },
+  get version()      { return process.env.BOT_VERSION    || 'v1.0'; },
 
   // ── BOT SETTINGS ──────────────────────────────────────────────
   get prefix()       { return this.prefixes[0]; },
   get mode()         { return process.env.BOT_MODE       || 'public'; },
-  // ✅ FIX: was hardcoded to 'heroku' regardless of where the bot actually
-  // runs — menu/smenu always showed "Platform: HEROKU" even on Render or
-  // Railway. Auto-detects from the same env vars each host sets, same logic
-  // index.js's detectPlatform() already used elsewhere — now consistent.
   get platform() {
     if (process.env.PLATFORM)            return process.env.PLATFORM;
     if (process.env.RENDER)              return 'Render';
@@ -46,25 +32,22 @@ module.exports = {
     if (process.env.DYNO)                return 'Heroku';
     return 'Local';
   },
-  // ✅ FIX: menu/smenu referenced settings.timeZone but it was never
-  // defined here — always undefined, silently falling back to a hardcoded
-  // 'Asia/Karachi' with no way to change it. Now configurable via env.
-  get timeZone()     { return process.env.TIMEZONE       || process.env.TZ || 'Asia/Karachi'; },
+  get timeZone()     { return process.env.TIMEZONE       || process.env.TZ || 'Asia/Dar_es_Salaam'; },
 
   // ── MEDIA ─────────────────────────────────────────────────────
-  get botDp()         { return this._botDpOverride || process.env.MENU_IMAGE || 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png'; },
+  get botDp()         { return this._botDpOverride || process.env.MENU_IMAGE || 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg'; },
   set botDp(v)        { this._botDpOverride = v; },
   _botDpOverride: null,
-  get menuImage()    { return process.env.MENU_IMAGE     || 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png'; },
+  get menuImage()    { return process.env.MENU_IMAGE     || 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg'; },
 
   // ── LINKS ─────────────────────────────────────────────────────
-  get whatsappGroup(){ return process.env.WA_GROUP       || 'https://chat.whatsapp.com/C4ynk2v10WXDeL67ahhJLj'; },
-  get telegramGroup(){ return process.env.TG_GROUP       || 'https://t.me/TeamRedxhacker2'; },
-  get repoLink()     { return process.env.REPO_LINK      || 'https://github.com/AbdulRehman19721986/REDXBOT-MD'; },
-  get newsletterJid(){ return process.env.NEWSLETTER_JID || '120363409338797582@newsletter'; },
+  get whatsappGroup(){ return process.env.WA_GROUP       || 'https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g'; },
+  get telegramGroup(){ return process.env.TG_GROUP       || 'https://t.me/SilaTech'; },
+  get repoLink()     { return process.env.REPO_LINK      || 'https://github.com/Sila-Md'; },
+  get newsletterJid(){ return process.env.NEWSLETTER_JID || '120363402325089913@newsletter'; },
 
   // ── PAIRING (no SESSION_ID – pair only) ───────────────────────
-  get pairingNumber(){ return process.env.PAIRING_NUMBER || process.env.OWNER_NUMBER || '923009842133'; },
+  get pairingNumber(){ return process.env.PAIRING_NUMBER || process.env.OWNER_NUMBER || '255789661031'; },
 
   // ── DATABASE ──────────────────────────────────────────────────
   get mongoUrl()     { return process.env.MONGO_URL      || ''; },
@@ -73,8 +56,8 @@ module.exports = {
   get sqliteUrl()    { return process.env.DB_URL         || ''; },
 
   // ── ADMIN PANEL ───────────────────────────────────────────────
-  get adminUser()    { return process.env.ADMIN_USERNAME || 'redx'; },
-  get adminPass()    { return process.env.ADMIN_PASSWORD || 'redx'; },
+  get adminUser()    { return process.env.ADMIN_USERNAME || 'sila'; },
+  get adminPass()    { return process.env.ADMIN_PASSWORD || 'sila'; },
 
   // ── APIS (from verbose-fishstick config) ──────────────────────
   APIs: {
