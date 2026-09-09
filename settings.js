@@ -32,7 +32,7 @@ module.exports = {
     if (process.env.DYNO)                return 'Heroku';
     return 'Local';
   },
-  get timeZone()     { return process.env.TIMEZONE       || process.env.TZ || 'Asia/Dar_es_Salaam'; },
+  get timeZone()     { return process.env.TIMEZONE       || process.env.TZ || 'Africa/Dar_es_Salaam'; },
 
   // ── MEDIA ─────────────────────────────────────────────────────
   get botDp()         { return this._botDpOverride || process.env.MENU_IMAGE || 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg'; },
