@@ -1,9 +1,10 @@
-﻿'use strict';
+'use strict';
 /**
- * 🔥 REDX MINI MD — ANTI-BAN EDITION v9.0
+ * 𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈 — ANTI-BAN EDITION v1.0
  * ✅ Fixed: forwardingScore spam, browser fingerprint, presence abuse,
  *    aggressive reconnect, newsletter context injection, group auto-join
  * Full plugin system · Antidelete · Stealth Presence · Channel Auto-React
+ * Powered By 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡
  */
 
 const express  = require('express');
@@ -16,15 +17,6 @@ const crypto   = require('crypto');
 require('dotenv').config();
 
 // ── LOG NOISE FILTER ─────────────────────────────────────────
-// ✅ FIX: libsignal (used by Baileys) spams the log with harmless
-// decryption churn on every multi-device/retry message: "Bad MAC",
-// "MessageCounterError: Key used already or never filled",
-// "Closing session"/"Closing open session in favor of incoming prekey
-// bundle", giant "SessionEntry { ... }" buffer dumps, and "Failed to
-// decrypt message with any known session". None of these mean the bot
-// is broken — WhatsApp resends and the message still arrives — but they
-// bury the real logs and make the service look like it's on fire.
-// Suppress ONLY these known-noisy lines; everything else passes through.
 (() => {
   const NOISE = [
     /Bad MAC/i,
@@ -43,9 +35,6 @@ require('dotenv').config();
     /SessionEntry \{/,
     /Removing old closed session/i,
   ];
-  // Track whether we're inside a multi-line SessionEntry {...} dump so the
-  // buffer-field lines that follow (registrationId:, currentRatchet:, etc.)
-  // are swallowed too instead of leaking hundreds of hex lines.
   let inDump = false;
   const isNoise = (args) => {
     const line = args.map(a => (typeof a === 'string' ? a : '')).join(' ');
@@ -89,15 +78,10 @@ const NodeCache = require('node-cache');
 const P = require('pino');
 const QRCode = require('qrcode');
 
-// ✅ SPEED FIX: fetchLatestBaileysVersion() is a network request to GitHub.
-// It was fired on EVERY initConnection / pair / reconnect. On restore of many
-// sessions this serialized dozens of network calls before any bot could come
-// online (slow restart), and every reconnect paid the cost again. Cache it for
-// 6h and share one in-flight promise so concurrent connects don't duplicate it.
 let _cachedWaVersion = null;
 let _cachedWaVersionTs = 0;
 let _waVersionInflight = null;
-const _WA_VERSION_TTL = 6 * 60 * 60 * 1000; // 6h
+const _WA_VERSION_TTL = 6 * 60 * 60 * 1000;
 async function getCachedBaileysVersion() {
   const now = Date.now();
   if (_cachedWaVersion && (now - _cachedWaVersionTs) < _WA_VERSION_TTL) {
@@ -111,7 +95,6 @@ async function getCachedBaileysVersion() {
       _cachedWaVersionTs = Date.now();
       return { version };
     } catch (e) {
-      // Fall back to last-known version if we have one, else let Baileys use its bundled default.
       if (_cachedWaVersion) return { version: _cachedWaVersion };
       throw e;
     } finally {
@@ -124,8 +107,8 @@ async function getCachedBaileysVersion() {
 // ── CHANNEL REACTION POOL ────────────────────────────────────
 const CHANNEL_REACTIONS = ['🔥','❤️','👏','💯','🚀','⚡','🎯','😍','🙌','💪'];
 
-// ── RATE LIMITER — prevents message flooding (ban trigger) ───
-const _msgTimestamps = new Map(); // jid -> [timestamps]
+// ── RATE LIMITER ──────────────────────────────────────────────
+const _msgTimestamps = new Map();
 function canSend(jid, limitPerMin = 20) {
   const now = Date.now();
   const cutoff = now - 60_000;
@@ -142,8 +125,7 @@ function getLibIndex() {
   if (!_libIndex) { try { _libIndex = require('./lib/index'); } catch {} }
   return _libIndex;
 }
-// ✅ SPEED: cache sudo lookups (they hit disk/DB). 60s TTL.
-const _sudoCache = new Map(); // jid -> { val, ts }
+const _sudoCache = new Map();
 async function isSudoUser(jid) {
   try {
     const now = Date.now();
@@ -157,11 +139,7 @@ async function isSudoUser(jid) {
 }
 function cleanNum(jid) { return (jid||'').split(':')[0].split('@')[0]; }
 
-// ✅ SPEED: cache @lid → isOwner resolution so we do NOT fire a blocking
-// conn.onWhatsApp() network round-trip on EVERY message from an @lid sender
-// (the #1 cause of slow replies + "high ping" in groups). Owner/co-owner @lid
-// numbers are stable, so once resolved we remember them.
-const _lidOwnerCache = new Map();   // lidNum -> boolean
+const _lidOwnerCache = new Map();
 const _ownerLidResolved = { done: false, ts: 0 };
 try {
   const memoryManager = require('./lib/memoryManager');
@@ -169,10 +147,6 @@ try {
   memoryManager.registerExtraCache(_lidOwnerCache, 200);
 } catch {}
 
-/**
- * Robust admin status from group metadata — matches by bare number so it works
- * across device-suffix ("92300...:17@s.whatsapp.net") and @lid forms.
- */
 function adminStatusFromMeta(meta, senderId, conn) {
   const participants = (meta && meta.participants) || [];
   const botIdNorm    = cleanNum(conn?.user?.id);
@@ -190,11 +164,7 @@ function adminStatusFromMeta(meta, senderId, conn) {
   }
   return { isSenderAdmin, isBotAdmin };
 }
-// ✅ FIX: WhatsApp now addresses many chats (DM + group) by @lid instead of the
-// real phone-number JID. Baileys 7 exposes the real phone-number JID on the
-// message key as participantAlt / remoteJidAlt / senderPn / participantPn.
-// Without checking these, isOwner/isSudo silently fail whenever WhatsApp sends
-// the message in @lid form (this was breaking owner-detection in DMs).
+
 function getAltNum(msg) {
   const k = msg?.key || {};
   const alt = k.participantAlt || k.remoteJidAlt || k.senderPn || k.participantPn || '';
@@ -232,18 +202,8 @@ try {
   if (anticallPlugin?.handleIncomingCall) console.log('✅ anticall plugin loaded');
 } catch(e) { console.warn('⚠️ anticall plugin load error:', e.message); }
 
-// ✅ FIX: ffmpeg was never initialized at boot, so FFMPEG_PATH stayed unset
-// and any feature shelling out to ffmpeg (tts, bgm, stickers, video) either
-// failed silently or fell back to a slow/unset system lookup on every call.
 try { require('./lib/ffmpegSetup').setupFFmpeg(); } catch(e) { console.warn('⚠️ ffmpeg setup error:', e.message); }
 
-// ✅ FIX: .prefix/.setprefix (and .panel setname/.panel setowner) only ever
-// wrote to settings._prefixesOverride in memory for the CURRENT process.
-// On every restart (Render free tier sleeps/restarts constantly, plus the
-// plugin hot-reload watcher), that override was lost and the prefix/name/
-// owner silently reverted to the .env default — looking like the commands
-// "don't work" even though they succeeded at the time. Restore any saved
-// override from the persistent store at boot, before the socket connects.
 (async () => {
   try {
     const store = require('./lib/lightweight_store');
@@ -262,10 +222,6 @@ try { require('./lib/ffmpegSetup').setupFFmpeg(); } catch(e) { console.warn('⚠
   } catch (e) { console.warn('⚠️ settings restore error:', e.message); }
 })();
 
-// ✅ FIX: antilink / antibot / antibadword / bgm all export a passive
-// "check every message" function, but nothing ever called them — only their
-// .command handlers (on/off/config) were reachable. Wire them here so the
-// actual moderation/trigger logic runs.
 let antilinkCheck  = async () => {};
 let antibotCheck   = async () => {};
 let antifloodCheck = async () => {};
@@ -273,17 +229,10 @@ let antibadwordCheck = async () => false;
 let bgmCheckAndPlay = async () => false;
 try { antilinkCheck = require('./plugins/antilink').handleLinkDetection || antilinkCheck; } catch(e) { console.warn('⚠️ antilink load error:', e.message); }
 try { antibotCheck = require('./plugins/antibot').handleAntibotCheck || antibotCheck; } catch(e) { console.warn('⚠️ antibot load error:', e.message); }
-// ✅ FIX: antiflood's checkFlood was exported "for messageHandler hook" but
-// nothing ever called it — the feature was completely dead. Wire it here.
 try { antifloodCheck = require('./plugins/antiflood').checkFlood || antifloodCheck; } catch(e) { console.warn('⚠️ antiflood load error:', e.message); }
 try { antibadwordCheck = require('./plugins/antibadword').checkAntiBadword || antibadwordCheck; } catch(e) { console.warn('⚠️ antibadword load error:', e.message); }
 let antibadwordMuteCheck = async () => false;
 try { antibadwordMuteCheck = require('./plugins/antibadword').checkMuted || antibadwordMuteCheck; } catch(e) {}
-// ✅ NEW: lib/selectionHandler.js was fully wired (plugins already call
-// registerHandler on load) but nothing in index.js ever called
-// handleSelection — so no plain "1".."9" reply ever reached it. Wiring it
-// here is what makes the movie downloader's numbered picker (and anything
-// else built on this registry) actually work.
 const { handleSelection } = require('./lib/selectionHandler');
 try {
   const bgmPlugin = require('./plugins/bgm');
@@ -291,13 +240,6 @@ try {
   if (bgmPlugin.loadTriggers) bgmPlugin.loadTriggers().catch(()=>{});
 } catch(e) { console.warn('⚠️ bgm load error:', e.message); }
 
-// ✅ FIX: plugins/chatbot.js's handleChatbotResponse (replies when mentioned/
-// replied-to in groups, or to any DM once enabled) was only ever called from
-// lib/messageHandler.js — a file index.js never requires or invokes for real
-// messages (index.js has its OWN handleMessage() below). So `.chatbot on`
-// always "succeeded" and the AI backend/keys could be perfectly configured,
-// but the reply function was structurally unreachable — zero responses,
-// always, regardless of API keys or mention format. Wired in for real here.
 let chatbotRespond = async () => {};
 try { chatbotRespond = require('./plugins/chatbot').handleChatbotResponse || chatbotRespond; }
 catch(e) { console.warn('⚠️ chatbot load error:', e.message); }
@@ -314,34 +256,28 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── CONFIG ──────────────────────────────────────────────────
-const BOT_NAME     = process.env.BOT_NAME     || '🔥 REDX MINI MD 🔥';
-const OWNER_NAME   = process.env.OWNER_NAME   || 'Abdul Rehman Rajpoot';
-const OWNER_NUM    = process.env.OWNER_NUMBER || '923009842133';
+const BOT_NAME     = process.env.BOT_NAME     || '𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈';
+const OWNER_NAME   = process.env.OWNER_NAME   || 'Richard Besisila';
+const OWNER_NUM    = process.env.OWNER_NUMBER || '255789661031';
 const CO_OWNER     = process.env.CO_OWNER_NAME || '';
 const CO_OWNER_NUM = process.env.CO_OWNER_NUM  || '';
 const PREFIX       = process.env.PREFIX       || '.';
-// ✅ FIX: this defaulted to an old catbox.moe image, different from the
-// image menu.js actually shows (MENU_IMAGE_URL). Pairing welcome message,
-// group-events plugin, and the public web panel all read BOT_IMG, so they
-// were showing a different/stale picture than the menu. Now defaults to
-// the same image, unless MENU_IMAGE env overrides it.
-const BOT_IMG      = process.env.MENU_IMAGE   || 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png';
-const REPO_LINK    = process.env.REPO_LINK    || 'https://github.com/AbdulRehman19721986/REDXBOT-MD';
-const NL_JID       = process.env.NEWSLETTER_JID || '120363405513439052@newsletter';
-const NL_NAME      = '🔥 REDX MINI MD 🔥';
-const WA_GROUP     = process.env.WA_GROUP || ''; // ⚠️ Set in .env — disabled by default to prevent ban
-const TG_GROUP     = 'https://t.me/TeamRedxhacker2';
+const BOT_IMG      = process.env.MENU_IMAGE   || 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg';
+const REPO_LINK    = process.env.REPO_LINK    || 'https://github.com/Sila-Md';
+const NL_JID       = process.env.NEWSLETTER_JID || '120363402325089913@newsletter';
+const NL_NAME      = '𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈';
+const WA_GROUP     = process.env.WA_GROUP || 'https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g';
+const TG_GROUP     = 'https://t.me/SilaTech';
 global.BOT_MODE    = 'public';
 
 // ── ANTI-BAN CONFIG ──────────────────────────────────────────
-// Set AUTO_STATUS_REACT=false and AUTO_GROUP_JOIN=false to prevent banning
-const AUTO_STATUS_REACT  = process.env.AUTO_STATUS_REACT !== 'false';  // default true
-const AUTO_STATUS_SEEN   = process.env.AUTO_STATUS_SEEN  !== 'false';  // default true
-const AUTO_GROUP_JOIN    = process.env.AUTO_GROUP_JOIN   === 'true';   // default FALSE (ban risk)
-const AUTO_NL_FOLLOW     = process.env.AUTO_NL_FOLLOW    !== 'false';  // default true
+const AUTO_STATUS_REACT  = process.env.AUTO_STATUS_REACT !== 'false';
+const AUTO_STATUS_SEEN   = process.env.AUTO_STATUS_SEEN  !== 'false';
+const AUTO_GROUP_JOIN    = process.env.AUTO_GROUP_JOIN   === 'true';
+const AUTO_NL_FOLLOW     = process.env.AUTO_NL_FOLLOW    !== 'false';
 
-let adminUsername = process.env.ADMIN_USERNAME || 'redx';
-let adminPassword = process.env.ADMIN_PASSWORD || 'redx';
+let adminUsername = process.env.ADMIN_USERNAME || 'sila';
+let adminPassword = process.env.ADMIN_PASSWORD || 'silaxmini';
 const adminSessions = new Map();
 
 // ── PATHS ────────────────────────────────────────────────────
@@ -358,7 +294,7 @@ const DEPLOY_ID_FILE = path.join(__dirname, 'deploy_id.txt');
 // ── DEPLOY ID ────────────────────────────────────────────────
 const DEPLOY_ID = (() => {
   if (fs.existsSync(DEPLOY_ID_FILE)) return fs.readFileSync(DEPLOY_ID_FILE,'utf8').trim();
-  const id = process.env.DEPLOY_ID || ('REDX-' + crypto.randomBytes(4).toString('hex').toUpperCase());
+  const id = process.env.DEPLOY_ID || ('SILA-' + crypto.randomBytes(4).toString('hex').toUpperCase());
   fs.writeFileSync(DEPLOY_ID_FILE, id);
   return id;
 })();
@@ -418,19 +354,13 @@ const channelManager = require('./lib/channelManager');
 function getActiveSockets() {
   return [...activeConnections.values()].filter(e => e.connected && e.conn).map(e => e.conn);
 }
-// ✅ FIX: panel.js called global.saveChannelCfg / global.applyChannelToAll —
-// neither was ever defined anywhere, hence "global.saveChannelCfg is not a
-// function". Wired up for real here, plus multi-channel + post-react support.
 global.getChannelCfg      = (legacySingle) => channelManager.getChannelCfg(legacySingle);
 global.saveChannelCfg     = (cfg) => channelManager.saveChannelCfg(cfg);
 global.applyChannelToAll  = () => channelManager.applyChannelToAll(getActiveSockets);
 global.reactPostOnAll     = (postLink, emoji) => channelManager.reactPostOnAll(getActiveSockets, postLink, emoji);
-// ✅ FIX: was called by `.panel poststatus`/`poststatusimg` but never defined
-// anywhere — always threw "not a function". Wired up now.
 global.postStatusToAll    = (payload) => channelManager.postStatusToAll(getActiveSockets, payload);
 global.addChannel         = (sock, input) => channelManager.addChannel(sock, input);
 global.removeChannel      = (indexOrJid) => channelManager.removeChannel(indexOrJid);
-// Used by `.panel sessions` to mark which saved sessions are live right now.
 global.__activeConnectionNums = () => [...activeConnections.entries()].filter(([,e]) => e.connected && e.conn).map(([n]) => n);
 
 const broadcastStats = () => {
@@ -438,11 +368,9 @@ const broadcastStats = () => {
   io.emit('statsUpdate', { activeSockets: connected, totalUsers: statsData.totalUsers, pairCount: statsData.pairCount });
 };
 
-// ── GROUP METADATA CACHE (5-min TTL — avoids repeated API calls) ──
+// ── GROUP METADATA CACHE ──────────────────────────────────────
 const groupMetaCache = new Map();
 const GROUP_CACHE_TTL = 5 * 60 * 1000;
-// ✅ RAM management: bound these long-lived caches via memoryManager instead
-// of letting them grow for the whole process lifetime (see lib/memoryManager.js).
 try {
   const memoryManager = require('./lib/memoryManager');
   memoryManager.registerExtraCache(groupMetaCache, 300);
@@ -467,7 +395,6 @@ const loadPlugins = () => {
   commands.clear(); cmdCount = 0;
   if (!fs.existsSync(pluginsDir)) { fs.mkdirSync(pluginsDir,{recursive:true}); return; }
 
-  // ⚠️ SKIP known spammer/bomber plugins — they cause immediate bans
   const BANNED_PLUGINS = new Set(['smsbomber.js', 'bomber.js', 'boomber.js']);
 
   const files = fs.readdirSync(pluginsDir)
@@ -537,7 +464,6 @@ loadPlugins();
 if (fs.existsSync(pluginsDir)) fs.watch(pluginsDir,(e,f)=>{ if(f&&f.endsWith('.js')){ console.log(`♻️ Reloading ${f}`); loadPlugins(); } });
 
 // ======================== MAKE SOCKET CONFIG ========================
-// ✅ ANTI-BAN: Use Ubuntu Chrome — most common fingerprint, lowest detection
 function buildSocketConfig(state) {
   return {
     auth: {
@@ -546,16 +472,12 @@ function buildSocketConfig(state) {
     },
     logger: P({ level: 'silent' }),
     printQRInTerminal: false,
-    // ✅ ANTI-BAN: Ubuntu Chrome is the most common, least suspicious fingerprint
     browser: Browsers.ubuntu('Chrome'),
-    // ✅ ANTI-BAN: 30s keepAlive instead of 10s — less WS noise
     keepAliveIntervalMs:      30_000,
     connectTimeoutMs:         30_000,
     defaultQueryTimeoutMs:    30_000,
-    // ✅ ANTI-BAN: Slower retry — aggressive reconnect triggers ban
     retryRequestDelayMs:      2_000,
     maxRetries:               3,
-    // ✅ ANTI-BAN: Don't appear online on connect
     markOnlineOnConnect:      false,
     syncFullHistory:          false,
     emitOwnEvents:            true,
@@ -588,10 +510,6 @@ async function initConnection(number) {
     },
   });
 
-  // ✅ SPEED FIX: wrap conn.groupMetadata with the shared 5-min TTL cache so
-  // EVERY call site (isAdmin, antilink, antibadword, antitag, welcome, ~50
-  // spots across plugins) benefits automatically — previously each of these
-  // fired a live WA query per message, a major cause of slow group replies.
   const _origGroupMetadata = conn.groupMetadata.bind(conn);
   conn.groupMetadata = async (jid, ...rest) => {
     const now = Date.now();
@@ -602,7 +520,6 @@ async function initConnection(number) {
     return meta;
   };
 
-  // Bind message store (needed for group retry)
   conn.ev.on('messages.upsert', ({ messages }) => {
     for (const msg of messages) {
       if (!msg.message) continue;
@@ -614,7 +531,6 @@ async function initConnection(number) {
     }
   });
 
-  // Invalidate group cache on participant change / group settings change
   conn.ev.on('group-participants.update', ({ id }) => { groupMetaCache.delete(id); });
   conn.ev.on('groups.update', (updates) => {
     for (const u of (updates || [])) if (u?.id) groupMetaCache.delete(u.id);
@@ -630,29 +546,20 @@ async function initConnection(number) {
 function setupHandlers(conn, number, saveCreds) {
   const entry = activeConnections.get(number);
 
-  // ✅ FIX ("Creds backup error: Unexpected end of JSON input"): creds.update
-  // can fire several times in quick succession (esp. during pairing), and
-  // Baileys' own creds.json write isn't guaranteed flushed to disk the
-  // instant saveCreds() resolves. Back-to-back events were racing: one
-  // handler's read landed mid-write from another, catching a truncated/
-  // empty file → JSON.parse threw. Fixed with (1) a lock so only one
-  // backup runs at a time per session, and (2) skip silently on
-  // empty/partial content instead of logging a scary parse error — the
-  // next creds.update (there's always another one soon) picks it up.
   let credsBackupInFlight = false;
   const readCredsSafe = () => {
     const sessionDir = path.join(SESSIONS_DIR, number);
     const credsPath  = path.join(sessionDir, 'creds.json');
     if (!fs.existsSync(credsPath)) return null;
     const raw = fs.readFileSync(credsPath, 'utf8');
-    if (!raw || !raw.trim()) return null; // mid-write, try again next event
+    if (!raw || !raw.trim()) return null;
     return JSON.parse(raw);
   };
 
   conn.ev.on('creds.update', async () => {
     try {
       await saveCreds();
-      if (credsBackupInFlight) return; // another creds.update is already backing up
+      if (credsBackupInFlight) return;
       credsBackupInFlight = true;
       try {
         if (supabaseStore.isEnabled()) {
@@ -661,7 +568,6 @@ function setupHandlers(conn, number, saveCreds) {
             if (creds) await supabaseStore.saveSession(number, creds);
           } catch (e) { console.error('[SUPABASE] Creds backup error:', e.message); }
         }
-        // ✅ FIX: MONGO_URL never backed up creds before — see lib/mongoSessionStore.js
         if (mongoSessionStore.isEnabled()) {
           try {
             const creds = readCredsSafe();
@@ -678,10 +584,6 @@ function setupHandlers(conn, number, saveCreds) {
     const { connection, lastDisconnect, qr } = update;
     if (connection) console.log(`[${number}] ${connection}`);
 
-    // ✅ NEW: QR pairing support (Baileys 7rc14 emits `update.qr`; previously
-    // dropped on the floor — only pairing-code login worked). Turn it into a
-    // scannable PNG data URL and broadcast it live over socket.io, plus
-    // stash it so /api/qr/:number can hand it to a polling client too.
     if (qr) {
       try {
         const dataUrl = await QRCode.toDataURL(qr, { errorCorrectionLevel: 'M', margin: 1, scale: 8 });
@@ -697,7 +599,7 @@ function setupHandlers(conn, number, saveCreds) {
     if (connection === 'open') {
       entry.connected = true;
       entry.reconnectAttempts = 0;
-      stopPairWaitLog(number); // pairing window done — real connection confirmed
+      stopPairWaitLog(number);
       statsData.pairCount++;
       statsData.totalUsers++;
       saveStats();
@@ -715,18 +617,6 @@ function setupHandlers(conn, number, saveCreds) {
 
       initPresenceManager(conn, number);
 
-      // ✅ FIX ("channel auto-unfollows after 5-10s"): this used to fire TWO
-      // separate newsletterFollow calls for the same channel (a raw one at
-      // 8s + the full followAllOn sweep at 9s) on EVERY `connection===open`
-      // event, with no guard against reconnect flapping. On an unstable host
-      // the socket flaps (open→close→reopen) inside that same 5-10s window,
-      // re-arming both timers again — so the channel got hit with a burst of
-      // back-to-back follow calls, which is what was toggling it back to
-      // unfollowed. Now: (1) the raw NL_JID call is gone — followAllOn
-      // already covers it via the saved channel list, and (2) the whole
-      // thing only runs ONCE per session lifetime (guarded by
-      // entry.channelsFollowed, same pattern as entry.hasWelcomed below),
-      // not on every reconnect.
       if (AUTO_NL_FOLLOW && NL_JID) {
         channelManager.addChannel(conn, NL_JID).catch(() => {});
       }
@@ -740,7 +630,6 @@ function setupHandlers(conn, number, saveCreds) {
         }, 9_000);
       }
 
-      // ✅ ANTI-BAN: Auto-join group DISABLED by default — set AUTO_GROUP_JOIN=true in .env to enable
       if (AUTO_GROUP_JOIN && WA_GROUP && WA_GROUP.startsWith('https://chat.whatsapp.com/')) {
         setTimeout(async () => {
           try {
@@ -776,7 +665,6 @@ function setupHandlers(conn, number, saveCreds) {
         return;
       }
 
-      // ✅ ANTI-BAN: Exponential backoff with jitter — aggressive reconnect = ban
       if (entry.reconnectAttempts < 5) {
         entry.reconnectAttempts++;
         const base = 5000 * entry.reconnectAttempts;
@@ -800,7 +688,6 @@ function setupHandlers(conn, number, saveCreds) {
     for (const msg of messages) {
       const from = msg.key?.remoteJid || '';
 
-      // ✅ ANTI-BAN: Rate-limit channel reactions (no reaction spam)
       if (from.endsWith('@newsletter')) {
         if (canSend(from, 5)) {
           try {
@@ -812,10 +699,6 @@ function setupHandlers(conn, number, saveCreds) {
         continue;
       }
 
-      // ✅ FIX: on Baileys 7.x, "delete for everyone" arrives as a normal
-      // message in messages.upsert with message.protocolMessage.type REVOKE —
-      // it does NOT reliably fire messages.update on every host. The old code
-      // only listened on messages.update, so real-time deletions were missed.
       const pmType = msg.message?.protocolMessage?.type;
       if (pmType === 0 || pmType === 5) {
         if (antidelete && typeof antidelete.handleMessageRevocation === 'function') {
@@ -826,23 +709,18 @@ function setupHandlers(conn, number, saveCreds) {
 
       if (antidelete && typeof antidelete.storeMessage === 'function')
         await antidelete.storeMessage(conn, msg);
-      // Auto-VV intercept (vvset triggers)
       if (handleAutoVV) {
         try { await handleAutoVV(conn, msg); } catch(e) { console.error('[vv auto]', e.message); }
       }
       try { await handleMessage(conn, msg, number); } catch(e){ console.error(`msg: ${e.message}`); }
     }
-    // ✅ ANTI-BAN: Don't call goOffline after EVERY message batch — presence spam triggers ban
-    // Presence is managed by presenceManager on its own 5-min timer
   });
 
   conn.ev.on('messages.update', async (updates) => {
     for (const update of updates) {
-      // REVOKE = type 0 in Baileys proto (was wrongly 1)
       const pType = update.update?.protocolMessage?.type ?? update.update?.message?.protocolMessage?.type;
       if (pType === 0 || pType === 5) {
         if (antidelete && typeof antidelete.handleMessageRevocation === 'function') {
-          // Build synthetic msg so plugin message?.protocolMessage path resolves
           const synMsg = {
             key: update.key,
             message: update.update?.message || update.update,
@@ -861,7 +739,6 @@ function setupHandlers(conn, number, saveCreds) {
     } catch(e){ console.error('GroupEvents:', e.message); }
   });
 
-  // ── ANTICALL: reject incoming calls ──────────────────────────
   conn.ev.on('call', async (calls) => {
     for (const call of calls) {
       try {
@@ -874,7 +751,6 @@ function setupHandlers(conn, number, saveCreds) {
 }
 
 // ======================== WELCOME MESSAGE ========================
-// ✅ ANTI-BAN: No forwardingScore, no isForwarded, no newsletterContext — plain messages don't get flagged
 async function sendWelcome(conn, number) {
   const userJid = `${number}@s.whatsapp.net`;
   let name = 'User';
@@ -882,34 +758,31 @@ async function sendWelcome(conn, number) {
   const dep = deploys[DEPLOY_ID];
   const now = new Date().toLocaleString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short', year: 'numeric' });
 
-  // ✅ FIX: raw REPO_LINK/GitHub source was printed directly in the welcome
-  // message — hidden now. Also sends BOT_IMG as an actual image (was
-  // text-only before) and reformats as a proper session card.
-  const caption = `╭───「 🔥 *${BOT_NAME}* 🔥 」
+  const caption = `╭───「 ${BOT_NAME} 」
 │
-│  ✅ *Session Linked Successfully!*
+│  ✅ Session Linked Successfully
 │
-├─ 👤 *User:* ${name}
-├─ 📱 *Number:* +${number}
-├─ 🕒 *Linked:* ${now}
-├─ 👑 *Owner:* ${OWNER_NAME}
-├─ 🌍 *Mode:* ${global.BOT_MODE.toUpperCase()}
-├─ 📌 *Prefix:* \`${dep.prefix||PREFIX}\`
-├─ 📦 *Commands:* ${cmdCount+8}+
-├─ 🆔 *Deploy ID:* \`${DEPLOY_ID}\`
-├─ 🔑 *Deploy Key:* \`${dep.deployKey}\`
+├─ User: ${name}
+├─ Number: +${number}
+├─ Linked: ${now}
+├─ Owner: ${OWNER_NAME}
+├─ Mode: ${global.BOT_MODE.toUpperCase()}
+├─ Prefix: ${dep.prefix||PREFIX}
+├─ Commands: ${cmdCount+8}+
+├─ Deploy ID: ${DEPLOY_ID}
+├─ Deploy Key: ${dep.deployKey}
 │
 ╰───────────────⊷
 
-🔒 *Keep your Deploy Key private — it controls this session.*
-💡 Send *${dep.prefix||PREFIX}menu* anytime to see every command.
+Keep your Deploy Key private — it controls this session.
+Send ${dep.prefix||PREFIX}menu to see all commands.
 
-> 🔥 ${BOT_NAME} — by ${OWNER_NAME}`;
+> ${BOT_NAME} — ${OWNER_NAME}
+𝐏𝐨𝐰𝐞𝐫𝐝 𝐁𝐲 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡`;
 
   try {
     await conn.sendMessage(userJid, { image: { url: BOT_IMG }, caption });
   } catch (e) {
-    // Fallback to plain text if the image fails to send (bad URL, offline host, etc.)
     console.warn('[welcome] image send failed, falling back to text:', e.message);
     await conn.sendMessage(userJid, { text: caption });
   }
@@ -922,7 +795,7 @@ async function handleMessage(conn, msg, sessionId) {
   const sNum    = sender.split('@')[0].split(':')[0];
 
   const sNumClean       = cleanNum(sender);
-  const altNumClean     = getAltNum(msg); // real PN when sender/remoteJid is @lid
+  const altNumClean     = getAltNum(msg);
   const sessionNumClean = cleanNum(sessionId);
   const ownerClean      = cleanNum(OWNER_NUM);
   const coOwnerClean    = CO_OWNER_NUM ? cleanNum(CO_OWNER_NUM) : '';
@@ -934,13 +807,6 @@ async function handleMessage(conn, msg, sessionId) {
 
   if (!isOwner && msg.key.fromMe) isOwner = true;
 
-  // ✅ FIX + SPEED: @lid resolution runs for DMs and groups, but is now
-  // CACHED. Previously this fired a blocking conn.onWhatsApp() network call
-  // on EVERY message from an @lid sender — which on modern WhatsApp is most
-  // messages — adding hundreds of ms of latency per message (the main cause
-  // of slow DM/group replies and "high ping"). We now:
-  //   1. check a per-lid cache first (instant), and
-  //   2. only ever query the owner's lid ONCE (cached 6h), then compare locally.
   if (!isOwner && (sNumClean.length > 15 || sender.includes('@lid'))) {
     if (_lidOwnerCache.has(sNumClean)) {
       if (_lidOwnerCache.get(sNumClean)) isOwner = true;
@@ -958,7 +824,6 @@ async function handleMessage(conn, msg, sessionId) {
           _ownerLidResolved.ts = now;
         }
         const match = _lidOwnerCache.get(sNumClean) === true;
-        // remember negatives too so repeat senders never trigger another lookup
         if (!_lidOwnerCache.has(sNumClean)) _lidOwnerCache.set(sNumClean, match);
         if (match) isOwner = true;
       } catch {}
@@ -985,7 +850,6 @@ async function handleMessage(conn, msg, sessionId) {
 
   if (isOwner && msg.key.fromMe) onOwnerActivity(conn, sessionId);
 
-  // Status messages — ✅ ANTI-BAN: rate-limited, no spam
   if (from === 'status@broadcast') {
     if (AUTO_STATUS_SEEN) await conn.readMessages([msg.key]).catch(()=>{});
     if (AUTO_STATUS_REACT && canSend('status@broadcast', 30)) {
@@ -1025,27 +889,14 @@ async function handleMessage(conn, msg, sessionId) {
   const dep = deploys[DEPLOY_ID];
   const pfx = dep?.prefix || PREFIX;
 
-  // ✅ FIX: antilink / antibot / antibadword / bgm all watch PLAIN messages
-  // (no command prefix). The old code returned above this point whenever a
-  // message didn't start with the prefix, so none of these ever ran on real
-  // group chatter or on bgm trigger words. Run them first.
   if (!msg.key.fromMe && isGroupChat) {
-    // ✅ FIX (speed): fetch group metadata ONCE (5-min cache) and share it with
-    // antibot / antiflood — they used to call groupMetadata() per message.
     const gMetaFast = await getCachedGroupMeta(conn, from).catch(() => null);
     try { if (await antibadwordMuteCheck(conn, msg)) return; } catch(e) { console.error('[antibadword-mute]', e.message); }
     try { if (await antibadwordCheck(conn, msg)) return; } catch(e) { console.error('[antibadword]', e.message); }
     try { await antibotCheck(conn, msg, from, sender, gMetaFast); } catch(e) { console.error('[antibot]', e.message); }
     try { await antilinkCheck(conn, from, msg, body, sender); } catch(e) { console.error('[antilink]', e.message); }
-    // ✅ FIX: antiflood was never invoked — wire it in so .antiflood on works.
     try { await antifloodCheck(conn, msg, from, sender, gMetaFast); } catch(e) { console.error('[antiflood]', e.message); }
   }
-  // ✅ NEW: a bare "1".."9" reply is how numbered pickers (movie search,
-  // etc.) resolve — check that before bgm/prefix handling so it doesn't
-  // get swallowed as an unmatched trigger word or ignored entirely.
-  // ✅ FIX: also allow fromMe (owner/paired-number replies) — the owner who
-  // searched the movie replies from the SAME linked account, and their reply
-  // arrives with fromMe=true, which previously skipped the selector entirely.
   if (/^[1-9]$/.test(body.trim())) {
     try {
       const handled = await handleSelection(conn, msg, { chatId: from }, parseInt(body.trim(), 10));
@@ -1053,18 +904,9 @@ async function handleMessage(conn, msg, sessionId) {
     } catch (e) { console.error('[selection]', e.message); }
   }
 
-  // ✅ FIX: bgm.js is explicitly built to also fire on the owner's own
-  // outgoing messages (self-bot use case) — gating it behind `!fromMe` (like
-  // the moderation plugins above) silently killed every trigger sent from
-  // the linked/owner number, which is how most people were testing it.
   try { if (await bgmCheckAndPlay(conn, msg, body, from, {})) return; } catch(e) { console.error('[bgm]', e.message); }
 
   if (!body.startsWith(pfx)) {
-    // ✅ FIX: chatbot reply logic was never reachable at all (see require
-    // above) — this is the actual call site. Runs on non-command text only,
-    // skips the bot's own messages, mirrors the intended enable/mode gating
-    // that plugins/chatbot.js already implements internally (per-chat on/off
-    // via `.chatbot on`, and it self-detects DM vs mention-in-group).
     if (!msg.key.fromMe && body) {
       try { await chatbotRespond(conn, from, msg, body, sender); } catch(e) { console.error('[chatbot]', e.message); }
     }
@@ -1082,11 +924,11 @@ async function handleMessage(conn, msg, sessionId) {
   if (commands.has(cmd)) {
     const plugin = commands.get(cmd);
     if (plugin.strictOwnerOnly && !isRealOwner) {
-      await conn.sendMessage(from, { text: '❌ This command is restricted to the real owner only.' }, { quoted: msg });
+      await conn.sendMessage(from, { text: 'This command is restricted to the real owner only.' }, { quoted: msg });
       return;
     }
     if (plugin.ownerOnly && !isOwner) {
-      await conn.sendMessage(from, { text: '❌ This command is for the bot owner/co-owner only.' }, { quoted: msg });
+      await conn.sendMessage(from, { text: 'This command is for the bot owner/co-owner only.' }, { quoted: msg });
       return;
     }
     try {
@@ -1094,12 +936,6 @@ async function handleMessage(conn, msg, sessionId) {
       const isGroup = from.endsWith('@g.us');
       let gMeta = null;
       if (isGroup) { gMeta = await getCachedGroupMeta(conn, from); }
-      // ✅ FIX: previously only the SENDER was checked (and only by exact JID
-      // match — broken for device suffixes / @lid). Now compute BOTH sender
-      // and bot admin status with normalized matching, and expose them to the
-      // plugin context. Bundled admin commands (kick, demote, mute, …) read
-      // context.isBotAdmin and wrongly replied "make the bot an admin first"
-      // because it was always undefined here.
       let isAdmin = false, isBotAdmin = false, isSenderAdmin = false;
       if (isGroup && gMeta) {
         const a = adminStatusFromMeta(gMeta, sender, conn);
@@ -1123,25 +959,21 @@ async function handleMessage(conn, msg, sessionId) {
 }
 
 // ======================== BUILT-IN COMMANDS ========================
-// ✅ ANTI-BAN: All built-in replies are plain messages — no forwardingScore/newsletter injection
 async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
   const dep = deploys[DEPLOY_ID];
 
-  // Plain sender — no newsletter/forward context (ban risk removed)
   const s = text => conn.sendMessage(from, { text }, { quoted: msg });
 
   switch(cmd) {
     case 'ping': {
-      // ✅ Real round-trip: time how long an actual message send takes, which
-      // reflects the true WhatsApp latency (not a near-zero local diff).
       const t = Date.now();
-      const sent = await conn.sendMessage(from, { text: '🏓 Pinging...' }, { quoted: msg });
+      const sent = await conn.sendMessage(from, { text: 'Pinging...' }, { quoted: msg });
       const lat = Date.now() - t;
-      const tag = lat < 400 ? '🟢 Excellent' : lat < 900 ? '🟡 Good' : lat < 1800 ? '🟠 Okay' : '🔴 Slow';
+      const tag = lat < 400 ? 'Excellent' : lat < 900 ? 'Good' : lat < 1800 ? 'Okay' : 'Slow';
       try {
-        await conn.sendMessage(from, { text: `⚡ *ᴘɪɴɢ:* \`${lat}ms\` ${tag}\n\n> 🔥 ${BOT_NAME}`, edit: sent.key });
+        await conn.sendMessage(from, { text: `Ping: ${lat}ms ${tag}\n\n> ${BOT_NAME}`, edit: sent.key });
       } catch {
-        await s(`⚡ *ᴘɪɴɢ:* \`${lat}ms\` ${tag}\n\n> 🔥 ${BOT_NAME}`);
+        await s(`Ping: ${lat}ms ${tag}\n\n> ${BOT_NAME}`);
       }
       return true;
     }
@@ -1149,48 +981,48 @@ async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
       await conn.sendMessage(from, {
         contacts: { displayName: OWNER_NAME, contacts: [{ vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${OWNER_NAME}\nTEL;type=CELL;waid=${OWNER_NUM}:+${OWNER_NUM}\nEND:VCARD` }] }
       }, { quoted: msg });
-      await s(`👑 *ᴏᴡɴᴇʀ:* ${OWNER_NAME}\n📱 *ɴᴜᴍ:* +${OWNER_NUM}\n\n> 🔥 ${BOT_NAME}`);
+      await s(`Owner: ${OWNER_NAME}\nNumber: +${OWNER_NUM}\n\n> ${BOT_NAME}\n𝐏𝐨𝐰𝐞𝐫𝐝 𝐁𝐲 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡`);
       return true;
 
     case 'mode':
     case 'setmode':
     case 'botmode': {
-      if (!isOwner) { await s('❌ Owner only.'); return true; }
+      if (!isOwner) { await s('Owner only.'); return true; }
       const m = args[0]?.toLowerCase();
       const modeDescMap = {
-        public:  '🌍 Everyone can use bot in groups and DMs.',
-        private: '🔒 Owner and sudo users only.',
-        groups:  '👥 Only works in group chats for everyone.',
-        inbox:   '💬 Only works in private DMs for everyone.',
-        self:    '👤 Owner and sudo users only.'
+        public:  'Everyone can use bot in groups and DMs.',
+        private: 'Owner and sudo users only.',
+        groups:  'Only works in group chats for everyone.',
+        inbox:   'Only works in private DMs for everyone.',
+        self:    'Owner and sudo users only.'
       };
       if (m && VALID_MODES.includes(m)) {
         global.BOT_MODE = m;
         if (dep) dep.mode = m;
         saveDeploys();
-        await s(`✅ *ᴍᴏᴅᴇ ᴄʜᴀɴɢᴇᴅ:* \`${m.toUpperCase()}\`\n\n${modeDescMap[m]}\n\n> 🔥 ${BOT_NAME}`);
+        await s(`Mode changed: ${m.toUpperCase()}\n\n${modeDescMap[m]}\n\n> ${BOT_NAME}`);
       } else {
-        const mList = VALID_MODES.map(md => `• \`${pfx}mode ${md}\` — ${modeDescMap[md]}`).join('\n');
-        await s(`📌 *ᴄᴜʀʀᴇɴᴛ ᴍᴏᴅᴇ:* \`${global.BOT_MODE.toUpperCase()}\`\n\n*Available Modes:*\n${mList}\n\n> 🔥 ${BOT_NAME}`);
+        const mList = VALID_MODES.map(md => `• ${pfx}mode ${md} — ${modeDescMap[md]}`).join('\n');
+        await s(`Current mode: ${global.BOT_MODE.toUpperCase()}\n\nAvailable Modes:\n${mList}\n\n> ${BOT_NAME}`);
       }
       return true;
     }
     case 'deployid':
     case 'myid':
-      await s(`🆔 *ᴅᴇᴘʟᴏʏ ɪᴅ:* \`${DEPLOY_ID}\`\n🔑 *ᴋᴇʏ:* \`${dep?.deployKey||'—'}\`\n🌐 *ᴘʟᴀᴛᴇ:* ${detectPlatform()}\n\n> 🔥 ${BOT_NAME}`);
+      await s(`Deploy ID: ${DEPLOY_ID}\nKey: ${dep?.deployKey||'—'}\nPlatform: ${detectPlatform()}\n\n> ${BOT_NAME}`);
       return true;
 
     case 'runtime':
     case 'uptime': {
       const up = Math.floor((Date.now()-START_TIME)/1000);
       const h=Math.floor(up/3600), m2=Math.floor((up%3600)/60), s2=up%60;
-      await s(`⏱️ *ʀᴜɴᴛɪᴍᴇ:* \`${h}h ${m2}m ${s2}s\`\n📦 *ᴄᴍᴅs:* ${cmdCount+8}+\n🌍 *ᴍᴏᴅᴇ:* ${global.BOT_MODE.toUpperCase()}\n\n> 🔥 ${BOT_NAME}`);
+      await s(`Runtime: ${h}h ${m2}m ${s2}s\nCommands: ${cmdCount+8}+\nMode: ${global.BOT_MODE.toUpperCase()}\n\n> ${BOT_NAME}`);
       return true;
     }
     case 'restart':
     case 'shutdown':
-      if (!isOwner) { await s('❌ Owner only.'); return true; }
-      await s('🔄 *Restarting...*\n\n> 🔥 '+BOT_NAME);
+      if (!isOwner) { await s('Owner only.'); return true; }
+      await s(`Restarting...\n\n> ${BOT_NAME}`);
       setTimeout(()=>process.exit(0),2000);
       return true;
 
@@ -1207,7 +1039,6 @@ function getQuoted(msg) {
 // ======================== EXPRESS ROUTES ========================
 app.get('/', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
 app.get('/api/status', (req,res)=>res.json(getStats()));
-// ── SESSION VISIBILITY: list saved sessions ──────────────────────────────
 app.get('/api/sessions', (req,res)=>{
   try {
     const sessions = [];
@@ -1237,8 +1068,6 @@ app.get('/api/config', (req,res)=>res.json({
   deployId: DEPLOY_ID, platform: detectPlatform(),
 }));
 
-// ── PER-NUMBER SESSION STATUS (used by the frontend to verify the real
-//    connection state instead of the global /api/status "any session" flag) ──
 app.get('/api/session/:number', (req, res) => {
   try {
     const num = String(req.params.number || '').replace(/\D/g, '');
@@ -1255,11 +1084,8 @@ app.get('/api/session/:number', (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── PAIRING WINDOW LOGGING ────────────────────────────────────────────────
-// Logs the waiting state every 60s so Render logs clearly show whether the
-// user has actually linked the device (5-minute window), and when it opened.
 const PAIR_WINDOW_MS = 5 * 60 * 1000;
-const pairWaitTimers = new Map(); // number -> interval
+const pairWaitTimers = new Map();
 function startPairWaitLog(num) {
   stopPairWaitLog(num);
   const started = Date.now();
@@ -1300,7 +1126,7 @@ app.post('/api/pair', async (req, res) => {
       try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
       destroyPresenceManager(num);
       activeConnections.delete(num);
-      await new Promise(r => setTimeout(r, 1500)); // safe cleanup delay
+      await new Promise(r => setTimeout(r, 1500));
     }
 
     const sessionDir = path.join(SESSIONS_DIR, num);
@@ -1321,7 +1147,6 @@ app.post('/api/pair', async (req, res) => {
     activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
     setupHandlers(conn, num, saveCreds);
 
-    // ✅ ANTI-BAN: Wait for socket to stabilise before requesting code
     await new Promise(r => setTimeout(r, 4000));
 
     if (!conn.ws || conn.ws.readyState > 1) {
@@ -1334,8 +1159,6 @@ app.post('/api/pair', async (req, res) => {
     const formatted = code.match(/.{1,4}/g)?.join('-') || code;
 
     console.log(`✅ Code for ${num}: ${formatted}`);
-    // ✅ FIX: visible pairing-window logging — Render logs now show the wait
-    // state so you can verify whether the bot really connected.
     startPairWaitLog(num);
     return res.json({ success: true, pairingCode: formatted, code: formatted, number: num });
 
@@ -1346,12 +1169,6 @@ app.post('/api/pair', async (req, res) => {
   }
 });
 
-// ✅ NEW: QR-code pairing (baileys 7.0.0-rc14 supports both pairing-code AND
-// QR login — only pairing-code was wired up before). Starts a session and
-// waits for the first `qr` string from Baileys, returns it as a scannable
-// PNG data URL. If the QR is scanned in time, `connection.update` flips to
-// 'open' and the normal /api/pair success flow (stats, welcome msg, etc.)
-// applies identically — this only changes how the client authenticates.
 app.post('/api/qr', async (req, res) => {
   let conn;
   try {
@@ -1387,15 +1204,11 @@ app.post('/api/qr', async (req, res) => {
       version,
       ...buildSocketConfig(state),
       msgRetryCounterCache: new NodeCache({ stdTTL: 60, checkperiod: 120 }),
-      // printQRInTerminal is deprecated/removed upstream — we read `update.qr`
-      // from connection.update ourselves (wired in setupHandlers) instead.
     });
 
     activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
     setupHandlers(conn, num, saveCreds);
 
-    // Wait for the first QR frame (Baileys regenerates one ~every 20s until
-    // scanned or the socket closes). 20s covers the first frame comfortably.
     const qrDataUrl = await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Timed out waiting for QR code. Please try again.')), 20_000);
       const check = setInterval(() => {
@@ -1419,8 +1232,6 @@ app.post('/api/qr', async (req, res) => {
   }
 });
 
-// Poll fallback for clients that can't hold the /api/qr request open, or
-// want to refresh to the newest QR frame after the first one expires.
 app.get('/api/qr/:number', (req, res) => {
   const num = (req.params.number || '').replace(/\D/g, '');
   const entry = activeConnections.get(num);
@@ -1438,9 +1249,6 @@ app.post('/api/logout', async (req,res) => {
       destroyPresenceManager(num);
       activeConnections.delete(num);
       try{fs.rmSync(path.join(SESSIONS_DIR,num),{recursive:true,force:true});}catch{}
-      // ✅ FIX: logout only ever wiped local disk — the DB-backed copy (Supabase
-      // and/or Mongo) survived, so `.panel sessions` / reloadExistingSessions
-      // kept "restoring" a session the user had just logged out of.
       if (supabaseStore.isEnabled()) supabaseStore.deleteSession(num).catch(()=>{});
       if (mongoSessionStore.isEnabled()) mongoSessionStore.deleteSession(num).catch(()=>{});
       io.emit('unlinked',{sessionId:num,number:num});
@@ -1468,7 +1276,6 @@ app.get('/api/deploy/:id',(req,res)=>{
   res.json({ id:d.id, platform:d.platform, pairCount:d.pairCount||0, createdAt:d.createdAt, lastSeen:d.lastSeen, numbers:d.numbers?.length||0 });
 });
 
-// ── USER DEPLOY KEY API ───────────────────────────────────────
 function deployKeyAuth(req, res, next) {
   const key = req.headers['x-deploy-key'] || req.body?.deployKey || req.query?.key;
   if (!key) return res.status(401).json({ error: 'Deploy key required' });
@@ -1510,7 +1317,6 @@ app.post('/api/user/logout', deployKeyAuth, async (req,res) => {
 
 app.get('/api/user/status', deployKeyAuth, (req,res) => { res.json({ ...getStats(), deployKey: '***hidden***' }); });
 
-// ── ADMIN ROUTES ──────────────────────────────────────────────
 const adminAuth = (req,res,next) => {
   const token = req.headers['x-admin-token']||req.query.token;
   if(!token||!adminSessions.has(token))return res.status(401).json({error:'Unauthorized'});
@@ -1531,7 +1337,7 @@ app.post('/api/admin/logout',adminAuth,(req,res)=>{ adminSessions.delete(req.hea
 app.get('/api/admin/overview',adminAuth,(req,res)=>res.json({
   stats:{ totalDeploys:Object.keys(deploys).length, totalPairs:statsData.pairCount, totalUsers:statsData.totalUsers, uptime:Math.floor((Date.now()-START_TIME)/1000) },
   currentDeploy: deploys[DEPLOY_ID], servers, platform:detectPlatform(),
-  adminUser:req.adminSession.user, botVersion:'9.0.0', nodeVersion:process.version, memUsage:process.memoryUsage(), activeConnections:activeConnections.size,
+  adminUser:req.adminSession.user, botVersion:'1.0.0', nodeVersion:process.version, memUsage:process.memoryUsage(), activeConnections:activeConnections.size,
 }));
 
 app.get('/api/admin/deploys',adminAuth,(req,res)=>res.json({deploys:Object.values(deploys)}));
@@ -1573,13 +1379,6 @@ app.post('/api/admin/settings/credentials',adminAuth,(req,res)=>{
   res.json({success:true,message:'Updated'});
 });
 
-// ── REMOTE ACTIONS (HTTP-triggered equivalents of `.panel <cmd>`) ──────────
-// ✅ NEW: lets a multi-server admin dashboard fan `.panel followchannel` /
-// `.panel reactpost` out to every registered backend deploy (Render,
-// Railway, ...) instead of only the one WA chat is talking to. Reuses the
-// exact same global.applyChannelToAll / global.reactPostOnAll used by the
-// WA `.panel` command — same logic, HTTP-triggered, gated by adminAuth
-// (x-admin-token) instead of the WA panel password.
 app.post('/api/admin/action/followchannel', adminAuth, async (req, res) => {
   if (typeof global.applyChannelToAll !== 'function') return res.status(503).json({ error: 'Channel service not ready' });
   try {
@@ -1617,12 +1416,10 @@ app.post('/api/admin/action/poststatus', adminAuth, async (req, res) => {
     res.json({ success: true, ok: result.ok, failed: result.failed, errors: result.errors });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-// Quick ping so the dashboard can test a server entry before running actions.
 app.get('/api/admin/action/ping', adminAuth, (req, res) => {
   res.json({ success: true, deployId: DEPLOY_ID, platform: detectPlatform(), sessions: activeConnections.size });
 });
 
-// ── SOCKET.IO ─────────────────────────────────────────────────
 io.on('connection', socket => {
   const st=getStats();
   socket.emit('statsUpdate',{activeSockets:st.activeSockets,totalUsers:st.totalUsers,pairCount:st.pairCount});
@@ -1630,7 +1427,6 @@ io.on('connection', socket => {
   socket.on('disconnect',()=>{});
 });
 
-// ── GRACEFUL SHUTDOWN ─────────────────────────────────────────
 let isShuttingDown=false;
 const gracefulShutdown=sig=>{
   if(isShuttingDown)return; isShuttingDown=true;
@@ -1644,12 +1440,7 @@ process.on('SIGTERM',()=>gracefulShutdown('SIGTERM'));
 process.on('uncaughtException',err=>console.error('uncaughtException:',err.message));
 process.on('unhandledRejection',err=>console.error('unhandledRejection:',err));
 
-// ── KEEP-ALIVE ────────────────────────────────────────────────
 function startKeepAlive() {
-  // ✅ FIX: Render auto-injects RENDER_EXTERNAL_URL for every web service,
-  // but it wasn't in the detection list — so on Render this always fell
-  // through to `null` and the whole keep-alive loop silently never started,
-  // which is exactly why the service kept spinning down.
   const rawUrl = process.env.APP_URL
     || process.env.RENDER_EXTERNAL_URL
     || (process.env.HEROKU_APP_DEFAULT_DOMAIN_NAME ? `https://${process.env.HEROKU_APP_DEFAULT_DOMAIN_NAME}` : null)
@@ -1664,13 +1455,8 @@ function startKeepAlive() {
       mod.get(rawUrl + '/health', res => { console.log(`💓 Keep-alive → ${res.statusCode}`); }).on('error', ()=>{});
     } catch {}
   };
-  // ✅ FIX: Render's free tier spins a service down after ~15 min of no
-  // inbound HTTP traffic. A 25-min internal timer pings AFTER it's already
-  // asleep (and a sleeping process can't run its own setInterval to wake
-  // itself back up). 10 min keeps it under that threshold so it never
-  // sleeps in the first place.
   setInterval(ping, 10 * 60 * 1000);
-  ping(); // fire one immediately on boot too
+  ping();
   console.log(`💓 Keep-alive enabled → ${rawUrl} (every 10 min)`);
   console.log('   NOTE: self-ping only works while the process is awake. If it ever');
   console.log('   does fall asleep, set up a free external monitor (UptimeRobot,');
@@ -1678,14 +1464,14 @@ function startKeepAlive() {
   console.log('   is the only thing that can wake a fully-suspended Render instance.');
 }
 
-// ── START ─────────────────────────────────────────────────────
 server.listen(PORT, async () => {
   console.log(`\n╔════════════════════════════════════════════════════╗`);
-  console.log(`║  🔥 REDX MINI MD v9.0.0 — ANTI-BAN EDITION             ║`);
+  console.log(`║  ${BOT_NAME} v1.0.0 — ANTI-BAN EDITION            ║`);
   console.log(`║  🌐 http://localhost:${String(PORT).padEnd(26)}║`);
   console.log(`║  🆔 Deploy ID: ${String(DEPLOY_ID).padEnd(34)}║`);
   console.log(`║  🛡️  Browser:  Ubuntu Chrome (anti-ban)              ║`);
   console.log(`║  🔌 Commands:  ${String(cmdCount+'+ loaded').padEnd(34)}║`);
+  console.log(`║  ${'𝐏𝐨𝐰𝐞𝐫𝐝 𝐁𝐲 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡'.padEnd(46)}║`);
   console.log(`╚════════════════════════════════════════════════════╝\n`);
   await reloadExistingSessions();
   startKeepAlive();
@@ -1697,7 +1483,6 @@ async function reloadExistingSessions() {
 
   if (supabaseStore.isEnabled()) {
     try {
-      // Skip initTables() RPC (may not exist on all Supabase setups); go straight to query
       const remoteSessions = await supabaseStore.listSessions();
       console.log(`☁️  Supabase has ${remoteSessions.length} remote session(s)`);
       for (const num of remoteSessions) {
@@ -1722,9 +1507,6 @@ async function reloadExistingSessions() {
     console.warn('⚠️  Supabase NOT configured (no SUPABASE_URL/SUPABASE_KEY).');
   }
 
-  // ✅ FIX: MONGO_URL was fully wired for bot settings/chat data but never
-  // for session creds — sessions saved to Mongo were never restored here,
-  // so a Mongo-only deploy lost every pairing on every Render restart.
   if (mongoSessionStore.isEnabled()) {
     try {
       const remoteSessions = await mongoSessionStore.listSessions();
@@ -1757,13 +1539,12 @@ async function reloadExistingSessions() {
   });
   console.log(`📂 Found ${dirs.length} local session(s)`);
 
-  // ✅ ANTI-BAN: Stagger session reloads — don't connect all at once
   for (let i = 0; i < dirs.length; i++) {
     const num = dirs[i];
     if (fs.existsSync(path.join(SESSIONS_DIR,num,'creds.json'))) {
       console.log(`🔄 Reloading: ${num}`);
       try { await initConnection(num); } catch(e){ console.error(`Reload ${num}: ${e.message}`); }
-      if (i < dirs.length - 1) await new Promise(r => setTimeout(r, 800)); // ✅ SPEED FIX: 0.8s stagger (was 3s) — much faster restart, still avoids burst
+      if (i < dirs.length - 1) await new Promise(r => setTimeout(r, 800));
     }
   }
   broadcastStats();
@@ -1787,7 +1568,6 @@ function getStats() {
 
 module.exports = { app, server, io };
 
-// ── GLOBAL PAIR HELPER ────────────────────────────────────────
 global.doPairNumber = async function(num, force = false) {
   const existing = activeConnections.get(num);
   if (existing?.connected && !force) return { alreadyConnected: true, number: num };
@@ -1813,4 +1593,3 @@ global.doPairNumber = async function(num, force = false) {
   startPairWaitLog(num);
   return { pairingCode: code.match(/.{1,4}/g)?.join('-') || code, number: num };
 };
-
