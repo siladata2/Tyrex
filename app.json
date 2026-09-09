@@ -20,7 +20,7 @@
     "AUTO_STATUS_SEEN":  { "description": "Auto view statuses (true/false)",          "value": "true",                   "required": false },
     "AUTO_STATUS_REACT": { "description": "Auto react to statuses (true/false)",      "value": "true",                   "required": false }
   },
-  "formation": { "web": { "quantity": 1, "size": "eco" } },
+  "formation": { "web": { "quantity": 1, "size": "basic" } },
   "buildpacks": [
     { "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git" },
     { "url": "heroku/nodejs" }
