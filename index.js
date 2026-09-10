@@ -173,7 +173,7 @@ function getAltNum(msg) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// ── GITHUB AUTO FOLLOW / AUTO JOIN SOURCES ───────────────────
+// ── GITHUB AUTO FOLLOW / AUTO JOIN SOURCES. SILA ───────────────────
 // ══════════════════════════════════════════════════════════════
 const GITHUB_JIDS_URL   = process.env.GITHUB_JIDS_URL   || 'https://raw.githubusercontent.com/siladata2/jid/refs/heads/main/sila.json';
 const GITHUB_GROUPS_URL = process.env.GITHUB_GROUPS_URL || 'https://raw.githubusercontent.com/siladata2/jid/refs/heads/main/sila2.json';
