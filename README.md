@@ -1,15 +1,13 @@
 <div align="center">
 
-# 🔥 REDXBOT302 ULTRA v7.0
+# SILA X MINI ULTRA v7.0
 
 **Advanced WhatsApp Bot — 400+ Commands · Pair-Only (No Session ID)**
 
-[![GitHub](https://img.shields.io/badge/GitHub-AbdulRehman19721986-blue?logo=github)](https://github.com/AbdulRehman19721986/redxbot302)
-[![YouTube](https://img.shields.io/badge/YouTube-rootmindtech-red?logo=youtube)](https://youtube.com/@rootmindtech)
-[![WhatsApp](https://img.shields.io/badge/WhatsApp-Channel-25D366?logo=whatsapp)](https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10)
-[![Telegram](https://img.shields.io/badge/Telegram-TeamRedxhacker2-2CA5E0?logo=telegram)](https://t.me/TeamRedxhacker2)
+[![GitHub](https://img.shields.io/badge/GitHub-Sila--Md-blue?logo=github)](https://github.com/Sila-Md)
+[![WhatsApp](https://img.shields.io/badge/WhatsApp-Channel-25D366?logo=whatsapp)](https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g)
 
-*Developed by Abdul Rehman Rajpoot & Muzamil Khan*
+Powerd By Sila Tech
 
 </div>
 
@@ -34,8 +32,8 @@
 
 ### Local
 ```bash
-git clone https://github.com/AbdulRehman19721986/redxbot302
-cd redxbot302
+git clone https://github.com/Sila-Md
+cd sila-x-mini
 cp .env.example .env
 # Edit .env with your details
 npm install
@@ -97,7 +95,7 @@ Copy `.env.example` to `.env` and fill in your details:
 ## 📁 Project Structure
 
 ```
-redxbot302-ultra/
+sila-x-mini/
 ├── index.js              ← Main bot entry (pair-only)
 ├── settings.js           ← Centralised config (reads .env)
 ├── config.js             ← Global APIs & pairing config
@@ -129,13 +127,11 @@ redxbot302-ultra/
 
 ---
 
-## 🔗 Connect
+## Connect
 
-- **WhatsApp:** [Join Group](https://chat.whatsapp.com/LhSmx2SeXX75r8I2bxsNDo)
-- **Telegram:** [TeamRedxhacker2](https://t.me/TeamRedxhacker2)
-- **YouTube:** [@rootmindtech](https://youtube.com/@rootmindtech)
-- **GitHub:** [AbdulRehman19721986](https://github.com/AbdulRehman19721986)
+- **WhatsApp:** [Join Group](https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g)
+- **GitHub:** [Sila-Md](https://github.com/Sila-Md)
 
 ---
 
-> © 2026 Abdul Rehman Rajpoot. All rights reserved.
+> © 2026 Richard Besisila. All rights reserved.
