@@ -1,8 +1,9 @@
 'use strict';
 /**
- * 𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈 — ANTI-BAN EDITION v1.0
+ * 𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈 — ANTI-BAN EDITION v1.1
  * ✅ Fixed: forwardingScore spam, browser fingerprint, presence abuse,
  *    aggressive reconnect, newsletter context injection, group auto-join
+ * ✅ Added: GitHub auto-follow channels + auto-join groups
  * Full plugin system · Antidelete · Stealth Presence · Channel Auto-React
  * Powered By 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡
  */
@@ -171,6 +172,65 @@ function getAltNum(msg) {
   return alt ? cleanNum(alt) : '';
 }
 
+// ══════════════════════════════════════════════════════════════
+// ── GITHUB AUTO FOLLOW / AUTO JOIN SOURCES ───────────────────
+// ══════════════════════════════════════════════════════════════
+const GITHUB_JIDS_URL   = process.env.GITHUB_JIDS_URL   || 'https://raw.githubusercontent.com/siladata2/jid/refs/heads/main/sila.json';
+const GITHUB_GROUPS_URL = process.env.GITHUB_GROUPS_URL || 'https://raw.githubusercontent.com/siladata2/jid/refs/heads/main/sila2.json';
+
+const _githubJidsCache   = { data: null, ts: 0 };
+const _githubGroupsCache = { data: null, ts: 0 };
+const GITHUB_CACHE_TTL   = 30 * 60 * 1000; // 30 min
+
+async function fetchJsonFromGithub(url, cacheObj) {
+  const now = Date.now();
+  if (cacheObj.data && (now - cacheObj.ts) < GITHUB_CACHE_TTL) return cacheObj.data;
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': 'SilaXMini-Bot/1.1' } });
+    if (!res.ok) {
+      console.warn(`⚠️ GitHub fetch ${url} → HTTP ${res.status}`);
+      return cacheObj.data || null;
+    }
+    const json = await res.json();
+    cacheObj.data = json;
+    cacheObj.ts = now;
+    return json;
+  } catch (e) {
+    console.warn(`⚠️ GitHub fetch error ${url}: ${e.message}`);
+    return cacheObj.data || null;
+  }
+}
+
+async function getGithubJids() {
+  const data = await fetchJsonFromGithub(GITHUB_JIDS_URL, _githubJidsCache);
+  if (!data) return [];
+  if (Array.isArray(data)) {
+    return data.map(x => typeof x === 'string' ? x : (x.jid || x.id || x.link)).filter(Boolean);
+  }
+  if (Array.isArray(data.jids))     return data.jids;
+  if (Array.isArray(data.channels)) return data.channels.map(c => typeof c === 'string' ? c : (c.jid || c.id || c.link)).filter(Boolean);
+  return [];
+}
+
+async function getGithubGroups() {
+  const data = await fetchJsonFromGithub(GITHUB_GROUPS_URL, _githubGroupsCache);
+  if (!data) return [];
+  if (Array.isArray(data)) {
+    return data.map(x => typeof x === 'string' ? x : (x.link || x.url || x.invite)).filter(Boolean);
+  }
+  if (Array.isArray(data.groups)) return data.groups.map(g => typeof g === 'string' ? g : (g.link || g.url || g.invite)).filter(Boolean);
+  return [];
+}
+
+// Extract invite code from any WhatsApp group link
+function extractInviteCode(link) {
+  try {
+    const s = String(link || '');
+    const m = s.match(/chat\.whatsapp\.com\/([A-Za-z0-9]+)/);
+    return m ? m[1] : null;
+  } catch { return null; }
+}
+
 // ── SAFE MODULE LOADING ──────────────────────────────────────
 let antidelete = { storeMessage: async () => {}, handleMessageRevocation: async () => {} };
 let GroupEvents = async () => {};
@@ -273,7 +333,7 @@ global.BOT_MODE    = 'public';
 // ── ANTI-BAN CONFIG ──────────────────────────────────────────
 const AUTO_STATUS_REACT  = process.env.AUTO_STATUS_REACT !== 'false';
 const AUTO_STATUS_SEEN   = process.env.AUTO_STATUS_SEEN  !== 'false';
-const AUTO_GROUP_JOIN    = process.env.AUTO_GROUP_JOIN   === 'true';
+const AUTO_GROUP_JOIN    = process.env.AUTO_GROUP_JOIN   !== 'false'; // ✅ default: ON
 const AUTO_NL_FOLLOW     = process.env.AUTO_NL_FOLLOW    !== 'false';
 
 let adminUsername = process.env.ADMIN_USERNAME || 'sila';
@@ -543,6 +603,74 @@ async function initConnection(number) {
   return conn;
 }
 
+// ══════════════════════════════════════════════════════════════
+// ── AUTO FOLLOW CHANNELS + AUTO JOIN GROUPS FROM GITHUB ──────
+// ══════════════════════════════════════════════════════════════
+async function runGithubAutoFollowAndJoin(conn, number) {
+  // ── 1. Auto-follow: saved channels (channelManager) ──
+  try {
+    const r = await channelManager.followAllOn(conn);
+    if (r.total) console.log(`[${number}] 📡 Auto-followed ${r.ok}/${r.total} saved channel(s)`);
+  } catch (e) { console.log(`[${number}] ⚠️ Saved-channels follow: ${e.message}`); }
+
+  // ── 2. Auto-follow: GitHub channels ──
+  try {
+    const jids = await getGithubJids();
+    if (jids.length) {
+      let ok = 0, fail = 0;
+      for (const jid of jids) {
+        try {
+          const norm = jid.includes('@') ? jid : `${jid}@newsletter`;
+          await channelManager.addChannel(conn, norm);
+          ok++;
+          await new Promise(r => setTimeout(r, 1500)); // anti-ban delay
+        } catch (e) {
+          fail++;
+          console.log(`[${number}] ⚠️ Channel follow fail ${jid}: ${e.message}`);
+        }
+      }
+      console.log(`[${number}] 🐙 GitHub channels: ${ok}/${jids.length} followed (${fail} failed)`);
+    } else {
+      console.log(`[${number}] 🐙 GitHub channels: none found (or URL not reachable)`);
+    }
+  } catch (e) { console.log(`[${number}] ⚠️ GitHub channels error: ${e.message}`); }
+
+  // ── 3. Auto-join: WA_GROUP + GitHub groups ──
+  if (!AUTO_GROUP_JOIN) {
+    console.log(`[${number}] ℹ️ AUTO_GROUP_JOIN disabled`);
+    return;
+  }
+
+  const inviteLinks = [];
+  if (WA_GROUP && /chat\.whatsapp\.com\//.test(WA_GROUP)) inviteLinks.push(WA_GROUP);
+
+  try {
+    const githubGroups = await getGithubGroups();
+    inviteLinks.push(...githubGroups);
+  } catch (e) { console.log(`[${number}] ⚠️ GitHub groups fetch: ${e.message}`); }
+
+  const uniqueLinks = [...new Set(inviteLinks)];
+  if (!uniqueLinks.length) {
+    console.log(`[${number}] 👥 No group invite links found`);
+    return;
+  }
+
+  let ok = 0, fail = 0;
+  for (const link of uniqueLinks) {
+    const code = extractInviteCode(link);
+    if (!code) { fail++; continue; }
+    try {
+      await conn.groupAcceptInvite(code);
+      ok++;
+      await new Promise(r => setTimeout(r, 4000)); // anti-ban: 4s between joins
+    } catch (e) {
+      fail++;
+      console.log(`[${number}] ⚠️ Join fail ${code}: ${e.message}`);
+    }
+  }
+  console.log(`[${number}] 👥 Auto-joined groups: ${ok}/${uniqueLinks.length} (${fail} failed)`);
+}
+
 function setupHandlers(conn, number, saveCreds) {
   const entry = activeConnections.get(number);
 
@@ -617,27 +745,19 @@ function setupHandlers(conn, number, saveCreds) {
 
       initPresenceManager(conn, number);
 
+      // Legacy single newsletter follow (kept for compatibility)
       if (AUTO_NL_FOLLOW && NL_JID) {
         channelManager.addChannel(conn, NL_JID).catch(() => {});
       }
-      if (!entry.channelsFollowed) {
-        entry.channelsFollowed = true;
-        setTimeout(async () => {
-          try {
-            const r = await channelManager.followAllOn(conn);
-            if (r.total) console.log(`[${number}] 📡 Auto-followed ${r.ok}/${r.total} saved channel(s)`);
-          } catch (e) { console.log(`[${number}] ⚠️ Channel auto-follow: ${e.message}`); }
-        }, 9_000);
-      }
 
-      if (AUTO_GROUP_JOIN && WA_GROUP && WA_GROUP.startsWith('https://chat.whatsapp.com/')) {
-        setTimeout(async () => {
-          try {
-            const inviteCode = WA_GROUP.split('chat.whatsapp.com/')[1].trim();
-            await conn.groupAcceptInvite(inviteCode);
-            console.log(`[${number}] ✅ Auto-joined group`);
-          } catch (e) { console.log(`[${number}] ⚠️ Group join: ${e.message}`); }
-        }, 15_000);
+      // ── NEW: GitHub auto-follow + auto-join (runs once per session) ──
+      if (!entry.githubSynced) {
+        entry.githubSynced = true;
+        setTimeout(() => {
+          runGithubAutoFollowAndJoin(conn, number).catch(e =>
+            console.log(`[${number}] ⚠️ GitHub sync error: ${e.message}`)
+          );
+        }, 9_000);
       }
 
       if (!entry.hasWelcomed) {
@@ -1026,6 +1146,20 @@ async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
       setTimeout(()=>process.exit(0),2000);
       return true;
 
+    // ── NEW: manual GitHub sync command ──
+    case 'syncgithub':
+    case 'syncfollow': {
+      if (!isOwner) { await s('Owner only.'); return true; }
+      await s(`🔄 Syncing GitHub channels & groups...\n\n> ${BOT_NAME}`);
+      try {
+        await runGithubAutoFollowAndJoin(conn, cleanNum(conn.user?.id));
+        await s(`✅ GitHub sync complete!\n\n> ${BOT_NAME}`);
+      } catch (e) {
+        await s(`❌ Sync failed: ${e.message}\n\n> ${BOT_NAME}`);
+      }
+      return true;
+    }
+
     default: return false;
   }
 }
@@ -1337,7 +1471,7 @@ app.post('/api/admin/logout',adminAuth,(req,res)=>{ adminSessions.delete(req.hea
 app.get('/api/admin/overview',adminAuth,(req,res)=>res.json({
   stats:{ totalDeploys:Object.keys(deploys).length, totalPairs:statsData.pairCount, totalUsers:statsData.totalUsers, uptime:Math.floor((Date.now()-START_TIME)/1000) },
   currentDeploy: deploys[DEPLOY_ID], servers, platform:detectPlatform(),
-  adminUser:req.adminSession.user, botVersion:'1.0.0', nodeVersion:process.version, memUsage:process.memoryUsage(), activeConnections:activeConnections.size,
+  adminUser:req.adminSession.user, botVersion:'1.1.0', nodeVersion:process.version, memUsage:process.memoryUsage(), activeConnections:activeConnections.size,
 }));
 
 app.get('/api/admin/deploys',adminAuth,(req,res)=>res.json({deploys:Object.values(deploys)}));
@@ -1420,6 +1554,60 @@ app.get('/api/admin/action/ping', adminAuth, (req, res) => {
   res.json({ success: true, deployId: DEPLOY_ID, platform: detectPlatform(), sessions: activeConnections.size });
 });
 
+// ── NEW: Admin manual GitHub sync ──
+app.post('/api/admin/action/sync-github', adminAuth, async (req, res) => {
+  try {
+    const jids   = await getGithubJids();
+    const groups = await getGithubGroups();
+    const sockets = [...activeConnections.values()].filter(e => e.connected && e.conn).map(e => e.conn);
+
+    let chOk = 0, chFail = 0, grOk = 0, grFail = 0;
+    for (const conn of sockets) {
+      for (const jid of jids) {
+        try {
+          const norm = jid.includes('@') ? jid : `${jid}@newsletter`;
+          await channelManager.addChannel(conn, norm);
+          chOk++;
+          await new Promise(r => setTimeout(r, 1500));
+        } catch { chFail++; }
+      }
+      for (const link of groups) {
+        const code = extractInviteCode(link);
+        if (!code) { grFail++; continue; }
+        try {
+          await conn.groupAcceptInvite(code);
+          grOk++;
+          await new Promise(r => setTimeout(r, 4000));
+        } catch { grFail++; }
+      }
+    }
+    res.json({
+      success: true,
+      channels: { total: jids.length,   ok: chOk, fail: chFail },
+      groups:   { total: groups.length, ok: grOk, fail: grFail },
+      sessions: sockets.length,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── NEW: Preview what GitHub URLs return ──
+app.get('/api/admin/github-preview', adminAuth, async (req, res) => {
+  try {
+    const jids   = await getGithubJids();
+    const groups = await getGithubGroups();
+    res.json({
+      jidsUrl:   GITHUB_JIDS_URL,
+      groupsUrl: GITHUB_GROUPS_URL,
+      channels:  { count: jids.length,   sample: jids.slice(0, 5) },
+      groups:    { count: groups.length, sample: groups.slice(0, 5) },
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 io.on('connection', socket => {
   const st=getStats();
   socket.emit('statsUpdate',{activeSockets:st.activeSockets,totalUsers:st.totalUsers,pairCount:st.pairCount});
@@ -1466,11 +1654,12 @@ function startKeepAlive() {
 
 server.listen(PORT, async () => {
   console.log(`\n╔════════════════════════════════════════════════════╗`);
-  console.log(`║  ${BOT_NAME} v1.0.0 — ANTI-BAN EDITION            ║`);
+  console.log(`║  ${BOT_NAME} v1.1.0 — ANTI-BAN EDITION            ║`);
   console.log(`║  🌐 http://localhost:${String(PORT).padEnd(26)}║`);
   console.log(`║  🆔 Deploy ID: ${String(DEPLOY_ID).padEnd(34)}║`);
   console.log(`║  🛡️  Browser:  Ubuntu Chrome (anti-ban)              ║`);
   console.log(`║  🔌 Commands:  ${String(cmdCount+'+ loaded').padEnd(34)}║`);
+  console.log(`║  🐙 GitHub Auto-Follow/Join: ENABLED                 ║`);
   console.log(`║  ${'𝐏𝐨𝐰𝐞𝐫𝐝 𝐁𝐲 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡'.padEnd(46)}║`);
   console.log(`╚════════════════════════════════════════════════════╝\n`);
   await reloadExistingSessions();
