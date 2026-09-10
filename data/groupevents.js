@@ -1,6 +1,6 @@
 /**
- * REDXBOT302 — Group Events (Welcome / Goodbye)
- * Owner: Abdul Rehman Rajpoot
+ * SILA X MINI — Group Events (Welcome / Goodbye)
+ * Owner: Richard Besisila
  */
 
 'use strict';
@@ -8,10 +8,10 @@
 module.exports = async function GroupEvents(conn, update, config = {}) {
   try {
     const {
-      botName     = '🔥 REDXBOT302 🔥',
-      ownerName   = 'Abdul Rehman Rajpoot',
-      menuImage   = 'https://files.catbox.moe/s36b12.jpg',
-      newsletterJid = '120363405513439052@newsletter',
+      botName     = 'SILA X MINI',
+      ownerName   = 'Richard Besisila',
+      menuImage   = 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg',
+      newsletterJid = '120363402325089913@newsletter',
     } = config;
 
     const { id, participants, action } = update;
