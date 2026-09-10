@@ -1,6 +1,6 @@
 # ╔══════════════════════════════════════╗
-# ║   🔥 REDXBOT302 MINI — Dockerfile   ║
-# ║   Owner: Abdul Rehman Rajpoot        ║
+# ║   🔥 SILA X MINI MINI — Dockerfile   ║
+# ║   Owner: Richard Besisila        ║
 # ╚══════════════════════════════════════╝
 
 FROM node:20-slim

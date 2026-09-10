@@ -1,4 +1,4 @@
-# 🔧 REDXBOT302 — Bug Fixes & Permission System Overhaul
+# 🔧 SILA X MINI — Bug Fixes & Permission System Overhaul
 
 ## Summary of Changes
 

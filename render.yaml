@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: redxbot302
+    name: silaxmini
     runtime: node
     buildCommand: "apt-get install -y ffmpeg 2>/dev/null; npm install --legacy-peer-deps --no-audit --no-fund"
     startCommand: "node index.js"
@@ -8,15 +8,15 @@ services:
       - key: NODE_ENV
         value: production
       - key: BOT_NAME
-        value: "🔥 REDXBOT302 🔥"
+        value: "SILA X MINI"
       - key: OWNER_NUMBER
-        value: "923009842133"
+        value: "255789661031"
       - key: OWNER_NAME
-        value: "Abdul Rehman Rajpoot"
+        value: "Richard Besisila"
       - key: CO_OWNER
-        value: "Muzamil Khan"
+        value: ""
       - key: CO_OWNER_NUM
-        value: "923183928892"
+        value: ""
       - key: PREFIX
         value: "."
       - key: BOT_MODE
