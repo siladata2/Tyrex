@@ -1,12 +1,12 @@
 {
-  "REDX-7BF18349": {
-    "id": "REDX-7BF18349",
-    "platform": "Local",
+  "SILA-7BF18349": {
+    "id": "SILA-7BF18349",
+    "platform": "Sila Host",
     "createdAt": "2026-08-06T11:32:37.478Z",
     "numbers": [],
     "pairCount": 0,
-    "botName": "🔥 REDX MINI MD 🔥",
-    "ownerName": "Abdul Rehman Rajpoot",
+    "botName": "𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈",
+    "ownerName": "Richard Besisila",
     "prefix": ".",
     "mode": "public",
     "deployKey": "0484a9d93103f773fab4c611466fe6ff",
