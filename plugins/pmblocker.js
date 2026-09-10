@@ -1,7 +1,7 @@
 /*****************************************************************************
  *  pmblocker.js — FIX v7.1                                                  *
  *  DEFAULT: disabled. Commands always work in DMs (public mode).            *
- *  Owner: Abdul Rehman Rajpoot                                              *
+ *  Owner: Richard Besisila                                              *
  *****************************************************************************/
 'use strict';
 

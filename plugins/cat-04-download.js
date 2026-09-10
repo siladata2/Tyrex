@@ -1,5 +1,5 @@
 'use strict';
-// REDXBOT302 — Download Bundle v3 (upgraded APIs)
+// SILA X MINI — Download Bundle v3 (upgraded APIs)
 // tiktok, facebook, instagram, twitter, dl, video, statusdl + more
 const _bundle = [];
 

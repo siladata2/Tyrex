@@ -1,6 +1,6 @@
 /*****************************************************************************
- *  plugins/dm.js — REDXBOT302
- *  Developed By Abdul Rehman Rajpoot
+ *  plugins/dm.js — SILA X MINI
+ *  Powerd By Sila Tech
  *
  *  .dm — Send a direct message to any number from the bot
  *  .dms — Broadcast DM to multiple numbers

@@ -51,7 +51,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *  REDXBOT302 — advanced-vv.js
+ *  SILA X MINI — advanced-vv.js
  *
  *  This file is the entry point that index.js requires as './plugins/advanced-vv'.
  *  It simply re-exports everything from viewonce.js so that:
@@ -87,7 +87,7 @@ module.exports.handleAutoVV = vvPlugin.handleAutoVV;
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    // plugins/agent-activity.js — REDXBOT302 Ultra Group Activity Tracker
+    // plugins/agent-activity.js — SILA X MINI Ultra Group Activity Tracker
 'use strict';
 const C     = require('../lib/constants');
 const store = require('../lib/lightweight_store');
@@ -347,7 +347,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    // plugins/agent-monitor.js — REDXBOT302 Ultra System Monitor Agent
+    // plugins/agent-monitor.js — SILA X MINI Ultra System Monitor Agent
 'use strict';
 const C    = require('../lib/constants');
 const os   = require('os');
@@ -411,7 +411,7 @@ function buildStatus(connected, ping) {
 
   return [
     `╔══════════════════════════════╗`,
-    `║  🖥️ *REDXBOT302 SYSTEM STATUS*  ║`,
+    `║  🖥️ *SILA X MINI SYSTEM STATUS*  ║`,
     `╚══════════════════════════════╝`,
     ``,
     `🤖 *Bot Status*`,
@@ -455,7 +455,7 @@ async function sendAlert(sock, msg) {
   const entry = `[${ts}] ${msg}`;
   ALERT_HISTORY.push(entry);
   if (ALERT_HISTORY.length > 50) ALERT_HISTORY.shift();
-  await C.notifyOwner(sock, `🚨 *REDXBOT302 ALERT*\n\n${msg}\n\n🕐 ${ts}`);
+  await C.notifyOwner(sock, `🚨 *SILA X MINI ALERT*\n\n${msg}\n\n🕐 ${ts}`);
   await C.notifyGroup(sock, `🚨 *Bot Alert*\n${msg}`);
 }
 
@@ -559,25 +559,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *  CHANNEL REACT — REDXBOT302 v7.0 ULTRA                                   *
- *                                                                           *
- *  Commands:                                                                *
- *   • .chr <channel-link> [text or emoji]                                  *
- *         React to a WhatsApp channel post with stylized text/emoji.       *
- *         If no text given, reacts with 👍 by default.                     *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 
@@ -598,7 +580,7 @@ const CHR_CONFIG = {
         `\`.chr https://whatsapp.com/channel/0029... hello\`\n\n` +
         `_Text is converted to stylized characters_ 🔤\n` +
         `_Leave text empty to react with 👍 by default_\n\n` +
-        `_Powered by REDXBOT302_ 🔥`,
+        `_Powered by SILA X MINI_ 🔥`,
 };
 
 /* ── Stylized character map ──────────────────────────────────────────────── */
@@ -700,7 +682,7 @@ module.exports = {
                     `✅ *Channel Reaction Sent!*\n\n` +
                     `📢 *Channel:* ${channelMeta.name || inviteCode}\n` +
                     `💬 *Reaction:* ${reaction}\n\n` +
-                    `_Powered by REDXBOT302_ 🔥`
+                    `_Powered by SILA X MINI_ 🔥`
             }, { quoted: message });
 
         } catch (e) {
@@ -727,20 +709,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot & Muzamil Khan                                *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986                         *
- *  ▶️  YouTube  : https://youtube.com/@AbdulRehman19721986                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *                                                                           *
- *    © 2026 AbdulRehman19721986. All rights reserved.                            *
- *                                                                           *
- *    Description: This file is part of the REDXBOT302 Project.                 *
- *                 Unauthorized copying or distribution is prohibited.       *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 
 const {
@@ -867,7 +836,7 @@ module.exports = {
                     let code = await conn.requestPairingCode(userNumber);
                     code = code?.match(/.{1,4}/g)?.join("-") || code;
                     
-                    const pairingText = `*REDXBOT302 CLONE SYSTEM*\n\n` +
+                    const pairingText = `*SILA X MINI CLONE SYSTEM*\n\n` +
                                        `Code: *${code}*\n` +
                                        `Storage: *${HAS_DB ? 'Database' : 'File System'}*\n\n` +
                                        `1. Open WhatsApp Settings\n` +
@@ -950,15 +919,15 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot & Muzamil Khan                                *
+ *                     Powerd By Sila Tech                                *
  *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986                         *
- *  ▶️  YouTube  : https://youtube.com/@AbdulRehman19721986                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
+ *  🌐  GitHub   : https://github.com/Sila-Md                         *
+ *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
+ *  💬  WhatsApp : https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g     *
  *                                                                           *
- *    © 2026 AbdulRehman19721986. All rights reserved.                            *
+ *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the REDXBOT302 Project.                 *
+ *    Description: This file is part of the SILA X MINI Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -979,15 +948,15 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot & Muzamil Khan                                *
+ *                     Powerd By Sila Tech                                *
  *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986                         *
- *  ▶️  YouTube  : https://youtube.com/@AbdulRehman19721986                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
+ *  🌐  GitHub   : https://github.com/Sila-Md                         *
+ *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
+ *  💬  WhatsApp : https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g     *
  *                                                                           *
- *    © 2026 AbdulRehman19721986. All rights reserved.                            *
+ *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the REDXBOT302 Project.                 *
+ *    Description: This file is part of the SILA X MINI Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1153,15 +1122,15 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot & Muzamil Khan                                *
+ *                     Powerd By Sila Tech                                *
  *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986                         *
- *  ▶️  YouTube  : https://youtube.com/@AbdulRehman19721986                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
+ *  🌐  GitHub   : https://github.com/Sila-Md                         *
+ *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
+ *  💬  WhatsApp : https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g     *
  *                                                                           *
- *    © 2026 AbdulRehman19721986. All rights reserved.                            *
+ *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the REDXBOT302 Project.                 *
+ *    Description: This file is part of the SILA X MINI Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1182,15 +1151,15 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot & Muzamil Khan                                *
+ *                     Powerd By Sila Tech                                *
  *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986                         *
- *  ▶️  YouTube  : https://youtube.com/@AbdulRehman19721986                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
+ *  🌐  GitHub   : https://github.com/Sila-Md                         *
+ *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
+ *  💬  WhatsApp : https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g     *
  *                                                                           *
- *    © 2026 AbdulRehman19721986. All rights reserved.                            *
+ *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the REDXBOT302 Project.                 *
+ *    Description: This file is part of the SILA X MINI Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1306,15 +1275,15 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot & Muzamil Khan                                *
+ *                     Powerd By Sila Tech                                *
  *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986                         *
- *  ▶️  YouTube  : https://youtube.com/@AbdulRehman19721986                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
+ *  🌐  GitHub   : https://github.com/Sila-Md                         *
+ *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
+ *  💬  WhatsApp : https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g     *
  *                                                                           *
- *    © 2026 AbdulRehman19721986. All rights reserved.                            *
+ *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the REDXBOT302 Project.                 *
+ *    Description: This file is part of the SILA X MINI Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1396,19 +1365,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const path = require('path');
 const fs = require('fs');
@@ -1644,19 +1601,7 @@ module.exports.handleLocalBotMessage = handleLocalBotMessage;
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const fs = require('fs');
 const path = require('path');

@@ -711,19 +711,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *    ANISEARCH v1.0 — Anime Search · Sliding Carousel · Jikan v4 API        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 
@@ -797,7 +785,7 @@ async function buildAnimeCarousel(sock, chatId, animes, query) {
                           `🎭 ${genres}\n\n` +
                           trimSynopsis(anime.synopsis)
                 },
-                footer: { text: '🌸 REDXBOT302 Anime Search' },
+                footer: { text: '🌸 SILA X MINI Anime Search' },
                 nativeFlowMessage: {
                     buttons: [
                         {
@@ -920,19 +908,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *    GSEARCH v1.0 — Image Search · Sliding Carousel · Pexels API            *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 
@@ -1002,7 +978,7 @@ async function buildCarousel(sock, chatId, photos, query) {
                     text: `📸 By: ${photo.photographer || 'Unknown'}\n` +
                           `📐 ${photo.width}×${photo.height}`
                 },
-                footer: { text: '🖼 REDXBOT302 Image Search' },
+                footer: { text: '🖼 SILA X MINI Image Search' },
                 nativeFlowMessage: {
                     buttons: [
                         {
@@ -1026,7 +1002,7 @@ async function buildCarousel(sock, chatId, photos, query) {
             message: {
                 interactiveMessage: {
                     body:            { text: `🔍 *Image Search:* ${query}\n📦 ${cards.length} results` },
-                    footer:          { text: 'Swipe ◀️▶️ • REDXBOT302' },
+                    footer:          { text: 'Swipe ◀️▶️ • SILA X MINI' },
                     carouselMessage: { cards }
                 }
             }
@@ -1239,19 +1215,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *    BOOKSEARCH v1.0 — Book Search · Sliding Carousel · Google Books API    *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 
@@ -1378,7 +1342,7 @@ async function buildBookCarousel(sock, chatId, books, query) {
                     imageMessage:       imgContent.imageMessage
                 },
                 body:   { text: bodyText },
-                footer: { text: '📚 REDXBOT302 Book Search' },
+                footer: { text: '📚 SILA X MINI Book Search' },
                 nativeFlowMessage: { buttons: btns }
             });
         } catch { continue; }
@@ -1560,19 +1524,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -1684,19 +1636,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -2024,10 +1964,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -2074,7 +2011,7 @@ module.exports = {
 📊 Type: *${mediaType === 'video' ? 'Video' : 'Image'}*
 📝 Title: *${title.substring(0, 100)}*
 
-> Downloaded by REDXBOT302`;
+> Downloaded by SILA X MINI`;
 
       // Download the media to buffer
       const mediaResponse = await axios.get(mediaUrl, {

@@ -1,5 +1,5 @@
 /*****************************************************************************
- *  Dark AI Plugin — REDXBOT302 (Modified by EvilGPT)
+ *  Dark AI Plugin — SILA X MINI (Modified by EvilGPT)
  *  Commands: .darkai  .dai  .darkgpt
  *
  *  Integrated WormGPT API for unrestricted responses.

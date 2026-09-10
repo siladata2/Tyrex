@@ -10,23 +10,12 @@ const _bundle = [];
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                          REDXBOT302 v7.0 ULTRA                            *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 const axios = require('axios');
 
-// ══════════════════ REDXBOT302 API POOL ══════════════════
+// ══════════════════ SILA X MINI API POOL ══════════════════
 const DELINE_BASE = 'https://api.deline.web.id/ai';
 const SAQIB_BASE  = 'https://apisaqib.vercel.app/api/v1';
 
@@ -70,7 +59,7 @@ module.exports = {
     command: 'ai',
     aliases: ['gpt', 'llama', 'mistral', 'gemini', 'ask', 'chat'],
     category: 'AI',
-    description: '🤖 Ask REDXBOT302 AI — supports all languages',
+    description: '🤖 Ask SILA X MINI AI — supports all languages',
     usage: '.ai <question>\n.gpt <question>\n.gemini <question>\n.llama <question>',
 
     async handler(sock, message, args, context = {}) {
@@ -79,7 +68,7 @@ module.exports = {
         const query  = args.join(' ').trim();
 
         if (!query) return sock.sendMessage(chatId, {
-            text: `🤖 *REDXBOT302 AI*\n\nUsage: \`.${cmd} <your question>\`\n\nExample:\n• \`.ai What is Islam?\`\n• \`.gpt Write a poem in Urdu\`\n• \`.gemini Explain quantum physics\``
+            text: `🤖 *SILA X MINI AI*\n\nUsage: \`.${cmd} <your question>\`\n\nExample:\n• \`.ai What is Islam?\`\n• \`.gpt Write a poem in Urdu\`\n• \`.gemini Explain quantum physics\``
         }, { quoted: message });
 
         await sock.sendMessage(chatId, { react: { text: '🤖', key: message.key } });
@@ -106,7 +95,7 @@ module.exports = {
 
         await sock.sendMessage(chatId, { react: { text: '✅', key: message.key } });
         await sock.sendMessage(chatId, {
-            text: `🤖 *REDXBOT302 AI*\n\n${answer}\n\n_Powered by REDXBOT302_`
+            text: `🤖 *SILA X MINI AI*\n\n${answer}\n\n_Powered by SILA X MINI_`
         }, { quoted: message });
     }
 };
@@ -172,18 +161,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -278,19 +256,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -355,19 +321,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -432,19 +386,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCMUDuLikgGEPWQZN3u     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -522,7 +464,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *                         REDXBOT302 v7.0 ULTRA                             *
+ *                         SILA X MINI v7.0 ULTRA                             *
  *          AI STORY GENERATOR — Stories in All Languages with TTS           *
  *****************************************************************************/
 'use strict';
@@ -599,7 +541,7 @@ module.exports = {
         if (!story) return sock.sendMessage(chatId, { text: '❌ Story generation failed.' }, { quoted: message });
 
         await sock.sendMessage(chatId, {
-            text: `📖 *AI Story*\n\n${story}\n\n_— REDXBOT302_`
+            text: `📖 *AI Story*\n\n${story}\n\n_— SILA X MINI_`
         }, { quoted: message });
 
         if (voice) {
@@ -640,19 +582,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -729,19 +659,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -818,19 +736,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -925,8 +831,8 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *                         REDXBOT302 v7.0 ULTRA                             *
- *            REDX AI — Multi-Model Smart AI with Context Memory             *
+ *                         SILA X MINI v7.0 ULTRA                             *
+ *            SILA X MINI AI — Multi-Model Smart AI with Context Memory             *
  *****************************************************************************/
 'use strict';
 const axios = require('axios');
@@ -936,7 +842,7 @@ const path  = require('path');
 const DELINE = 'https://api.deline.web.id/ai';
 const SAQIB  = 'https://apisaqib.vercel.app/api/v1';
 
-const MEM = path.join(process.cwd(), 'data', 'redxai_memory.json');
+const MEM = path.join(process.cwd(), 'data', 'silaai_memory.json');
 const APIS = [
     // ── PRIMARY ── Deline Copilot Think (reasoning mode)
     { url: (q) => `${DELINE}/copilot-think?text=${encodeURIComponent(q)}`,
@@ -979,16 +885,16 @@ async function askAI(question) {
     return null;
 }
 
-const SYSTEM_PROMPT = `You are REDXBOT302, an advanced AI assistant created by Abdul Rehman Rajpoot. 
+const SYSTEM_PROMPT = `You are SILA X MINI, an advanced AI assistant created by Richard Besisila. 
 You are helpful, smart, and speak in the user's language. 
-You represent the brand redxbot302. Always be professional and helpful.`;
+You represent the brand SILA X MINI. Always be professional and helpful.`;
 
 module.exports = {
-    command: 'redxai',
-    aliases: ['rxai', 'botai', 'smartai'],
+    command: 'silaai',
+    aliases: ['redxai', 'rxai', 'botai', 'smartai'],
     category: 'AI',
-    description: '🧠 REDXBOT302 Smart AI with memory & context',
-    usage: '.redxai <question>\n.redxai clear — clear memory',
+    description: '🧠 SILA X MINI Smart AI with memory & context',
+    usage: '.silaai <question>\n.silaai clear — clear memory',
 
     async handler(sock, message, args, context = {}) {
         const chatId = context.chatId || message.key.remoteJid;
@@ -1004,7 +910,7 @@ module.exports = {
 
         const query = args.join(' ').trim();
         if (!query) return sock.sendMessage(chatId, {
-            text: `🧠 *REDXBOT302 Smart AI*\n\nUsage: \`.redxai <question>\`\n\nFeatures:\n• Remembers context from last 5 messages\n• Speaks all languages\n• Smart, fast responses\n\n\`.redxai clear\` — reset memory`
+            text: `🧠 *SILA X MINI Smart AI*\n\nUsage: \`.silaai <question>\`\n\nFeatures:\n• Remembers context from last 5 messages\n• Speaks all languages\n• Smart, fast responses\n\n\`.silaai clear\` — reset memory`
         }, { quoted: message });
 
         await sock.sendMessage(chatId, { react: { text: '🧠', key: message.key } });
@@ -1032,7 +938,7 @@ module.exports = {
         saveMemory(mem);
 
         await sock.sendMessage(chatId, {
-            text: `🧠 *REDXBOT302 AI*\n\n${answer}`
+            text: `🧠 *SILA X MINI AI*\n\n${answer}`
         }, { quoted: message });
 
         await sock.sendMessage(chatId, { react: { text: '✅', key: message.key } });
@@ -1052,18 +958,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 

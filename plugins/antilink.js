@@ -1,6 +1,6 @@
 /*****************************************************************************
- *  plugins/antilink.js — REDXBOT302 ULTRA v6
- *  Developed by Abdul Rehman Rajpoot
+ *  plugins/antilink.js — SILA X MINI ULTRA v6
+ *  Developed by Richard Besisila
  *
  *  v6 BUG FIXES (over v5):
  *  ✅ safeDelete: tries message.key as-is FIRST (preserves @lid participant

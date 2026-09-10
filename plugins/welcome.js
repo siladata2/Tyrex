@@ -4,14 +4,14 @@ const settings = require('../settings');
 const axios = require('axios');
 
 // Default values
-const DEFAULT_BOT_NAME = settings.botName || 'REDXBOT302';
-const DEFAULT_OWNER = settings.botOwner || 'Abdul Rehman Rajpoot';
+const DEFAULT_BOT_NAME = settings.botName || 'SILA X MINI';
+const DEFAULT_OWNER = settings.botOwner || 'Richard Besisila';
 
 // ✅ SPEED FIX: welcome image is downloaded ONCE and cached in memory (6h TTL).
 // The old code passed { url } to Baileys on every single join, forcing a fresh
 // network download per new member — slow, and it stacked up when several people
 // joined at once. New default image = the ibb.co banner requested by the owner.
-const WELCOME_IMAGE_URL = 'https://i.ibb.co/xq22T0dd/Chat-GPT-Image-Aug-6-2026-12-50-31-AM.png';
+const WELCOME_IMAGE_URL = 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg';
 let _wImgCache = { url: null, buf: null, ts: 0 };
 const W_IMG_TTL = 6 * 60 * 60 * 1000;
 let _wImgInflight = null;
@@ -138,7 +138,7 @@ async function handleJoinEvent(sock, id, participants) {
       forwardingScore: 1,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: settings.channelJid || '120363405513439052@newsletter',
+        newsletterJid: settings.channelJid || '120363402325089913@newsletter',
         newsletterName: botName,
         serverMessageId: -1
       }

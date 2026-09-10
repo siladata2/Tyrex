@@ -1,5 +1,5 @@
 /*****************************************************************************
- *  REDX BOT - SMART MENU (.smenu)
+ *  SILA X MINI - SMART MENU (.smenu)
  *  Number-selection category menu — send category number to get command list
  *  NOTE: .menu is NOT touched. Only .smenu is changed.
  *****************************************************************************/

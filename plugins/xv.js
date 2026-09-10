@@ -1,16 +1,4 @@
-/*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -144,8 +132,8 @@ module.exports = {
                         const caption = `🎬 *${selected.title}*\n` +
                                         `📀 Quality: ${dlData.result.quality || 'Auto'}\n` +
                                         `🕒 Duration: ${dlData.result.duration || selected.duration || '?'}\n\n` +
-                                        `*Downloaded by REDXBOT302*\n` +
-                                        `_Owner: Abdul Rehman Rajpoot_`;
+                                        `*Downloaded by SILA X MINI*\n` +
+                                        `_Owner: Richard Besisila_`;
 
                         await sock.sendMessage(chatId, {
                             video: { url: finalVideoUrl },

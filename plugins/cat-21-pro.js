@@ -1,7 +1,7 @@
 'use strict';
 /*****************************************************************************
- *  cat-21-pro.js — REDXBOT302 PRO Bundle
- *  Developed By Abdul Rehman Rajpoot
+ *  cat-21-pro.js — SILA X MINI PRO Bundle
+ *  Powerd By Sila Tech
  *
  *  5 Professional Heavy Commands:
  *  1. .mediafire  — download any MediaFire file (cheerio scraper, MEGA-MDX)
@@ -153,7 +153,7 @@ _bundle.push({
             try { cheerio = require('cheerio'); } catch { throw new Error('cheerio not installed. Run: npm install cheerio'); }
 
             const { data, headers, status } = await axios.get(url, {
-                headers: { 'User-Agent': 'Mozilla/5.0 (compatible; REDXBOT302/1.0; +https://t.me/TeamRedxhacker2)' },
+                headers: { 'User-Agent': 'Mozilla/5.0 (compatible; SILA X MINI/1.0; +https://github.com/Sila-Md)' },
                 timeout: 20000, maxContentLength: 5 * 1024 * 1024
             });
 
@@ -238,7 +238,7 @@ _bundle.push({
             try {
                 // Try API first if available
                 if (p.api) {
-                    const headers = p.name === 'GitHub' ? { 'User-Agent': 'REDXBOT302' } : {};
+                    const headers = p.name === 'GitHub' ? { 'User-Agent': 'SILA X MINI' } : {};
                     const { data, status } = await axios.get(p.api, { timeout: 8000, headers });
                     if (status === 200) {
                         results.push({ name: p.name, url: p.url, found: true });

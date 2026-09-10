@@ -10,7 +10,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /**
- * plugins/antibadword.js — REDXBOT302 v3 ULTRA
+ * plugins/antibadword.js — SILA X MINI v3 ULTRA
  * ✅ 100+ bad words (50 default + 50 extra, 10 languages)
  * ✅ Leet-speak + repeat normalization
  * ✅ Warn → kick system with mute fallback
@@ -156,7 +156,7 @@ async function checkAntiBadword(sock, message) {
 
     if (action === 'delete') {
       await sock.sendMessage(chatId, {
-        text: `🚫 Message deleted — contains banned word.\n> REDXBOT302`,
+        text: `🚫 Message deleted — contains banned word.\n> SILA X MINI`,
         mentions: [senderId],
       });
       return true;
@@ -165,7 +165,7 @@ async function checkAntiBadword(sock, message) {
     if (action === 'kick') {
       await sock.groupParticipantsUpdate(chatId, [senderId], 'remove').catch(() => {});
       await sock.sendMessage(chatId, {
-        text: `⛔ ${mention} was removed — banned word detected.\n> REDXBOT302`,
+        text: `⛔ ${mention} was removed — banned word detected.\n> SILA X MINI`,
         mentions: [senderId],
       });
       return true;
@@ -174,7 +174,7 @@ async function checkAntiBadword(sock, message) {
     if (action === 'mute') {
       // Mute by demoting if admin, or just warn
       await sock.sendMessage(chatId, {
-        text: `🔇 ${mention} muted — banned word detected.\n> REDXBOT302`,
+        text: `🔇 ${mention} muted — banned word detected.\n> SILA X MINI`,
         mentions: [senderId],
       });
       return true;
@@ -192,12 +192,12 @@ async function checkAntiBadword(sock, message) {
       await saveWarns(chatId, warns);
       await sock.groupParticipantsUpdate(chatId, [senderId], 'remove').catch(() => {});
       await sock.sendMessage(chatId, {
-        text: `⛔ ${mention} kicked — reached ${limit} warnings for banned words.\n> REDXBOT302`,
+        text: `⛔ ${mention} kicked — reached ${limit} warnings for banned words.\n> SILA X MINI`,
         mentions: [senderId],
       });
     } else {
       await sock.sendMessage(chatId, {
-        text: `⚠️ Warning ${warnN}/${limit} — ${mention}, banned word detected: *"${hit}"*.\n> REDXBOT302`,
+        text: `⚠️ Warning ${warnN}/${limit} — ${mention}, banned word detected: *"${hit}"*.\n> SILA X MINI`,
         mentions: [senderId],
       });
     }
@@ -360,7 +360,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *  REDX BOT — .antibot
+ *  SILA X MINI — .antibot
  *  Detects when OTHER bots are used in the group and warns/kicks them.
  *  Owner/sudo/admins are always exempt.
  *****************************************************************************/
@@ -568,7 +568,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *****************************************************************************/
 
@@ -1163,19 +1163,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *    ANTIDELETE v4.0 ULTRA — Per-Group · Ignore · Edit-track · Stats        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 
@@ -1482,7 +1470,7 @@ async function handleMessageRevocation(sock, revocationMessage) {
 
         const report =
             `╔════════════════════════╗\n` +
-            `║  🗑️  REDX ANTIDELETE  ║\n` +
+            `║  🗑️  SILA X MINI ANTIDELETE  ║\n` +
             `╚════════════════════════╝\n\n` +
             `*🗑 Deleted By:* @${deleterNum}\n` +
             `*👤 Sender:*    @${senderNum}\n` +
@@ -1491,7 +1479,7 @@ async function handleMessageRevocation(sock, revocationMessage) {
             (groupName ? `*👥 Group:*     ${groupName}\n` : '') +
             (original.content   ? `\n*💬 Message:*\n${original.content}\n` : '') +
             (original.mediaType ? `\n*📎 Media Type:* ${original.mediaType}` : '') +
-            `\n\n> REDXBOT302 Anti-Delete v4.0`;
+            `\n\n> SILA X MINI Anti-Delete v4.0`;
 
         await sock.sendMessage(targetJid, {
             text:     report,
@@ -1598,13 +1586,13 @@ async function handleMessageEdit(sock, update) {
 
         await sock.sendMessage(targetJid, {
             text: `╔════════════════════════╗\n` +
-                  `║  ✏️  REDX ANTI-EDIT   ║\n` +
+                  `║  ✏️  SILA X MINI ANTI-EDIT   ║\n` +
                   `╚════════════════════════╝\n\n` +
                   `*✏️ Edited By:* @${editedBy?.split('@')[0]}\n` +
                   `*🕒 Originally:* ${_formatTime(original.timestamp)}\n\n` +
                   `*📝 Before:*\n${original.content || '(empty/media)'}\n\n` +
                   `*📝 After:*\n${newContent || '(unknown)'}\n\n` +
-                  `> REDXBOT302 Anti-Edit v4.0`,
+                  `> SILA X MINI Anti-Edit v4.0`,
             mentions: [editedBy, sender].filter(Boolean)
         });
 
@@ -1965,7 +1953,7 @@ module.exports.handleUpdate = handleUpdate;
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    // plugins/antiflood.js — REDXBOT302 Ultra Anti-Flood v2
+    // plugins/antiflood.js — SILA X MINI Ultra Anti-Flood v2
 'use strict';
 const store = require('../lib/store');
 
@@ -2135,8 +2123,8 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *  antilink.js — ULTRA v2  (REDXBOT302)
- *  Developed by Abdul Rehman Rajpoot
+ *  antilink.js — ULTRA v2  (SILA X MINI)
+ *  Developed by Richard Besisila
  *
  *  ULTRA features:
  *  - Detects WA groups, channels, Telegram, Discord, ALL URLs
@@ -2502,8 +2490,8 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *  antispam.js — ULTRA v2  (REDXBOT302)
- *  Developed by Abdul Rehman Rajpoot
+ *  antispam.js — ULTRA v2  (SILA X MINI)
+ *  Developed by Richard Besisila
  *
  *  ULTRA features:
  *  - Rate limiting (msg/sec window)
@@ -2863,19 +2851,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const store = require('../lib/lightweight_store');
 
@@ -3120,24 +3096,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *  BLOCK / UNBLOCK — REDXBOT302 v7.0 ULTRA                                 *
- *                                                                           *
- *  Commands:                                                                *
- *   • .block   — block a user (reply / mention / number)                   *
- *   • .unblock — unblock a user (reply / mention / number)                 *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 
@@ -3157,7 +3116,7 @@ const BLOCK_CONFIG = {
         `• \`.block @mention\`\n` +
         `• \`.block 923001234567\`\n\n` +
         `_Owner only command_ 👑\n` +
-        `_Powered by REDXBOT302_ 🔥`,
+        `_Powered by SILA X MINI_ 🔥`,
 
     unblockUsage:
         `╔════════════════════════╗\n` +
@@ -3168,7 +3127,7 @@ const BLOCK_CONFIG = {
         `• \`.unblock @mention\`\n` +
         `• \`.unblock 923001234567\`\n\n` +
         `_Owner only command_ 👑\n` +
-        `_Powered by REDXBOT302_ 🔥`,
+        `_Powered by SILA X MINI_ 🔥`,
 };
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
@@ -3241,7 +3200,7 @@ const blockCommand = {
                     `✅ *Blocked Successfully!*\n\n` +
                     `📵 *Number:* +${num}\n` +
                     `🚫 _They can no longer message this bot._\n\n` +
-                    `_Powered by REDXBOT302_ 🔥`
+                    `_Powered by SILA X MINI_ 🔥`
             }, { quoted: message });
             await sock.sendMessage(chatId, { react: { text: BLOCK_CONFIG.successEmoji, key: message.key } });
 
@@ -3293,7 +3252,7 @@ const unblockCommand = {
                     `✅ *Unblocked Successfully!*\n\n` +
                     `🔓 *Number:* +${num}\n` +
                     `💬 _They can now message this bot again._\n\n` +
-                    `_Powered by REDXBOT302_ 🔥`
+                    `_Powered by SILA X MINI_ 🔥`
             }, { quoted: message });
             await sock.sendMessage(chatId, { react: { text: BLOCK_CONFIG.successEmoji, key: message.key } });
 
@@ -3561,7 +3520,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    // plugins/groupguard.js — REDXBOT302 Ultra Group Guardian
+    // plugins/groupguard.js — SILA X MINI Ultra Group Guardian
 'use strict';
 const store = require('../lib/store');
 
@@ -3794,7 +3753,7 @@ try {
     /*****************************************************************************
  *  pmblocker.js — FIX v7.1                                                  *
  *  DEFAULT: disabled. Commands always work in DMs (public mode).            *
- *  Owner: Abdul Rehman Rajpoot                                              *
+ *  Owner: Richard Besisila                                              *
  *****************************************************************************/
 'use strict';
 

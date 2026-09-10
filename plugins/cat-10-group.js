@@ -14,8 +14,8 @@ const { isWelcomeOn, getWelcome, addWelcome, delWelcome } = require('../lib/inde
 const settings = require('../settings');
 
 // Default values
-const DEFAULT_BOT_NAME = settings.botName || 'REDXBOT302';
-const DEFAULT_OWNER = settings.botOwner || 'Abdul Rehman Rajpoot';
+const DEFAULT_BOT_NAME = settings.botName || 'SILA X MINI';
+const DEFAULT_OWNER = settings.botOwner || 'Richard Besisila';
 
 // ✅ FIX: welcome image = the bot's DP from settings (botDp / MENU_IMAGE).
 // The old some-random-api image generator is removed.
@@ -121,7 +121,7 @@ async function handleJoinEvent(sock, id, participants) {
       forwardingScore: 1,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: settings.channelJid || '120363405513439052@newsletter',
+        newsletterJid: settings.channelJid || '120363402325089913@newsletter',
         newsletterName: botName,
         serverMessageId: -1
       }
@@ -212,7 +212,7 @@ const fetch = require('node-fetch');
 const settings = require('../settings');
 
 // Default values
-const DEFAULT_BOT_NAME = settings.botName || 'REDXBOT302';
+const DEFAULT_BOT_NAME = settings.botName || 'SILA X MINI';
 
 // Fixed image settings (no customisation)
 const IMAGE_API = 'https://api.some-random-api.com/welcome/img/2/';
@@ -551,19 +551,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 module.exports = {
     command: 'poll',
@@ -632,19 +620,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 module.exports = {
     command: 'archivechat',
@@ -714,19 +690,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 module.exports = {
     command: 'broadcast',
@@ -781,8 +745,8 @@ module.exports = {
                         forwardingScore: 1,
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363405513439052@newsletter',
-                            newsletterName: 'REDXBOT302',
+                            newsletterJid: '120363402325089913@newsletter',
+                            newsletterName: 'SILA X MINI',
                             serverMessageId: -1
                         }
                     }
@@ -815,19 +779,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 module.exports = {
     command: 'broadcastdm',
@@ -885,8 +837,8 @@ module.exports = {
                         forwardingScore: 1,
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363405513439052@newsletter',
-                            newsletterName: 'REDXBOT302',
+                            newsletterJid: '120363402325089913@newsletter',
+                            newsletterName: 'SILA X MINI',
                             serverMessageId: -1
                         }
                     }
@@ -919,19 +871,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const fs = require('fs');
 const path = require('path');
@@ -1043,8 +983,8 @@ function startSchedulerEngine(sock) {
                                 forwardingScore: 1,
                                 isForwarded: true,
                                 forwardedNewsletterMessageInfo: {
-                                    newsletterJid: '120363405513439052@newsletter',
-                                    newsletterName: 'REDXBOT302',
+                                    newsletterJid: '120363402325089913@newsletter',
+                                    newsletterName: 'SILA X MINI',
                                     serverMessageId: -1
                                 }
                             }
@@ -1164,19 +1104,7 @@ module.exports.startSchedulerEngine = startSchedulerEngine;
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const { loadSchedules, formatTimeLeft } = require('./schedule.js');
 
@@ -1232,19 +1160,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const { loadSchedules, saveSchedules } = require('./schedule.js');
 
@@ -1304,19 +1220,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const config = require('../settings'); // or wherever newsletter info is stored
 
@@ -1366,8 +1270,8 @@ module.exports = {
       forwardingScore: 999,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: config.channelJid || '120363405513439052@newsletter',
-        newsletterName: config.botName || 'REDXBOT302',
+        newsletterJid: config.channelJid || '120363402325089913@newsletter',
+        newsletterName: config.botName || 'SILA X MINI',
         serverMessageId: -1
       }
     };
@@ -1443,7 +1347,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -1707,7 +1611,7 @@ async function usageError(sock, chatId, channelInfo, message) {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    // plugins/areact.js — REDXBOT302 v9.0 — Advanced Auto-React
+    // plugins/areact.js — SILA X MINI v9.0 — Advanced Auto-React
 // Modes: all | others | bot | self
 // .autoreact on         — react to ALL messages
 // .autoreact on others  — react only to OTHER people's messages
@@ -1833,7 +1737,7 @@ module.exports = {
         `• \`others\` — only other people\n` +
         `• \`bot\`    — only bot messages\n` +
         `• \`self\`   — only your own messages\n\n` +
-        `> ©️ Abdul Rehman Rajpoot | REDXBOT302`
+        `> ©️ Richard Besisila | SILA X MINI`
       );
     }
 
@@ -1842,7 +1746,7 @@ module.exports = {
       cfg.enabled = false;
       writeCfg(cfg);
       attachListener(sock);
-      return reply('❌ Auto-react *DISABLED*.\n\n> ©️ Abdul Rehman Rajpoot | REDXBOT302');
+      return reply('❌ Auto-react *DISABLED*.\n\n> ©️ Richard Besisila | SILA X MINI');
     }
 
     /* emoji pool */
@@ -1851,14 +1755,14 @@ module.exports = {
       if (!pool.length) return reply('❌ Provide emojis: `.autoreact emoji 😍 🔥 💯`');
       cfg.emojis = pool;
       writeCfg(cfg);
-      return reply(`✅ Emoji pool updated: ${pool.join(' ')}\n\n> ©️ Abdul Rehman Rajpoot | REDXBOT302`);
+      return reply(`✅ Emoji pool updated: ${pool.join(' ')}\n\n> ©️ Richard Besisila | SILA X MINI`);
     }
 
     /* reset */
     if (sub === 'reset') {
       cfg.emojis = null;
       writeCfg(cfg);
-      return reply(`✅ Emoji pool reset to defaults (${DEFAULT_EMOJIS.length} emojis).\n\n> ©️ Abdul Rehman Rajpoot | REDXBOT302`);
+      return reply(`✅ Emoji pool reset to defaults (${DEFAULT_EMOJIS.length} emojis).\n\n> ©️ Richard Besisila | SILA X MINI`);
     }
 
     /* on [mode] */
@@ -1883,12 +1787,12 @@ module.exports = {
       return reply(
         `✅ Auto-react *ENABLED*\n` +
         `🎯 Mode: *${modeArg}* — ${modeDesc[modeArg]}\n\n` +
-        `> ©️ Abdul Rehman Rajpoot | REDXBOT302`
+        `> ©️ Richard Besisila | SILA X MINI`
       );
     }
 
     return reply(
-      `*Usage:*\n${module.exports.usage}\n\n> ©️ Abdul Rehman Rajpoot | REDXBOT302`
+      `*Usage:*\n${module.exports.usage}\n\n> ©️ Richard Besisila | SILA X MINI`
     );
   }
 };
@@ -1906,19 +1810,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *    AUTOREPLY v3.0 ULTRA — Multi-match · Priority · Cooldown · Stats       *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 
@@ -2098,8 +1990,8 @@ async function handleAutoReply(sock, chatId, message, userMessage) {
                         forwardingScore: 1,
                         isForwarded:     true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid:     '120363405513439052@newsletter',
-                            newsletterName:    'REDXBOT302',
+                            newsletterJid:     '120363402325089913@newsletter',
+                            newsletterName:    'SILA X MINI',
                             serverMessageId:   -1
                         }
                     }
@@ -2264,7 +2156,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -2290,8 +2182,8 @@ const channelInfo = {
         forwardingScore: 1,
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363405513439052@newsletter',
-            newsletterName: 'REDXBOT302',
+            newsletterJid: '120363402325089913@newsletter',
+            newsletterName: 'SILA X MINI',
             serverMessageId: -1
         }
     }
@@ -2450,7 +2342,7 @@ module.exports = {
 
             if (args.length === 0) {
                 return await sock.sendMessage(chatId, {
-                    text: `🔄 *Auto Status – REDXBOT302*\n\n` +
+                    text: `🔄 *Auto Status – SILA X MINI*\n\n` +
                           `Auto View: ${config.enabled ? '✅' : '❌'}\n` +
                           `Reactions: ${config.reactOn ? '✅' : '❌'}\n` +
                           `Reaction Emoji: ${config.reactEmoji}\n` +
@@ -3088,19 +2980,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *    ADDREPLY v3.0 — Multi-match · Priority · Cooldown · Media              *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 
@@ -3288,19 +3168,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const { initConfig, saveConfig } = require('./autoreply.js');
 
@@ -3358,19 +3226,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const { initConfig } = require('./autoreply.js');
 

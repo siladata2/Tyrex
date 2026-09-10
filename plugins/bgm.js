@@ -1,6 +1,6 @@
 /**
- * BGM Plugin — REDXBOT302  (TRIGGER FIX v2)
- * Developed by Abdul Rehman Rajpoot
+ * BGM Plugin — SILA X MINI  (TRIGGER FIX v2)
+ * Developed by Richard Besisila
  *
  * FIXES:
  * - loadTriggers() now awaited on startup (race-condition fix)

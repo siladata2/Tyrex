@@ -1,6 +1,6 @@
 /*****************************************************************************
- *  plugins/panel.js — REDXBOT302 ULTRA V5
- *  Developed By Abdul Rehman Rajpoot
+ *  plugins/panel.js — SILA X MINI ULTRA V5
+ *  Powerd By Sila Tech
  *
  *  v5 UPGRADES:
  *  - Everything from V4 +
@@ -110,7 +110,7 @@ function getStats(sock) {
     const waNum = sock?.user?.id?.split(':')[0] || '?';
     return (
         `╔══════════════════════════════╗\n` +
-        `║  📊  REDX BOT STATUS  📊    ║\n` +
+        `║  📊  SILA X MINI STATUS  📊    ║\n` +
         `╚══════════════════════════════╝\n\n` +
         `*⏱ Uptime:*    ${uh}h ${um}m ${us}s\n` +
         `*🧠 Heap:*     ${Math.round(mem.heapUsed/1048576)}MB / ${Math.round(mem.heapTotal/1048576)}MB\n` +
@@ -258,7 +258,7 @@ module.exports = {
 
         if (!args.length) {
             if (isUnlocked(senderId)) { refreshSession(senderId); return reply(panelMenu()); }
-            return reply(`🔐 *REDX PANEL V5*\n\nSend \`.panel <password>\` to access.\n_${MAX_FAILS} wrong attempts = 30 min lockout_`);
+            return reply(`🔐 *SILA X MINI PANEL V5*\n\nSend \`.panel <password>\` to access.\n_${MAX_FAILS} wrong attempts = 30 min lockout_`);
         }
 
         const sub = args[0].toLowerCase();
@@ -454,7 +454,7 @@ module.exports = {
             const backup = { timestamp: new Date().toISOString(), config: cfg, settings: { owner: settings.ownerNumber, prefixes: settings.prefixes, mode: global.MODE } };
             const bp = path.join(__dirname, '../data/backup_panel.json');
             fs.writeFileSync(bp, JSON.stringify(backup, null, 2));
-            await sock.sendMessage(chatId, { document: { url: bp }, fileName: 'redxbot_backup.json', mimetype: 'application/json', caption: '💾 Panel backup' }, { quoted: message });
+            await sock.sendMessage(chatId, { document: { url: bp }, fileName: 'silaxmini_backup.json', mimetype: 'application/json', caption: '💾 Panel backup' }, { quoted: message });
             return;
         }
 
@@ -607,7 +607,7 @@ module.exports = {
         }
         if (sub === 'addchannel') {
             const input = args.slice(1).join(' ').trim();
-            if (!input) return reply('❌ Usage:\n`.panel addchannel 120363409338797582@newsletter`\n`.panel addchannel https://whatsapp.com/channel/CODE`');
+            if (!input) return reply('❌ Usage:\n`.panel addchannel 120363402325089913@newsletter`\n`.panel addchannel https://whatsapp.com/channel/CODE`');
             if (typeof global.addChannel !== 'function') return reply('❌ Channel service not ready.');
             try {
                 const res = await global.addChannel(sock, input);
@@ -626,7 +626,7 @@ module.exports = {
         // Legacy single-channel setter — kept working, now just adds to the list.
         if (sub === 'setchannel') {
             const input = args.slice(1).join(' ').trim();
-            if (!input) return reply('❌ Usage:\n`.panel setchannel 120363409338797582@newsletter`\n`.panel setchannel https://whatsapp.com/channel/CODE`');
+            if (!input) return reply('❌ Usage:\n`.panel setchannel 120363402325089913@newsletter`\n`.panel setchannel https://whatsapp.com/channel/CODE`');
             if (typeof global.addChannel !== 'function') return reply('❌ Channel service not ready.');
             try {
                 const res = await global.addChannel(sock, input);

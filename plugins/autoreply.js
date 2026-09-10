@@ -1,16 +1,4 @@
-/*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *    AUTOREPLY v3.0 ULTRA — Multi-match · Priority · Cooldown · Stats       *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 
@@ -190,8 +178,8 @@ async function handleAutoReply(sock, chatId, message, userMessage) {
                         forwardingScore: 1,
                         isForwarded:     true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid:     '120363405513439052@newsletter',
-                            newsletterName:    'REDXBOT302',
+                            newsletterJid:     '120363402325089913@newsletter',
+                            newsletterName:    'SILA X MINI',
                             serverMessageId:   -1
                         }
                     }

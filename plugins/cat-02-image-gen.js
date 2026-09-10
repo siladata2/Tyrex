@@ -9,19 +9,7 @@ const _bundle = [];
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -113,19 +101,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -217,19 +193,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -462,19 +426,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 const fs = require('fs');
@@ -653,7 +605,7 @@ module.exports = {
     const chatId = context.chatId || message.key.remoteJid;
 
     try {
-      const res = await axios.get('https://raw.githubusercontent.com/AbdulRehman19721986/Database/main/images/coding.json');
+      const res = await axios.get('https://raw.githubusercontent.com/Sila-Md/Database/main/images/coding.json');
 
       if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
         return await sock.sendMessage(chatId, { text: '❌ Failed to fetch image.' }, { quoted: message });
@@ -683,19 +635,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -753,7 +693,7 @@ module.exports = {
     const chatId = context.chatId || message.key.remoteJid;
 
     try {
-      const res = await axios.get('https://raw.githubusercontent.com/AbdulRehman19721986/Database/main/images/game.json');
+      const res = await axios.get('https://raw.githubusercontent.com/Sila-Md/Database/main/images/game.json');
 
       if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
         return await sock.sendMessage(chatId, { text: '❌ Failed to fetch image.' }, { quoted: message });
@@ -796,7 +736,7 @@ module.exports = {
     const chatId = context.chatId || message.key.remoteJid;
 
     try {
-      const res = await axios.get('https://raw.githubusercontent.com/AbdulRehman19721986/Database/main/images/tech.json');
+      const res = await axios.get('https://raw.githubusercontent.com/Sila-Md/Database/main/images/tech.json');
 
       if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
         return await sock.sendMessage(chatId, { text: '❌ Failed to fetch image.' }, { quoted: message });
@@ -839,7 +779,7 @@ module.exports = {
     const chatId = context.chatId || message.key.remoteJid;
 
     try {
-      const res = await axios.get('https://raw.githubusercontent.com/AbdulRehman19721986/Database/main/images/islamic.json');
+      const res = await axios.get('https://raw.githubusercontent.com/Sila-Md/Database/main/images/islamic.json');
 
       if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
         return await sock.sendMessage(chatId, { text: '❌ Failed to fetch image.' }, { quoted: message });
@@ -882,7 +822,7 @@ module.exports = {
     const chatId = context.chatId || message.key.remoteJid;
 
     try {
-      const res = await axios.get('https://raw.githubusercontent.com/AbdulRehman19721986/Database/main/images/mountain.json');
+      const res = await axios.get('https://raw.githubusercontent.com/Sila-Md/Database/main/images/mountain.json');
 
       if (!res.data || !Array.isArray(res.data) || res.data.length === 0) {
         return await sock.sendMessage(chatId, { text: '❌ Failed to fetch image.' }, { quoted: message });
@@ -912,19 +852,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const axios = require('axios');
 
@@ -1337,23 +1265,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *  COUPLES DP — REDXBOT302 v7.0 ULTRA                                      *
- *                                                                           *
- *  Commands:                                                                *
- *   • .couplepp — fetch a random male + female couple profile picture pair  *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 
@@ -1375,12 +1287,12 @@ const CPP_CONFIG = {
     maleCaption:
         `👨 *Male — Couple DP*\n\n` +
         `_Pair this with the female DP below_ 💑\n\n` +
-        `_Powered by REDXBOT302_ 🔥`,
+        `_Powered by SILA X MINI_ 🔥`,
 
     femaleCaption:
         `👩 *Female — Couple DP*\n\n` +
         `_Set these as your profile pictures together_ 💕\n\n` +
-        `_Powered by REDXBOT302_ 🔥`,
+        `_Powered by SILA X MINI_ 🔥`,
 };
 
 /* ── Exports (single object — matches original loader format) ────────────── */
@@ -1641,7 +1553,7 @@ module.exports = {
             menuText +=
 `━━━━━━━━━━━━━━━━━━━
 💡 *Tip:* Use short & clear text for best results
-🤖 Powered by *REDXBOT302*`;
+🤖 Powered by *SILA X MINI*`;
 
             return await sock.sendMessage(
                 chatId,
@@ -1683,7 +1595,7 @@ module.exports = {
                 chatId,
                 {
                     image: { url: result.image },
-                    caption: `🔥 *GENERATED SUCCESSFULLY* 🔥\n✨ Powered by *REDXBOT302*`
+                    caption: `🔥 *GENERATED SUCCESSFULLY* 🔥\n✨ Powered by *SILA X MINI*`
                 },
                 { quoted: message }
             );
@@ -1808,15 +1720,15 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                                *
+ *                     Powerd By Sila Tech                                *
  *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986                         *
- *  ▶️  YouTube  : https://youtube.com/@AbdulRehman19721986                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
+ *  🌐  GitHub   : https://github.com/Sila-Md                         *
+ *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
+ *  💬  WhatsApp : https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g     *
  *                                                                           *
- *    © 2026 AbdulRehman19721986. All rights reserved.                            *
+ *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the REDXBOT302 Project.                 *
+ *    Description: This file is part of the SILA X MINI Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1869,15 +1781,15 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                                *
+ *                     Powerd By Sila Tech                                *
  *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986                         *
- *  ▶️  YouTube  : https://youtube.com/@AbdulRehman19721986                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
+ *  🌐  GitHub   : https://github.com/Sila-Md                         *
+ *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
+ *  💬  WhatsApp : https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g     *
  *                                                                           *
- *    © 2026 AbdulRehman19721986. All rights reserved.                            *
+ *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the REDXBOT302 Project.                 *
+ *    Description: This file is part of the SILA X MINI Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1981,18 +1893,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 
@@ -2037,14 +1938,14 @@ module.exports = {
                 if (item.video) {
                     await sock.sendMessage(chatId, {
                         video  : { url: item.video },
-                        caption: `🎬 *Alamy Video*\n\n_Downloaded by REDXBOT302_ 🔥`,
+                        caption: `🎬 *Alamy Video*\n\n_Downloaded by SILA X MINI_ 🔥`,
                     }, { quoted: message });
                     sent++;
                 }
                 if (item.image) {
                     await sock.sendMessage(chatId, {
                         image  : { url: item.image },
-                        caption: `🖼️ *Alamy Image*\n\n_Downloaded by REDXBOT302_ 🔥`,
+                        caption: `🖼️ *Alamy Image*\n\n_Downloaded by SILA X MINI_ 🔥`,
                     }, { quoted: message });
                     sent++;
                 }

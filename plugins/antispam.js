@@ -1,6 +1,6 @@
 /*****************************************************************************
- *  antispam.js — ULTRA v1  (REDXBOT302)
- *  Developed by Abdul Rehman Rajpoot
+ *  antispam.js — ULTRA v1  (SILA X MINI)
+ *  Developed by Richard Besisila
  *  Ported & enhanced from MEGA-MDX
  *
  *  Features:

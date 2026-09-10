@@ -1,5 +1,5 @@
 /**
- * plugins/antibadword.js — REDXBOT302 v3 ULTRA
+ * plugins/antibadword.js — SILA X MINI v3 ULTRA
  * ✅ 100+ bad words (50 default + 50 extra, 10 languages)
  * ✅ Leet-speak + repeat normalization
  * ✅ Warn → kick system with mute fallback
@@ -206,7 +206,7 @@ async function checkAntiBadword(sock, message) {
 
     if (action === 'delete') {
       await sock.sendMessage(chatId, {
-        text: `🚫 Message deleted — contains banned word.\n> REDXBOT302`,
+        text: `🚫 Message deleted — contains banned word.\n> SILA X MINI`,
         mentions: [senderId],
       });
       return true;
@@ -219,7 +219,7 @@ async function checkAntiBadword(sock, message) {
       }
       await sock.groupParticipantsUpdate(chatId, [senderId], 'remove').catch(() => {});
       await sock.sendMessage(chatId, {
-        text: `⛔ ${mention} was removed — banned word detected.\n> REDXBOT302`,
+        text: `⛔ ${mention} was removed — banned word detected.\n> SILA X MINI`,
         mentions: [senderId],
       });
       return true;
@@ -229,7 +229,7 @@ async function checkAntiBadword(sock, message) {
       const minutes = settings.muteMinutes || 15;
       await muteUser(chatId, senderId, minutes);
       await sock.sendMessage(chatId, {
-        text: `🔇 ${mention} muted for ${minutes} min — banned word detected.\nAny message they send will be auto-deleted until then.\n> REDXBOT302`,
+        text: `🔇 ${mention} muted for ${minutes} min — banned word detected.\nAny message they send will be auto-deleted until then.\n> SILA X MINI`,
         mentions: [senderId],
       });
       return true;
@@ -246,17 +246,17 @@ async function checkAntiBadword(sock, message) {
       warns[senderId] = 0;
       await saveWarns(chatId, warns);
       if (!canKick) {
-        await sock.sendMessage(chatId, { text: `⚠️ ${mention} hit the ${limit}-warning limit, but I'm not a group admin so I can't remove them.\n> REDXBOT302`, mentions: [senderId] });
+        await sock.sendMessage(chatId, { text: `⚠️ ${mention} hit the ${limit}-warning limit, but I'm not a group admin so I can't remove them.\n> SILA X MINI`, mentions: [senderId] });
         return true;
       }
       await sock.groupParticipantsUpdate(chatId, [senderId], 'remove').catch(() => {});
       await sock.sendMessage(chatId, {
-        text: `⛔ ${mention} kicked — reached ${limit} warnings for banned words.\n> REDXBOT302`,
+        text: `⛔ ${mention} kicked — reached ${limit} warnings for banned words.\n> SILA X MINI`,
         mentions: [senderId],
       });
     } else {
       await sock.sendMessage(chatId, {
-        text: `⚠️ Warning ${warnN}/${limit} — ${mention}, banned word detected: *"${hit}"*.\n> REDXBOT302`,
+        text: `⚠️ Warning ${warnN}/${limit} — ${mention}, banned word detected: *"${hit}"*.\n> SILA X MINI`,
         mentions: [senderId],
       });
     }

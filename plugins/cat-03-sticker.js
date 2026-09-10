@@ -55,8 +55,8 @@ module.exports = {
 
       // Create sticker with stickers-formatter
       const sticker = new Sticker(buffer, {
-        pack: 'REDX Stickers',
-        author: 'Abdul Rehman & Muzamil',
+        pack: 'SILA X MINI Stickers',
+        author: 'Richard Besisila',
         type: stickerType,
         quality: 80,
         categories: ['🤖', '✨']
@@ -200,7 +200,7 @@ module.exports = {
 
       const json = {
         'sticker-pack-id': crypto.randomBytes(32).toString('hex'),
-        'sticker-pack-name': settings.packname || 'REDXBOT302',
+        'sticker-pack-name': settings.packname || 'SILA X MINI',
         'emojis': ['🤖']
       };
 
@@ -226,7 +226,7 @@ module.exports = {
             await img2.load(smallWebp);
             const json2 = {
               'sticker-pack-id': crypto.randomBytes(32).toString('hex'),
-              'sticker-pack-name': settings.packname || 'REDXBOT302',
+              'sticker-pack-name': settings.packname || 'SILA X MINI',
               'emojis': ['🤖']
             };
             const exifAttr2 = Buffer.from([0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00]);
@@ -594,7 +594,7 @@ module.exports = {
 
     if (!newName) {
       return await sock.sendMessage(chatId, {
-        text: '❌ Please provide a new sticker pack name.\nExample: .stickername REDXBOT Pack'
+        text: '❌ Please provide a new sticker pack name.\nExample: .stickername SILA X MINI Pack'
       }, { quoted: message });
     }
 
@@ -626,19 +626,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 const fs = require('fs');
@@ -959,7 +947,7 @@ module.exports = {
         return;
       }
       
-      const packname = args.join(' ') || 'REDXBOT302';
+      const packname = args.join(' ') || 'SILA X MINI';
 
       try {
         const stickerBuffer = await downloadMediaMessage(
@@ -1966,7 +1954,7 @@ module.exports = {
         chatId,
         {
           image: { url: grayFile },
-          caption: `🖤 *Grayscale Image*\n\nProcessed by: REDXBOT302`
+          caption: `🖤 *Grayscale Image*\n\nProcessed by: SILA X MINI`
         },
         { quoted: message }
       );
@@ -2055,7 +2043,7 @@ module.exports = {
         chatId,
         {
           image: { url: grayFile },
-          caption: `🧡 *Sepia Image*\n\nProcessed by: REDXBOT302`
+          caption: `🧡 *Sepia Image*\n\nProcessed by: SILA X MINI`
         },
         { quoted: message }
       );
@@ -2144,7 +2132,7 @@ module.exports = {
         chatId,
         {
           image: { url: grayFile },
-          caption: `🤍 *Inverted Image*\n\nProcessed by: REDXBOT302`
+          caption: `🤍 *Inverted Image*\n\nProcessed by: SILA X MINI`
         },
         { quoted: message }
       );
@@ -2307,7 +2295,7 @@ module.exports = {
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
             newsletterJid: '120363319098372999@newsletter',
-            newsletterName: 'REDXBOT302',
+            newsletterName: 'SILA X MINI',
             serverMessageId: -1
           }
         }
@@ -2606,39 +2594,39 @@ try {
     const fetch = require('node-fetch');
 
 const imageUrls = {
-    chinese: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/tiktokpics/china.json',
-    hijab: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/tiktokpics/hijab.json',
-    malaysia: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/tiktokpics/malaysia.json',
-    japanese: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/tiktokpics/japan.json',
-    korean: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/tiktokpics/korea.json',
-    malay: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/tiktokpics/malaysia.json',
-    random: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/tiktokpics/random.json',
-    random2: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/tiktokpics/random2.json',
-    thai: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/tiktokpics/thailand.json',
-    vietnamese: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/tiktokpics/vietnam.json',
-    indo: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/tiktokpics/indonesia.json',
-    boneka: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/boneka.json',
-    blackpink3: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/blackpink.json',
-    bike: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/bike.json',
-    antiwork: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/antiwork.json',
-    aesthetic: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/aesthetic.json',
-    justina: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/justina.json',
-    doggo: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/doggo.json',
-    cosplay2: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/cosplay.json',
-    cat: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/cat.json',
-    car: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/car.json',
-    profile2: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/profile.json',
-    ppcouple2: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/ppcouple.json',
-    notnot: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/notnot.json',
-    kpop: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/kpop.json',
-    kayes: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/kayes.json',
-    ulzzanggirl: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/ulzzanggirl.json',
-    ulzzangboy: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/ulzzangboy.json',
-    ryujin: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/ryujin.json',
-    rose: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/rose.json',
-    pubg: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/pubg.json',
-    wallml: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/wallml.json',
-    wallhp: 'https://raw.githubusercontent.com/AbdulRehman19721986/GLOBAL-XMD/master/src/media/randompics/wallhp.json',
+    chinese: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/tiktokpics/china.json',
+    hijab: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/tiktokpics/hijab.json',
+    malaysia: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/tiktokpics/malaysia.json',
+    japanese: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/tiktokpics/japan.json',
+    korean: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/tiktokpics/korea.json',
+    malay: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/tiktokpics/malaysia.json',
+    random: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/tiktokpics/random.json',
+    random2: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/tiktokpics/random2.json',
+    thai: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/tiktokpics/thailand.json',
+    vietnamese: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/tiktokpics/vietnam.json',
+    indo: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/tiktokpics/indonesia.json',
+    boneka: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/boneka.json',
+    blackpink3: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/blackpink.json',
+    bike: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/bike.json',
+    antiwork: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/antiwork.json',
+    aesthetic: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/aesthetic.json',
+    justina: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/justina.json',
+    doggo: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/doggo.json',
+    cosplay2: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/cosplay.json',
+    cat: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/cat.json',
+    car: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/car.json',
+    profile2: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/profile.json',
+    ppcouple2: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/ppcouple.json',
+    notnot: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/notnot.json',
+    kpop: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/kpop.json',
+    kayes: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/kayes.json',
+    ulzzanggirl: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/ulzzanggirl.json',
+    ulzzangboy: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/ulzzangboy.json',
+    ryujin: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/ryujin.json',
+    rose: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/rose.json',
+    pubg: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/pubg.json',
+    wallml: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/wallml.json',
+    wallhp: 'https://raw.githubusercontent.com/Sila-Md/GLOBAL-XMD/master/src/media/randompics/wallhp.json',
 };
 
 function pickRandom(arr, count = 1) {
@@ -2975,19 +2963,7 @@ try {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 module.exports = {
     command: 'excard',

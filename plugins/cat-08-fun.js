@@ -6,12 +6,7 @@ const _bundle = [];
 /* ===== joke.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const gtts = require('gtts');
 const fs = require('fs');
@@ -75,7 +70,7 @@ module.exports = {
     const chatId = context.chatId || message.key.remoteJid;
 
     try {
-      const res = await axios.get('https://raw.githubusercontent.com/AbdulRehman19721986/Database/main/text/random_jokes.txt');
+      const res = await axios.get('https://raw.githubusercontent.com/Sila-Md/Database/main/text/random_jokes.txt');
 
       if (!res.data) {
         return await sock.sendMessage(chatId, { text: '❌ Failed to fetch joke.' }, { quoted: message });
@@ -356,7 +351,7 @@ module.exports = {
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
                         newsletterJid: '120363319098372999@newsletter',
-                        newsletterName: 'REDXBOT302',
+                        newsletterName: 'SILA X MINI',
                         serverMessageId: -1
                     }
                 }
@@ -371,7 +366,7 @@ module.exports = {
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
                         newsletterJid: '120363319098372999@newsletter',
-                        newsletterName: 'REDXBOT302',
+                        newsletterName: 'SILA X MINI',
                         serverMessageId: -1
                     }
                 }
@@ -506,7 +501,7 @@ module.exports = {
 
       // Message 1: instructions + code
       await sock.sendMessage(chatId, {
-        text: `╭─── 🔗 *PAIRING CODE* ───╮\n│\n│  📱 *Number:* +${number}\n│  🔑 *Code:* ${code}\n│\n├─ *Steps:*\n│  1. Open WhatsApp Settings\n│  2. Linked Devices → Link Device\n│  3. Tap "Link with phone number"\n│  4. Enter the code above\n│\n╰─────────────────────────╯\n\n> 🔥 REDX MINI MD — Pair your number now!`
+        text: `╭─── 🔗 *PAIRING CODE* ───╮\n│\n│  📱 *Number:* +${number}\n│  🔑 *Code:* ${code}\n│\n├─ *Steps:*\n│  1. Open WhatsApp Settings\n│  2. Linked Devices → Link Device\n│  3. Tap "Link with phone number"\n│  4. Enter the code above\n│\n╰─────────────────────────╯\n\n> 🔥 SILA X MINI — Pair your number now!`
       }, { quoted: message });
 
       // Message 2: just the code (easy to copy)
@@ -1088,12 +1083,7 @@ module.exports = {
 /* ===== shayari.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const gtts = require('gtts');
 const fs = require('fs');
@@ -1239,20 +1229,7 @@ module.exports = {
 /* ===== hot.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *    Description: Displays a dynamic edit message with emojis for fun.     *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -1315,19 +1292,7 @@ module.exports = {
 /* ===== leg.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -1385,19 +1350,7 @@ module.exports = {
 /* ===== mouth.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -1455,19 +1408,7 @@ module.exports = {
 /* ===== finger.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -2093,15 +2034,15 @@ try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot & Muzamil Khan                                *
+ *                     Powerd By Sila Tech                                *
  *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986                         *
- *  ▶️  YouTube  : https://youtube.com/@AbdulRehman19721986                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
+ *  🌐  GitHub   : https://github.com/Sila-Md                         *
+ *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
+ *  💬  WhatsApp : https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g     *
  *                                                                           *
- *    © 2026 AbdulRehman19721986. All rights reserved.                            *
+ *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the REDXBOT302 Project.                 *
+ *    Description: This file is part of the SILA X MINI Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -2146,15 +2087,15 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot & Muzamil Khan                                *
+ *                     Powerd By Sila Tech                                *
  *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986                         *
- *  ▶️  YouTube  : https://youtube.com/@AbdulRehman19721986                       *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
+ *  🌐  GitHub   : https://github.com/Sila-Md                         *
+ *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
+ *  💬  WhatsApp : https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g     *
  *                                                                           *
- *    © 2026 AbdulRehman19721986. All rights reserved.                            *
+ *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the REDXBOT302 Project.                 *
+ *    Description: This file is part of the SILA X MINI Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -2168,12 +2109,7 @@ module.exports = {
 /* ===== gaali.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const gtts = require('gtts');
 const fs = require('fs');
@@ -2327,19 +2263,7 @@ module.exports = {
 /* ===== fuck.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -2400,19 +2324,7 @@ module.exports = {
 /* ===== fuckall.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -2481,19 +2393,7 @@ module.exports = {
 /* ===== fuckoff.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -2551,19 +2451,7 @@ module.exports = {
 /* ===== fuckyou.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 

@@ -2,7 +2,7 @@
 /**
  * deline-games.js
  * Game reply handler — checks global.games map for pending answers
- * Required by lib/messageHandler.js — REDXBOT302 v7
+ * Required by lib/messageHandler.js — SILA X MINI v7
  */
 
 /**
@@ -24,8 +24,8 @@ async function handleGameReply(sock, message, chatId, userMessage) {
                 forwardingScore: 1,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363405513439052@newsletter',
-                    newsletterName: 'REDXBOT302',
+                    newsletterJid: '120363402325089913@newsletter',
+                    newsletterName: 'SILA X MINI',
                     serverMessageId: -1
                 }
             }

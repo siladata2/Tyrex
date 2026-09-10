@@ -9,12 +9,7 @@ const _bundle = [];
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 // ==================== Game Logic ====================
 const words = ['apple', 'banana', 'cherry', 'dog', 'elephant', 'flower', 'guitar', 'house', 'ice', 'jungle'];
@@ -184,7 +179,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -698,7 +693,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -954,12 +949,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 // ==================== Game Logic ====================
 class Sudoku {
@@ -1124,7 +1114,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -1402,12 +1392,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 // ==================== Game Logic ====================
 class GuessNumber {
@@ -1530,19 +1515,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 // plugins/wordle.js
 const games = new Map();
@@ -1698,19 +1671,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 // plugins/connect4.js
 const games = new Map();
@@ -1952,12 +1913,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 // ==================== Game Logic ====================
 class Minesweeper {
@@ -2281,7 +2237,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -2525,7 +2481,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -2776,12 +2732,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 class MemoryPuzzle {
     constructor(size = 4) {
@@ -2996,12 +2947,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 // ==================== Game Logic ====================
 class RPGAdventure {
@@ -3296,12 +3242,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 // ==================== Game Logic ====================
 class RPGUltra {
@@ -3755,7 +3696,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -3968,12 +3909,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                     & Muzamil Khan                                        *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 // ==================== Game Logic ====================
 const slotSymbols = ['🍒', '🍋', '🍊', '🍇', '💎', '7️⃣'];
@@ -4217,7 +4153,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -4416,7 +4352,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -4772,19 +4708,7 @@ module.exports = [
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    /*****************************************************************************
- *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
- *                                                            *
- *                                                                           *
- *  🌐  GitHub   : https://github.com/AbdulRehman19721986/redxbot302          *
- *  ▶️  YouTube  : https://youtube.com/@rootmindtech                         *
- *  💬  WhatsApp : https://whatsapp.com/channel/0029VbCPnYf96H4SNehkev10     *
- *  🔗  Telegram : https://t.me/TeamRedxhacker2                              *
- *                                                                           *
- *    © 2026 Abdul Rehman Rajpoot. All rights reserved.                      *
- *                                                                           *
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { exec } = require('child_process');
@@ -4950,7 +4874,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Developed By Abdul Rehman Rajpoot                     *
+ *                     Powerd By Sila Tech                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -5171,7 +5095,7 @@ try {
 /**
  * deline-games.js
  * Game reply handler — checks global.games map for pending answers
- * Required by lib/messageHandler.js — REDXBOT302 v7
+ * Required by lib/messageHandler.js — SILA X MINI v7
  */
 
 /**
@@ -5193,8 +5117,8 @@ async function handleGameReply(sock, message, chatId, userMessage) {
                 forwardingScore: 1,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363405513439052@newsletter',
-                    newsletterName: 'REDXBOT302',
+                    newsletterJid: '120363402325089913@newsletter',
+                    newsletterName: 'SILA X MINI',
                     serverMessageId: -1
                 }
             }
@@ -5242,7 +5166,7 @@ try {
 /**
  * deline-requests.js
  * Group join-request approve/reject helper
- * Required by approve.js — REDXBOT302 v7
+ * Required by approve.js — SILA X MINI v7
  */
 
 async function approveRequests(sock, chatId, message, args, context) {

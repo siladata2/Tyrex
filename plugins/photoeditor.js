@@ -1,17 +1,4 @@
-/*****************************************************************************
- *  plugins/photoeditor.js — REDXBOT302 ULTRA
- *  Developed By Abdul Rehman Rajpoot & Muzamil Khan
- *
- *  Bugs fixed vs original:
- *  - axios was used but never required → added require
- *  - Jimp v4 API: writeAsync → write, loadFont → Jimp.loadFont
- *  - FONT_SANS_32_WHITE not available in all Jimp versions → safe fallback
- *  - sticker command used missing axios
- *  - No try/catch on individual Jimp ops
- *  - No cleanup on error path
- *
- *  New commands: brightness, contrast, grayscale, blur, rotate, flip, resize, watermark
- *****************************************************************************/
+/* Powerd By Sila Tech */
 
 'use strict';
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
@@ -214,7 +201,7 @@ module.exports = {
                 }
 
                 case 'watermark': {
-                    const text = args.slice(1).join(' ').trim() || 'REDXBOT302';
+                    const text = args.slice(1).join(' ').trim() || 'SILA X MINI';
                     try {
                         const font = await J.loadFont(J.FONT_SANS_16_WHITE || J.FONT_SANS_32_WHITE);
                         const tw   = J.measureText(font, text);
@@ -275,7 +262,7 @@ module.exports = {
 
             await sock.sendMessage(chatId, {
                 image: { url: outputPath },
-                caption: `✅ *${command}* applied\n> REDXBOT302 Photo Editor`,
+                caption: `✅ *${command}* applied\n> SILA X MINI Photo Editor`,
                 ...channelInfo
             }, { quoted: message });
 

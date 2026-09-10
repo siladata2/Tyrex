@@ -1,5 +1,5 @@
 /*****************************************************************************
- *  REDXBOT302 — advanced-vv.js
+ *  SILA X MINI — advanced-vv.js
  *
  *  This file is the entry point that index.js requires as './plugins/advanced-vv'.
  *  It simply re-exports everything from viewonce.js so that:
