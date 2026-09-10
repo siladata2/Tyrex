@@ -1,7 +1,7 @@
 {
-  "SILA-7BF18349": {
-    "id": "SILA-7BF18349",
-    "platform": "Sila Host",
+  "REDX-7BF18349": {
+    "id": "REDX-7BF18349",
+    "platform": "Local",
     "createdAt": "2026-08-06T11:32:37.478Z",
     "numbers": [],
     "pairCount": 0,
