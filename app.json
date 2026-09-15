@@ -1,16 +1,21 @@
 {
   "name": "SILA X MINI",
-  "description": "𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈 — WhatsApp Bot. No SESSION_ID needed. Just pair your number. Powered By 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡",
+  "description": "𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈 — WhatsApp Bot (Single Session). Add your SESSION_ID and deploy. Powered By 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡",
   "logo": "https://i.ibb.co/Gf4fr5BS/silaxmini.jpg",
   "keywords": [
     "whatsapp",
     "bot",
     "baileys",
     "silaxmini",
-    "silamd"
+    "silamd",
+    "session-id"
   ],
   "repository": "https://github.com/Sila-Md",
   "env": {
+    "SESSION_ID": {
+      "description": "Base64 session string. Format: SILA-MD~H4sIA... Generate from your creds.json (see README). REQUIRED.",
+      "required": true
+    },
     "BOT_NAME": {
       "description": "Bot display name",
       "value": "𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈",
@@ -32,7 +37,7 @@
       "required": false
     },
     "BOT_MODE": {
-      "description": "public or private",
+      "description": "public | private | groups | inbox | self",
       "value": "public",
       "required": false
     },
@@ -46,22 +51,8 @@
       "value": "sila",
       "required": false
     },
-    "DEPLOY_ID": {
-      "description": "Custom deploy ID (optional, auto-generated)",
-      "required": false
-    },
     "APP_URL": {
-      "description": "Your app URL for keep-alive ping",
-      "required": false
-    },
-    "CO_OWNER": {
-      "description": "Co-owner name",
-      "value": "𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡🤓",
-      "required": false
-    },
-    "CO_OWNER_NUM": {
-      "description": "Co-owner WhatsApp number",
-      "value": "255789661031",
+      "description": "Your app URL for keep-alive ping (e.g. https://your-app.onrender.com)",
       "required": false
     },
     "MENU_IMAGE": {
@@ -70,12 +61,12 @@
       "required": false
     },
     "NEWSLETTER_JID": {
-      "description": "WhatsApp Channel JID",
+      "description": "WhatsApp Channel JID to auto-follow",
       "value": "120363402325089913@newsletter",
       "required": false
     },
     "WA_GROUP": {
-      "description": "WhatsApp Group Link",
+      "description": "WhatsApp Group invite link for auto-join",
       "value": "https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g",
       "required": false
     },
@@ -95,14 +86,31 @@
       "required": true
     },
     "AUTO_NL_FOLLOW": {
-      "description": "Auto follow newsletter (true/false)",
+      "description": "Auto follow newsletter channels (true/false)",
       "value": "true",
       "required": true
     },
     "AUTO_GROUP_JOIN": {
-      "description": "Auto join groups (true/false) — DANGEROUS!",
-      "value": "false",
+      "description": "Auto join groups from GitHub list (true/false)",
+      "value": "true",
       "required": true
+    },
+    "SESSION_DIR": {
+      "description": "Where to store session files (default: ./sessions)",
+      "value": "./sessions",
+      "required": false
+    },
+    "MONGO_URL": {
+      "description": "MongoDB connection URL (optional — for session backup)",
+      "required": false
+    },
+    "SUPABASE_URL": {
+      "description": "Supabase project URL (optional — for session backup)",
+      "required": false
+    },
+    "SUPABASE_KEY": {
+      "description": "Supabase service role key (optional — for session backup)",
+      "required": false
     }
   },
   "formation": {
