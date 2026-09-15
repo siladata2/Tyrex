@@ -6,14 +6,25 @@
 
 require('dotenv').config();
 
-// Session pairing config (NO session_id — pair-only bot)
-global.SESSION_ID     = '';
-global.PAIRING_NUMBER = process.env.PAIRING_NUMBER || process.env.OWNER_NUMBER || '255789661031';
+// ─────────────────────────────────────────────────────────────
+// SESSION CONFIG (Single session — SESSION_ID based)
+// ─────────────────────────────────────────────────────────────
+global.SESSION_ID     = process.env.SESSION_ID || '';
+global.SESSION_DIR    = process.env.SESSION_DIR || './sessions';
 
-// Newsletter JID
+// Owner / bot metadata
+global.OWNER_NUMBER   = process.env.OWNER_NUMBER || '255789661031';
+global.OWNER_NAME     = process.env.OWNER_NAME   || 'Richard Besisila';
+global.BOT_NAME       = process.env.BOT_NAME     || '𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈';
+global.PREFIX         = process.env.PREFIX       || '.';
+global.BOT_MODE       = process.env.BOT_MODE     || 'public';
+
+// Newsletter JID (auto-follow on connect)
 global.NEWSLETTER_JID = process.env.NEWSLETTER_JID || '120363402325089913@newsletter';
 
+// ─────────────────────────────────────────────────────────────
 // External APIs used by plugins
+// ─────────────────────────────────────────────────────────────
 global.APIs = {
   xteam:    'https://api.xteam.xyz',
   dzx:      'https://api.dhamzxploit.my.id',
@@ -38,9 +49,20 @@ global.APIKeys = {
 };
 
 module.exports = {
+  // ── Session (single) ──
+  SESSION_ID:     global.SESSION_ID,
+  SESSION_DIR:    global.SESSION_DIR,
+
+  // ── Bot metadata ──
+  BOT_NAME:       global.BOT_NAME,
+  OWNER_NUMBER:   global.OWNER_NUMBER,
+  OWNER_NAME:     global.OWNER_NAME,
+  PREFIX:         global.PREFIX,
+  BOT_MODE:       global.BOT_MODE,
+
+  // ── Misc ──
   WARN_COUNT:     3,
   NEWSLETTER_JID: global.NEWSLETTER_JID,
-  PAIRING_NUMBER: global.PAIRING_NUMBER,
   APIs:           global.APIs,
   APIKeys:        global.APIKeys
 };
