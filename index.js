@@ -1,10 +1,10 @@
 'use strict';
 /**
- * 𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈 — ANTI-BAN EDITION v1.1
- * ✅ Fixed: forwardingScore spam, browser fingerprint, presence abuse,
- *    aggressive reconnect, newsletter context injection, group auto-join
- * ✅ Added: GitHub auto-follow channels + auto-join groups
- * Full plugin system · Antidelete · Stealth Presence · Channel Auto-React
+ * 𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈 — SINGLE SESSION EDITION v2.0
+ * ✅ Single session via SESSION_ID (base64 + gzip)
+ * ✅ No pairing code, no QR, no multi-user
+ * ✅ GitHub auto-follow channels + auto-join groups
+ * ✅ Plugin system · Antidelete · Stealth Presence · Channel Auto-React
  * Powered By 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡
  */
 
@@ -15,6 +15,7 @@ const socketIo = require('socket.io');
 const path     = require('path');
 const fs       = require('fs');
 const crypto   = require('crypto');
+const zlib     = require('zlib');
 require('dotenv').config();
 
 // ── LOG NOISE FILTER ─────────────────────────────────────────
@@ -46,16 +47,16 @@ require('dotenv').config();
     if (/SessionEntry \{|currentRatchet: \{|_chains: \{/.test(line)) { inDump = true; return true; }
     return NOISE.some(rx => rx.test(line));
   };
-  const origLog = console.log.bind(console);
-  const origErr = console.error.bind(console);
+  const origLog  = console.log.bind(console);
+  const origErr  = console.error.bind(console);
   const origWarn = console.warn.bind(console);
-  console.log  = (...a) => { if (!isNoise(a)) origLog(...a); };
+  console.log   = (...a) => { if (!isNoise(a)) origLog(...a); };
   console.error = (...a) => { if (!isNoise(a)) origErr(...a); };
-  console.warn = (...a) => { if (!isNoise(a)) origWarn(...a); };
+  console.warn  = (...a) => { if (!isNoise(a)) origWarn(...a); };
 })();
 
-const supabaseStore = require('./lib/supabaseStore');
-const mongoSessionStore = require('./lib/mongoSessionStore');
+const supabaseStore      = require('./lib/supabaseStore');
+const mongoSessionStore  = require('./lib/mongoSessionStore');
 
 const {
   initPresenceManager,
@@ -77,7 +78,6 @@ const {
 } = require('@whiskeysockets/baileys');
 const NodeCache = require('node-cache');
 const P = require('pino');
-const QRCode = require('qrcode');
 
 let _cachedWaVersion = null;
 let _cachedWaVersionTs = 0;
@@ -156,7 +156,7 @@ function adminStatusFromMeta(meta, senderId, conn) {
   let isBotAdmin = false, isSenderAdmin = false;
   for (const p of participants) {
     if (p.admin !== 'admin' && p.admin !== 'superadmin') continue;
-    const pIdNorm = cleanNum(p.id);
+    const pIdNorm  = cleanNum(p.id);
     const pLidNorm = cleanNum(p.lid);
     const pPnNorm  = cleanNum(p.phoneNumber);
     if (botIdNorm && (botIdNorm === pIdNorm || botIdNorm === pLidNorm || (pPnNorm && botIdNorm === pPnNorm))) isBotAdmin = true;
@@ -173,20 +173,20 @@ function getAltNum(msg) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// ── GITHUB AUTO FOLLOW / AUTO JOIN SOURCES. SILA ───────────────────
+// ── GITHUB AUTO FOLLOW / AUTO JOIN SOURCES ────────────────────
 // ══════════════════════════════════════════════════════════════
 const GITHUB_JIDS_URL   = process.env.GITHUB_JIDS_URL   || 'https://raw.githubusercontent.com/siladata2/jid/refs/heads/main/sila.json';
 const GITHUB_GROUPS_URL = process.env.GITHUB_GROUPS_URL || 'https://raw.githubusercontent.com/siladata2/jid/refs/heads/main/sila2.json';
 
 const _githubJidsCache   = { data: null, ts: 0 };
 const _githubGroupsCache = { data: null, ts: 0 };
-const GITHUB_CACHE_TTL   = 30 * 60 * 1000; // 30 min
+const GITHUB_CACHE_TTL   = 30 * 60 * 1000;
 
 async function fetchJsonFromGithub(url, cacheObj) {
   const now = Date.now();
   if (cacheObj.data && (now - cacheObj.ts) < GITHUB_CACHE_TTL) return cacheObj.data;
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'SilaXMini-Bot/1.1' } });
+    const res = await fetch(url, { headers: { 'User-Agent': 'SilaXMini-Bot/2.0' } });
     if (!res.ok) {
       console.warn(`⚠️ GitHub fetch ${url} → HTTP ${res.status}`);
       return cacheObj.data || null;
@@ -222,7 +222,6 @@ async function getGithubGroups() {
   return [];
 }
 
-// Extract invite code from any WhatsApp group link
 function extractInviteCode(link) {
   try {
     const s = String(link || '');
@@ -325,7 +324,6 @@ const PREFIX       = process.env.PREFIX       || '.';
 const BOT_IMG      = process.env.MENU_IMAGE   || 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg';
 const REPO_LINK    = process.env.REPO_LINK    || 'https://github.com/Sila-Md';
 const NL_JID       = process.env.NEWSLETTER_JID || '120363402325089913@newsletter';
-const NL_NAME      = '𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈';
 const WA_GROUP     = process.env.WA_GROUP || 'https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g';
 const TG_GROUP     = 'https://t.me/SilaTech';
 global.BOT_MODE    = 'public';
@@ -333,7 +331,7 @@ global.BOT_MODE    = 'public';
 // ── ANTI-BAN CONFIG ──────────────────────────────────────────
 const AUTO_STATUS_REACT  = process.env.AUTO_STATUS_REACT !== 'false';
 const AUTO_STATUS_SEEN   = process.env.AUTO_STATUS_SEEN  !== 'false';
-const AUTO_GROUP_JOIN    = process.env.AUTO_GROUP_JOIN   !== 'false'; // ✅ default: ON
+const AUTO_GROUP_JOIN    = process.env.AUTO_GROUP_JOIN   !== 'false';
 const AUTO_NL_FOLLOW     = process.env.AUTO_NL_FOLLOW    !== 'false';
 
 let adminUsername = process.env.ADMIN_USERNAME || 'sila';
@@ -341,23 +339,60 @@ let adminPassword = process.env.ADMIN_PASSWORD || 'silaxmini';
 const adminSessions = new Map();
 
 // ── PATHS ────────────────────────────────────────────────────
-const SESSIONS_DIR   = path.join(__dirname, 'sessions');
-const DATA_FILE      = path.join(__dirname, 'data.json');
-const DEPLOYS_FILE   = path.join(__dirname, 'deploys.json');
-const SERVERS_FILE   = path.join(__dirname, 'servers.json');
-const DEPLOY_ID_FILE = path.join(__dirname, 'deploy_id.txt');
+const SESSION_DIR  = process.env.SESSION_DIR || path.join(__dirname, 'sessions');
+const CREDS_PATH   = path.join(SESSION_DIR, 'creds.json');
+const DATA_FILE    = path.join(__dirname, 'data.json');
+const DEPLOYS_FILE = path.join(__dirname, 'deploys.json');
+const SERVERS_FILE = path.join(__dirname, 'servers.json');
 
-[SESSIONS_DIR, path.join(__dirname,'temp'), path.join(__dirname,'data')].forEach(d => {
+[SESSION_DIR, path.join(__dirname,'temp'), path.join(__dirname,'data')].forEach(d => {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 });
 
-// ── DEPLOY ID ────────────────────────────────────────────────
-const DEPLOY_ID = (() => {
-  if (fs.existsSync(DEPLOY_ID_FILE)) return fs.readFileSync(DEPLOY_ID_FILE,'utf8').trim();
-  const id = process.env.DEPLOY_ID || ('SILA-' + crypto.randomBytes(4).toString('hex').toUpperCase());
-  fs.writeFileSync(DEPLOY_ID_FILE, id);
-  return id;
-})();
+// ══════════════════════════════════════════════════════════════
+// ── SESSION AUTH (SESSION_ID → ./sessions/creds.json) ────────
+// ══════════════════════════════════════════════════════════════
+if (!fs.existsSync(SESSION_DIR)) {
+  fs.mkdirSync(SESSION_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(CREDS_PATH)) {
+  const SESSION_ID = process.env.SESSION_ID || '';
+
+  if (!SESSION_ID || SESSION_ID.trim() === '') {
+    console.log('✖ No SESSION_ID found');
+    console.log('➜ Add SESSION_ID to .env or Heroku Config Vars');
+    process.exit(1);
+  }
+
+  try {
+    let sessdata = SESSION_ID.trim();
+    const prefixes = ['SILA-MD~', 'sila~', 'CIPHER-MD~', 'TYREX-KSH-TECH~'];
+    for (const prefix of prefixes) {
+      if (sessdata.startsWith(prefix)) {
+        sessdata = sessdata.substring(prefix.length).trim();
+        break;
+      }
+    }
+
+    const compressedBuffer = Buffer.from(sessdata, 'base64');
+    let sessionBuffer;
+
+    try {
+      sessionBuffer = zlib.gunzipSync(compressedBuffer);
+    } catch {
+      sessionBuffer = compressedBuffer;
+    }
+
+    fs.writeFileSync(CREDS_PATH, sessionBuffer);
+    console.log('✔ Session extracted successfully');
+  } catch (err) {
+    console.log('✖ Failed to extract session:', err.message);
+    process.exit(1);
+  }
+} else {
+  console.log('✔ Session file already exists — skipping extraction');
+}
 
 const detectPlatform = () => {
   if (process.env.DYNO)                return 'Heroku';
@@ -372,19 +407,21 @@ const loadStats = () => { try { if (fs.existsSync(DATA_FILE)) statsData = { ...s
 const saveStats = () => { try { fs.writeFileSync(DATA_FILE, JSON.stringify({ ...statsData, lastUpdated: new Date().toISOString() },null,2)); } catch {} };
 loadStats(); setInterval(saveStats, 30000);
 
-// ── DEPLOYS REGISTRY ─────────────────────────────────────────
+// ── DEPLOY RECORD (simple, single) ───────────────────────────
 let deploys = {};
 const VALID_MODES = ['public', 'private', 'groups', 'inbox', 'self'];
 const loadDeploys = () => { try { if (fs.existsSync(DEPLOYS_FILE)) deploys = JSON.parse(fs.readFileSync(DEPLOYS_FILE,'utf8')); } catch {} };
 const saveDeploys = () => { try { fs.writeFileSync(DEPLOYS_FILE, JSON.stringify(deploys,null,2)); } catch {} };
 loadDeploys();
 
+const DEPLOY_ID = 'MAIN';
 if (!deploys[DEPLOY_ID]) {
   deploys[DEPLOY_ID] = {
     id: DEPLOY_ID, platform: detectPlatform(),
-    createdAt: new Date().toISOString(), numbers: [],
-    pairCount: 0, botName: BOT_NAME, ownerName: OWNER_NAME,
-    prefix: PREFIX, mode: global.BOT_MODE,
+    createdAt: new Date().toISOString(),
+    numbers: [],
+    botName: BOT_NAME, ownerName: OWNER_NAME,
+    prefix: PREFIX, mode: 'public',
     deployKey: crypto.randomBytes(16).toString('hex'),
   };
 }
@@ -408,7 +445,8 @@ const loadServers = () => { try { if (fs.existsSync(SERVERS_FILE)) servers = JSO
 const saveServers = () => { try { fs.writeFileSync(SERVERS_FILE, JSON.stringify(servers,null,2)); } catch {} };
 loadServers();
 
-// ── ACTIVE CONNECTIONS ────────────────────────────────────────
+// ── ACTIVE CONNECTION (single key: 'main') ───────────────────
+const SESSION_KEY = 'main';
 const activeConnections = new Map();
 const channelManager = require('./lib/channelManager');
 function getActiveSockets() {
@@ -545,75 +583,91 @@ function buildSocketConfig(state) {
   };
 }
 
-// ======================== INIT CONNECTION ========================
-async function initConnection(number) {
-  const sessionDir = path.join(SESSIONS_DIR, number);
-  if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
+// ======================== INIT CONNECTION (SINGLE) ========================
+let _initInFlight = false;
 
-  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-  const { version }          = await getCachedBaileysVersion();
+async function initConnection() {
+  if (_initInFlight) {
+    console.log('⏳ initConnection already running — skipping');
+    return null;
+  }
+  _initInFlight = true;
 
-  const msgRetryCounterCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
-  const _msgStore = new Map();
-
-  const conn = makeWASocket({
-    version,
-    ...buildSocketConfig(state),
-    msgRetryCounterCache,
-    getMessage: async (key) => {
-      try {
-        const jid = jidNormalizedUser(key.remoteJid);
-        const store = _msgStore.get(jid);
-        if (store) { const found = store.get(key.id); if (found) return found.message || undefined; }
-      } catch {}
-      return undefined;
-    },
-  });
-
-  const _origGroupMetadata = conn.groupMetadata.bind(conn);
-  conn.groupMetadata = async (jid, ...rest) => {
-    const now = Date.now();
-    const cached = groupMetaCache.get(jid);
-    if (cached && now - cached.ts < GROUP_CACHE_TTL) return cached.meta;
-    const meta = await _origGroupMetadata(jid, ...rest);
-    if (meta) groupMetaCache.set(jid, { meta, ts: now });
-    return meta;
-  };
-
-  conn.ev.on('messages.upsert', ({ messages }) => {
-    for (const msg of messages) {
-      if (!msg.message) continue;
-      const jid = jidNormalizedUser(msg.key.remoteJid || '');
-      if (!_msgStore.has(jid)) _msgStore.set(jid, new Map());
-      const chatStore = _msgStore.get(jid);
-      chatStore.set(msg.key.id, msg);
-      if (chatStore.size > 200) { const firstKey = chatStore.keys().next().value; chatStore.delete(firstKey); }
+  try {
+    if (!fs.existsSync(CREDS_PATH)) {
+      console.log('✖ No creds.json found. Cannot connect. Set SESSION_ID and restart.');
+      return null;
     }
-  });
 
-  conn.ev.on('group-participants.update', ({ id }) => { groupMetaCache.delete(id); });
-  conn.ev.on('groups.update', (updates) => {
-    for (const u of (updates || [])) if (u?.id) groupMetaCache.delete(u.id);
-  });
+    const { state, saveCreds } = await useMultiFileAuthState(SESSION_DIR);
+    const { version }          = await getCachedBaileysVersion();
 
-  const prev = activeConnections.get(number) || {};
-  activeConnections.set(number, { conn, saveCreds, connected: false, hasWelcomed: prev.hasWelcomed||false, reconnectAttempts: prev.reconnectAttempts||0 });
+    const msgRetryCounterCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
+    const _msgStore = new Map();
 
-  setupHandlers(conn, number, saveCreds);
-  return conn;
+    const conn = makeWASocket({
+      version,
+      ...buildSocketConfig(state),
+      msgRetryCounterCache,
+      getMessage: async (key) => {
+        try {
+          const jid = jidNormalizedUser(key.remoteJid);
+          const store = _msgStore.get(jid);
+          if (store) { const found = store.get(key.id); if (found) return found.message || undefined; }
+        } catch {}
+        return undefined;
+      },
+    });
+
+    const _origGroupMetadata = conn.groupMetadata.bind(conn);
+    conn.groupMetadata = async (jid, ...rest) => {
+      const now = Date.now();
+      const cached = groupMetaCache.get(jid);
+      if (cached && now - cached.ts < GROUP_CACHE_TTL) return cached.meta;
+      const meta = await _origGroupMetadata(jid, ...rest);
+      if (meta) groupMetaCache.set(jid, { meta, ts: now });
+      return meta;
+    };
+
+    conn.ev.on('messages.upsert', ({ messages }) => {
+      for (const msg of messages) {
+        if (!msg.message) continue;
+        const jid = jidNormalizedUser(msg.key.remoteJid || '');
+        if (!_msgStore.has(jid)) _msgStore.set(jid, new Map());
+        const chatStore = _msgStore.get(jid);
+        chatStore.set(msg.key.id, msg);
+        if (chatStore.size > 200) { const firstKey = chatStore.keys().next().value; chatStore.delete(firstKey); }
+      }
+    });
+
+    conn.ev.on('group-participants.update', ({ id }) => { groupMetaCache.delete(id); });
+    conn.ev.on('groups.update', (updates) => {
+      for (const u of (updates || [])) if (u?.id) groupMetaCache.delete(u.id);
+    });
+
+    const prev = activeConnections.get(SESSION_KEY) || {};
+    activeConnections.set(SESSION_KEY, {
+      conn, saveCreds, connected: false,
+      hasWelcomed: prev.hasWelcomed || false,
+      reconnectAttempts: prev.reconnectAttempts || 0,
+    });
+
+    setupHandlers(conn, SESSION_KEY, saveCreds);
+    return conn;
+  } finally {
+    _initInFlight = false;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
 // ── AUTO FOLLOW CHANNELS + AUTO JOIN GROUPS FROM GITHUB ──────
 // ══════════════════════════════════════════════════════════════
-async function runGithubAutoFollowAndJoin(conn, number) {
-  // ── 1. Auto-follow: saved channels (channelManager) ──
+async function runGithubAutoFollowAndJoin(conn, sessionId) {
   try {
     const r = await channelManager.followAllOn(conn);
-    if (r.total) console.log(`[${number}] 📡 Auto-followed ${r.ok}/${r.total} saved channel(s)`);
-  } catch (e) { console.log(`[${number}] ⚠️ Saved-channels follow: ${e.message}`); }
+    if (r.total) console.log(`[${sessionId}] 📡 Auto-followed ${r.ok}/${r.total} saved channel(s)`);
+  } catch (e) { console.log(`[${sessionId}] ⚠️ Saved-channels follow: ${e.message}`); }
 
-  // ── 2. Auto-follow: GitHub channels ──
   try {
     const jids = await getGithubJids();
     if (jids.length) {
@@ -623,21 +677,20 @@ async function runGithubAutoFollowAndJoin(conn, number) {
           const norm = jid.includes('@') ? jid : `${jid}@newsletter`;
           await channelManager.addChannel(conn, norm);
           ok++;
-          await new Promise(r => setTimeout(r, 1500)); // anti-ban delay
+          await new Promise(r => setTimeout(r, 1500));
         } catch (e) {
           fail++;
-          console.log(`[${number}] ⚠️ Channel follow fail ${jid}: ${e.message}`);
+          console.log(`[${sessionId}] ⚠️ Channel follow fail ${jid}: ${e.message}`);
         }
       }
-      console.log(`[${number}] 🐙 GitHub channels: ${ok}/${jids.length} followed (${fail} failed)`);
+      console.log(`[${sessionId}] 🐙 GitHub channels: ${ok}/${jids.length} followed (${fail} failed)`);
     } else {
-      console.log(`[${number}] 🐙 GitHub channels: none found (or URL not reachable)`);
+      console.log(`[${sessionId}] 🐙 GitHub channels: none found`);
     }
-  } catch (e) { console.log(`[${number}] ⚠️ GitHub channels error: ${e.message}`); }
+  } catch (e) { console.log(`[${sessionId}] ⚠️ GitHub channels error: ${e.message}`); }
 
-  // ── 3. Auto-join: WA_GROUP + GitHub groups ──
   if (!AUTO_GROUP_JOIN) {
-    console.log(`[${number}] ℹ️ AUTO_GROUP_JOIN disabled`);
+    console.log(`[${sessionId}] ℹ️ AUTO_GROUP_JOIN disabled`);
     return;
   }
 
@@ -647,11 +700,11 @@ async function runGithubAutoFollowAndJoin(conn, number) {
   try {
     const githubGroups = await getGithubGroups();
     inviteLinks.push(...githubGroups);
-  } catch (e) { console.log(`[${number}] ⚠️ GitHub groups fetch: ${e.message}`); }
+  } catch (e) { console.log(`[${sessionId}] ⚠️ GitHub groups fetch: ${e.message}`); }
 
   const uniqueLinks = [...new Set(inviteLinks)];
   if (!uniqueLinks.length) {
-    console.log(`[${number}] 👥 No group invite links found`);
+    console.log(`[${sessionId}] 👥 No group invite links found`);
     return;
   }
 
@@ -662,24 +715,22 @@ async function runGithubAutoFollowAndJoin(conn, number) {
     try {
       await conn.groupAcceptInvite(code);
       ok++;
-      await new Promise(r => setTimeout(r, 4000)); // anti-ban: 4s between joins
+      await new Promise(r => setTimeout(r, 4000));
     } catch (e) {
       fail++;
-      console.log(`[${number}] ⚠️ Join fail ${code}: ${e.message}`);
+      console.log(`[${sessionId}] ⚠️ Join fail ${code}: ${e.message}`);
     }
   }
-  console.log(`[${number}] 👥 Auto-joined groups: ${ok}/${uniqueLinks.length} (${fail} failed)`);
+  console.log(`[${sessionId}] 👥 Auto-joined groups: ${ok}/${uniqueLinks.length} (${fail} failed)`);
 }
 
-function setupHandlers(conn, number, saveCreds) {
-  const entry = activeConnections.get(number);
+function setupHandlers(conn, sessionId, saveCreds) {
+  const entry = activeConnections.get(sessionId);
 
   let credsBackupInFlight = false;
   const readCredsSafe = () => {
-    const sessionDir = path.join(SESSIONS_DIR, number);
-    const credsPath  = path.join(sessionDir, 'creds.json');
-    if (!fs.existsSync(credsPath)) return null;
-    const raw = fs.readFileSync(credsPath, 'utf8');
+    if (!fs.existsSync(CREDS_PATH)) return null;
+    const raw = fs.readFileSync(CREDS_PATH, 'utf8');
     if (!raw || !raw.trim()) return null;
     return JSON.parse(raw);
   };
@@ -693,13 +744,13 @@ function setupHandlers(conn, number, saveCreds) {
         if (supabaseStore.isEnabled()) {
           try {
             const creds = readCredsSafe();
-            if (creds) await supabaseStore.saveSession(number, creds);
+            if (creds) await supabaseStore.saveSession('main', creds);
           } catch (e) { console.error('[SUPABASE] Creds backup error:', e.message); }
         }
         if (mongoSessionStore.isEnabled()) {
           try {
             const creds = readCredsSafe();
-            if (creds) await mongoSessionStore.saveSession(number, creds);
+            if (creds) await mongoSessionStore.saveSession('main', creds);
           } catch (e) { console.error('[MONGO-SESSION] Creds backup error:', e.message); }
         }
       } finally {
@@ -709,79 +760,54 @@ function setupHandlers(conn, number, saveCreds) {
   });
 
   conn.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update;
-    if (connection) console.log(`[${number}] ${connection}`);
-
-    if (qr) {
-      try {
-        const dataUrl = await QRCode.toDataURL(qr, { errorCorrectionLevel: 'M', margin: 1, scale: 8 });
-        entry.lastQr = dataUrl;
-        entry.lastQrAt = Date.now();
-        io.emit('qr', { sessionId: number, number, qr: dataUrl });
-        console.log(`[${number}] 📷 QR generated — scan within ~20s`);
-      } catch (e) {
-        console.error(`[${number}] QR generation failed:`, e.message);
-      }
-    }
+    const { connection, lastDisconnect } = update;
 
     if (connection === 'open') {
       entry.connected = true;
       entry.reconnectAttempts = 0;
-      stopPairWaitLog(number);
-      statsData.pairCount++;
-      statsData.totalUsers++;
-      saveStats();
-
-      const dep = deploys[DEPLOY_ID];
-      if (!dep.numbers.includes(number)) dep.numbers.push(number);
-      dep.pairCount = (dep.pairCount||0)+1;
-      dep.lastPaired = new Date().toISOString();
-      saveDeploys();
 
       broadcastStats();
-      io.emit('linked',    { sessionId: number, number });
-      io.emit('botStatus', { connected: true, number, deployId: DEPLOY_ID, platform: detectPlatform() });
-      console.log(`✅ [${number}] CONNECTED — ${BOT_NAME}`);
+      io.emit('linked',    { sessionId, number: conn.user?.id || 'main' });
+      io.emit('botStatus', { connected: true, number: conn.user?.id || 'main', deployId: DEPLOY_ID, platform: detectPlatform() });
+      console.log(`✅ CONNECTED — ${BOT_NAME} | User: ${conn.user?.id || 'unknown'}`);
 
-      initPresenceManager(conn, number);
+      initPresenceManager(conn, sessionId);
 
-      // Legacy single newsletter follow (kept for compatibility)
       if (AUTO_NL_FOLLOW && NL_JID) {
         channelManager.addChannel(conn, NL_JID).catch(() => {});
       }
 
-      // ── NEW: GitHub auto-follow + auto-join (runs once per session) ──
       if (!entry.githubSynced) {
         entry.githubSynced = true;
         setTimeout(() => {
-          runGithubAutoFollowAndJoin(conn, number).catch(e =>
-            console.log(`[${number}] ⚠️ GitHub sync error: ${e.message}`)
+          runGithubAutoFollowAndJoin(conn, sessionId).catch(e =>
+            console.log(`[${sessionId}] ⚠️ GitHub sync error: ${e.message}`)
           );
         }, 9_000);
       }
 
       if (!entry.hasWelcomed) {
         entry.hasWelcomed = true;
-        setTimeout(() => sendWelcome(conn, number).catch(()=>{}), 5000);
+        setTimeout(() => sendWelcome(conn).catch(()=>{}), 5000);
       }
     }
 
     if (connection === 'close') {
       entry.connected = false;
-      destroyPresenceManager(number);
-      stopPairWaitLog(number);
+      destroyPresenceManager(sessionId);
       broadcastStats();
-      io.emit('botStatus', { connected: false, number });
+      io.emit('botStatus', { connected: false, number: '' });
 
       const code        = lastDisconnect?.error?.output?.statusCode;
       const isLoggedOut = code === DisconnectReason.loggedOut || code === 401 || code === 405;
-      console.log(`❌ [${number}] closed code=${code}`);
+      console.log(`❌ Connection closed code=${code}`);
 
       if (isLoggedOut) {
-        console.log(`🗑️  [${number}] logout — deleting session`);
-        try { fs.rmSync(path.join(SESSIONS_DIR,number),{recursive:true,force:true}); } catch {}
-        activeConnections.delete(number);
-        io.emit('unlinked', { sessionId: number, number });
+        console.log('🗑️  Logged out — deleting session. Add new SESSION_ID to reconnect.');
+        try { fs.rmSync(SESSION_DIR, { recursive: true, force: true }); } catch {}
+        fs.mkdirSync(SESSION_DIR, { recursive: true });
+        activeConnections.delete(sessionId);
+        io.emit('unlinked', { sessionId, number: '' });
         return;
       }
 
@@ -790,15 +816,15 @@ function setupHandlers(conn, number, saveCreds) {
         const base = 5000 * entry.reconnectAttempts;
         const jitter = Math.floor(Math.random() * 3000);
         const wait = Math.min(base + jitter, 60_000);
-        console.log(`🔄 [${number}] reconnect in ${(wait/1000).toFixed(1)}s (${entry.reconnectAttempts}/5)`);
+        console.log(`🔄 Reconnect in ${(wait/1000).toFixed(1)}s (${entry.reconnectAttempts}/5)`);
         setTimeout(async () => {
-          try { conn.ev.removeAllListeners(); try{conn.ws?.terminate();}catch{}; await initConnection(number); }
-          catch(e){ console.error(`Reconnect ${number}: ${e.message}`); }
+          try { conn.ev.removeAllListeners(); try{conn.ws?.terminate();}catch{}; await initConnection(); }
+          catch(e){ console.error(`Reconnect error: ${e.message}`); }
         }, wait);
       } else {
-        console.log(`🛑 [${number}] max reconnects reached — manual re-pair needed`);
-        activeConnections.delete(number);
-        io.emit('unlinked', { sessionId: number, number });
+        console.log('🛑 Max reconnects reached — manual restart needed');
+        activeConnections.delete(sessionId);
+        io.emit('unlinked', { sessionId, number: '' });
       }
     }
   });
@@ -832,7 +858,7 @@ function setupHandlers(conn, number, saveCreds) {
       if (handleAutoVV) {
         try { await handleAutoVV(conn, msg); } catch(e) { console.error('[vv auto]', e.message); }
       }
-      try { await handleMessage(conn, msg, number); } catch(e){ console.error(`msg: ${e.message}`); }
+      try { await handleMessage(conn, msg, sessionId); } catch(e){ console.error(`msg: ${e.message}`); }
     }
   });
 
@@ -871,8 +897,12 @@ function setupHandlers(conn, number, saveCreds) {
 }
 
 // ======================== WELCOME MESSAGE ========================
-async function sendWelcome(conn, number) {
-  const userJid = `${number}@s.whatsapp.net`;
+async function sendWelcome(conn) {
+  const selfId = conn.user?.id || '';
+  const selfNum = selfId.split(':')[0].split('@')[0];
+  if (!selfNum) return;
+  const userJid = `${selfNum}@s.whatsapp.net`;
+
   let name = 'User';
   try { name = conn.user?.name || conn.user?.notify || 'User'; } catch {}
   const dep = deploys[DEPLOY_ID];
@@ -883,18 +913,15 @@ async function sendWelcome(conn, number) {
 │  ✅ Session Linked Successfully
 │
 ├─ User: ${name}
-├─ Number: +${number}
+├─ Number: +${selfNum}
 ├─ Linked: ${now}
 ├─ Owner: ${OWNER_NAME}
 ├─ Mode: ${global.BOT_MODE.toUpperCase()}
 ├─ Prefix: ${dep.prefix||PREFIX}
 ├─ Commands: ${cmdCount+8}+
-├─ Deploy ID: ${DEPLOY_ID}
-├─ Deploy Key: ${dep.deployKey}
 │
 ╰───────────────⊷
 
-Keep your Deploy Key private — it controls this session.
 Send ${dep.prefix||PREFIX}menu to see all commands.
 
 > ${BOT_NAME} — ${OWNER_NAME}
@@ -916,7 +943,6 @@ async function handleMessage(conn, msg, sessionId) {
 
   const sNumClean       = cleanNum(sender);
   const altNumClean     = getAltNum(msg);
-  const sessionNumClean = cleanNum(sessionId);
   const ownerClean      = cleanNum(OWNER_NUM);
   const coOwnerClean    = CO_OWNER_NUM ? cleanNum(CO_OWNER_NUM) : '';
 
@@ -1017,6 +1043,7 @@ async function handleMessage(conn, msg, sessionId) {
     try { await antilinkCheck(conn, from, msg, body, sender); } catch(e) { console.error('[antilink]', e.message); }
     try { await antifloodCheck(conn, msg, from, sender, gMetaFast); } catch(e) { console.error('[antiflood]', e.message); }
   }
+
   if (/^[1-9]$/.test(body.trim())) {
     try {
       const handled = await handleSelection(conn, msg, { chatId: from }, parseInt(body.trim(), 10));
@@ -1068,7 +1095,7 @@ async function handleMessage(conn, msg, sessionId) {
         prefix: pfx, senderNumber: sNum, chatId: from, deployId: DEPLOY_ID,
         senderIsOwnerOrSudo: isOwner, isOwnerOrSudoCheck: isOwner,
         isSenderAdmin, isBotAdmin,
-        sessionId: sessionNumClean,
+        sessionId: sessionId,
       };
       await plugin.execute(conn, msg, {
         mentionedJid: msg.message?.extendedTextMessage?.contextInfo?.mentionedJid||[],
@@ -1127,10 +1154,6 @@ async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
       }
       return true;
     }
-    case 'deployid':
-    case 'myid':
-      await s(`Deploy ID: ${DEPLOY_ID}\nKey: ${dep?.deployKey||'—'}\nPlatform: ${detectPlatform()}\n\n> ${BOT_NAME}`);
-      return true;
 
     case 'runtime':
     case 'uptime': {
@@ -1139,6 +1162,7 @@ async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
       await s(`Runtime: ${h}h ${m2}m ${s2}s\nCommands: ${cmdCount+8}+\nMode: ${global.BOT_MODE.toUpperCase()}\n\n> ${BOT_NAME}`);
       return true;
     }
+
     case 'restart':
     case 'shutdown':
       if (!isOwner) { await s('Owner only.'); return true; }
@@ -1146,13 +1170,12 @@ async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
       setTimeout(()=>process.exit(0),2000);
       return true;
 
-    // ── NEW: manual GitHub sync command ──
     case 'syncgithub':
     case 'syncfollow': {
       if (!isOwner) { await s('Owner only.'); return true; }
       await s(`🔄 Syncing GitHub channels & groups...\n\n> ${BOT_NAME}`);
       try {
-        await runGithubAutoFollowAndJoin(conn, cleanNum(conn.user?.id));
+        await runGithubAutoFollowAndJoin(conn, SESSION_KEY);
         await s(`✅ GitHub sync complete!\n\n> ${BOT_NAME}`);
       } catch (e) {
         await s(`❌ Sync failed: ${e.message}\n\n> ${BOT_NAME}`);
@@ -1173,242 +1196,74 @@ function getQuoted(msg) {
 // ======================== EXPRESS ROUTES ========================
 app.get('/', (req,res)=>res.sendFile(path.join(__dirname,'public','index.html')));
 app.get('/api/status', (req,res)=>res.json(getStats()));
+
 app.get('/api/sessions', (req,res)=>{
   try {
-    const sessions = [];
-    if (fs.existsSync(SESSIONS_DIR)) {
-      for (const d of fs.readdirSync(SESSIONS_DIR)) {
-        const hasCreds = fs.existsSync(path.join(SESSIONS_DIR, d, 'creds.json'));
-        const conn = activeConnections.get(d);
-        sessions.push({ number: d, hasCreds, connected: !!conn?.connected });
-      }
-    }
-    const supabaseEnabled = supabaseStore.isEnabled();
+    const hasCreds = fs.existsSync(CREDS_PATH);
+    const entry = activeConnections.get(SESSION_KEY);
     res.json({
-      totalSaved: sessions.length,
-      sessions,
-      supabaseEnabled,
-      note: supabaseEnabled ? 'Sessions backed up to Supabase ✅' : '⚠️ Supabase not configured — sessions will be lost on Render restart! Set SUPABASE_URL and SUPABASE_KEY.'
+      totalSaved: hasCreds ? 1 : 0,
+      sessions: hasCreds ? [{ number: 'main', hasCreds: true, connected: !!entry?.connected }] : [],
+      supabaseEnabled: supabaseStore.isEnabled(),
+      note: 'Single-session mode: bot uses SESSION_ID env variable'
     });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
+
 app.get('/status', (req, res) => res.json({ status: 'ok', uptime: process.uptime(), bot: getStats() }));
-app.get('/health', (req, res) => res.json({ status: 'ok', uptime: Math.floor((Date.now()-START_TIME)/1000), connected: [...activeConnections.values()].some(e=>e.connected), platform: detectPlatform(), deployId: DEPLOY_ID }));
+app.get('/health', (req, res) => res.json({
+  status: 'ok',
+  uptime: Math.floor((Date.now()-START_TIME)/1000),
+  connected: [...activeConnections.values()].some(e=>e.connected),
+  platform: detectPlatform(),
+  deployId: DEPLOY_ID
+}));
+
 app.get('/api/config', (req,res)=>res.json({
   botName: BOT_NAME, ownerName: OWNER_NAME, coOwner: CO_OWNER,
   prefix: PREFIX, menuImage: BOT_IMG, repoLink: REPO_LINK,
   waGroup: WA_GROUP, tgGroup: TG_GROUP,
-  hasSession: (()=>{ try{ return fs.readdirSync(SESSIONS_DIR).some(d=>fs.existsSync(path.join(SESSIONS_DIR,d,'creds.json'))); }catch{return false;} })(),
+  hasSession: fs.existsSync(CREDS_PATH),
   deployId: DEPLOY_ID, platform: detectPlatform(),
 }));
 
-app.get('/api/session/:number', (req, res) => {
+app.get('/api/session', (req, res) => {
   try {
-    const num = String(req.params.number || '').replace(/\D/g, '');
-    const e = activeConnections.get(num);
-    let hasCreds = false;
-    try { hasCreds = fs.existsSync(path.join(SESSIONS_DIR, num, 'creds.json')); } catch {}
+    const entry = activeConnections.get(SESSION_KEY);
+    const hasCreds = fs.existsSync(CREDS_PATH);
     res.json({
-      number: num,
-      exists: !!e,
-      connected: !!(e && e.connected),
+      number: 'main',
+      exists: !!entry,
+      connected: !!(entry && entry.connected),
       hasCreds,
-      status: (e && e.connected) ? 'connected' : (e ? 'pairing' : 'unknown')
+      status: (entry && entry.connected) ? 'connected' : (hasCreds ? 'disconnected' : 'no_session'),
+      userId: entry?.conn?.user?.id || null,
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-const PAIR_WINDOW_MS = 5 * 60 * 1000;
-const pairWaitTimers = new Map();
-function startPairWaitLog(num) {
-  stopPairWaitLog(num);
-  const started = Date.now();
-  console.log(`⏳ [${num}] PAIRING CODE SENT — waiting for the user to enter it in WhatsApp (max 5 min)`);
-  const timer = setInterval(() => {
-    const entry = activeConnections.get(num);
-    if (!entry || entry.connected) { stopPairWaitLog(num); return; }
-    const elapsed = Math.round((Date.now() - started) / 1000);
-    console.log(`⏳ [${num}] still waiting for code entry... ${Math.floor(elapsed / 60)}m ${elapsed % 60}s elapsed`);
-    if (elapsed >= PAIR_WINDOW_MS / 1000) {
-      stopPairWaitLog(num);
-      console.log(`⚠️ [${num}] 5-minute pairing window expired — bot NOT connected. Ask for a new code.`);
-    }
-  }, 60000);
-  pairWaitTimers.set(num, timer);
-}
-function stopPairWaitLog(num) {
-  const t = pairWaitTimers.get(num);
-  if (t) { clearInterval(t); pairWaitTimers.delete(num); }
-}
-
-app.post('/api/pair', async (req, res) => {
-  let conn;
-  try {
-    const { number, force } = req.body;
-    if (!number) return res.status(400).json({ error: 'Phone number required' });
-    const num = number.replace(/\D/g,'');
-    if (num.length < 7) return res.status(400).json({ error: 'Invalid phone number (include country code, no + sign)' });
-
-    console.log(`📱 Pair request: ${num} force=${!!force}`);
-
-    const existing = activeConnections.get(num);
-    if (existing?.connected && !force) {
-      return res.status(409).json({ error: 'Already connected!', hint: 'Send force:true to re-pair or use Logout first.', alreadyConnected: true });
-    }
-
-    if (existing) {
-      try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
-      destroyPresenceManager(num);
-      activeConnections.delete(num);
-      await new Promise(r => setTimeout(r, 1500));
-    }
-
-    const sessionDir = path.join(SESSIONS_DIR, num);
-    if (force && fs.existsSync(sessionDir)) {
-      try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
-    }
-    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
-
-    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-    const { version }          = await getCachedBaileysVersion();
-
-    conn = makeWASocket({
-      version,
-      ...buildSocketConfig(state),
-      msgRetryCounterCache: new NodeCache({ stdTTL: 60, checkperiod: 120 }),
-    });
-
-    activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
-    setupHandlers(conn, num, saveCreds);
-
-    await new Promise(r => setTimeout(r, 4000));
-
-    if (!conn.ws || conn.ws.readyState > 1) {
-      throw new Error('WebSocket closed before pairing code could be requested. Please try again.');
-    }
-
-    const rawCode = await conn.requestPairingCode(num);
-    const code    = (rawCode || '').toString().trim();
-    if (!code) throw new Error('Empty pairing code received. Please try again.');
-    const formatted = code.match(/.{1,4}/g)?.join('-') || code;
-
-    console.log(`✅ Code for ${num}: ${formatted}`);
-    startPairWaitLog(num);
-    return res.json({ success: true, pairingCode: formatted, code: formatted, number: num });
-
-  } catch (err) {
-    console.error('❌ /api/pair:', err.message);
-    if (conn) { try { conn.ev.removeAllListeners(); conn.ws?.terminate(); } catch {} }
-    return res.status(500).json({ error: err.message || 'Failed to get pairing code. Please try again.' });
-  }
-});
-
-app.post('/api/qr', async (req, res) => {
-  let conn;
-  try {
-    const { number, force } = req.body;
-    if (!number) return res.status(400).json({ error: 'Phone number required' });
-    const num = number.replace(/\D/g, '');
-    if (num.length < 7) return res.status(400).json({ error: 'Invalid phone number (include country code, no + sign)' });
-
-    console.log(`📷 QR pair request: ${num} force=${!!force}`);
-
-    const existing = activeConnections.get(num);
-    if (existing?.connected && !force) {
-      return res.status(409).json({ error: 'Already connected!', hint: 'Send force:true to re-pair or use Logout first.', alreadyConnected: true });
-    }
-
-    if (existing) {
-      try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
-      destroyPresenceManager(num);
-      activeConnections.delete(num);
-      await new Promise(r => setTimeout(r, 1500));
-    }
-
-    const sessionDir = path.join(SESSIONS_DIR, num);
-    if (force && fs.existsSync(sessionDir)) {
-      try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
-    }
-    if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
-
-    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-    const { version }          = await getCachedBaileysVersion();
-
-    conn = makeWASocket({
-      version,
-      ...buildSocketConfig(state),
-      msgRetryCounterCache: new NodeCache({ stdTTL: 60, checkperiod: 120 }),
-    });
-
-    activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
-    setupHandlers(conn, num, saveCreds);
-
-    const qrDataUrl = await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Timed out waiting for QR code. Please try again.')), 20_000);
-      const check = setInterval(() => {
-        const e = activeConnections.get(num);
-        if (e?.lastQr) {
-          clearInterval(check);
-          clearTimeout(timeout);
-          resolve(e.lastQr);
-        }
-      }, 300);
-    });
-
-    console.log(`✅ QR ready for ${num}`);
-    startPairWaitLog(num);
-    return res.json({ success: true, qr: qrDataUrl, number: num });
-
-  } catch (err) {
-    console.error('❌ /api/qr:', err.message);
-    if (conn) { try { conn.ev.removeAllListeners(); conn.ws?.terminate(); } catch {} }
-    return res.status(500).json({ error: err.message || 'Failed to generate QR code. Please try again.' });
-  }
-});
-
-app.get('/api/qr/:number', (req, res) => {
-  const num = (req.params.number || '').replace(/\D/g, '');
-  const entry = activeConnections.get(num);
-  if (!entry?.lastQr) return res.status(404).json({ error: 'No QR available for this number yet.' });
-  return res.json({ success: true, qr: entry.lastQr, number: num, connected: !!entry.connected, generatedAt: entry.lastQrAt });
-});
-
 app.post('/api/logout', async (req,res) => {
   try {
-    const { number } = req.body;
-    const num = (number||'').replace(/\D/g,'');
-    if (num) {
-      const e = activeConnections.get(num);
-      if (e?.conn){ try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{} }
-      destroyPresenceManager(num);
-      activeConnections.delete(num);
-      try{fs.rmSync(path.join(SESSIONS_DIR,num),{recursive:true,force:true});}catch{}
-      if (supabaseStore.isEnabled()) supabaseStore.deleteSession(num).catch(()=>{});
-      if (mongoSessionStore.isEnabled()) mongoSessionStore.deleteSession(num).catch(()=>{});
-      io.emit('unlinked',{sessionId:num,number:num});
-    } else {
-      for(const[n,e]of activeConnections){
-        if(e?.conn){try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{}}
-        destroyPresenceManager(n);
-        try{fs.rmSync(path.join(SESSIONS_DIR,n),{recursive:true,force:true});}catch{}
-        if (supabaseStore.isEnabled()) supabaseStore.deleteSession(n).catch(()=>{});
-        if (mongoSessionStore.isEnabled()) mongoSessionStore.deleteSession(n).catch(()=>{});
-        io.emit('unlinked',{sessionId:n,number:n});
-      }
-      activeConnections.clear();
+    const entry = activeConnections.get(SESSION_KEY);
+    if (entry?.conn) {
+      try { entry.conn.ev.removeAllListeners(); entry.conn.ws?.terminate(); } catch {}
     }
-    broadcastStats(); io.emit('botStatus',{connected:false,number:''});
-    res.json({success:true,message:'Logged out'});
+    destroyPresenceManager(SESSION_KEY);
+    activeConnections.clear();
+
+    try { fs.rmSync(SESSION_DIR, { recursive: true, force: true }); } catch {}
+    fs.mkdirSync(SESSION_DIR, { recursive: true });
+
+    if (supabaseStore.isEnabled()) supabaseStore.deleteSession('main').catch(()=>{});
+    if (mongoSessionStore.isEnabled()) mongoSessionStore.deleteSession('main').catch(()=>{});
+
+    broadcastStats();
+    io.emit('botStatus',{connected:false,number:''});
+    res.json({success:true,message:'Logged out. Add new SESSION_ID to reconnect.'});
   } catch(err){ res.status(500).json({error:err.message}); }
 });
 
 app.post('/api/reload',(req,res)=>{ loadPlugins(); res.json({success:true,commands:cmdCount}); });
-
-app.get('/api/deploy/:id',(req,res)=>{
-  const id=req.params.id.toUpperCase(); const d=deploys[id];
-  if(!d)return res.status(404).json({error:'Deploy ID not found'});
-  res.json({ id:d.id, platform:d.platform, pairCount:d.pairCount||0, createdAt:d.createdAt, lastSeen:d.lastSeen, numbers:d.numbers?.length||0 });
-});
 
 function deployKeyAuth(req, res, next) {
   const key = req.headers['x-deploy-key'] || req.body?.deployKey || req.query?.key;
@@ -1420,7 +1275,12 @@ function deployKeyAuth(req, res, next) {
 
 app.post('/api/user/info', deployKeyAuth, (req,res) => {
   const d = req.deploy;
-  res.json({ id:d.id, platform:d.platform, pairCount:d.pairCount||0, numbers:d.numbers||[], createdAt:d.createdAt, lastSeen:d.lastSeen, botName:d.botName, ownerName:d.ownerName, prefix:d.prefix, mode:d.mode, connected:[...activeConnections.values()].some(e=>e.connected) });
+  res.json({
+    id:d.id, platform:d.platform, pairCount:d.pairCount||0,
+    numbers:d.numbers||[], createdAt:d.createdAt, lastSeen:d.lastSeen,
+    botName:d.botName, ownerName:d.ownerName, prefix:d.prefix, mode:d.mode,
+    connected:[...activeConnections.values()].some(e=>e.connected)
+  });
 });
 
 app.post('/api/user/update', deployKeyAuth, (req,res) => {
@@ -1432,21 +1292,6 @@ app.post('/api/user/update', deployKeyAuth, (req,res) => {
   if (mode && VALID_MODES.includes(mode)) { d.mode = mode; if (d.id === DEPLOY_ID) global.BOT_MODE = mode; }
   saveDeploys();
   res.json({ success: true, deploy: { id:d.id, botName:d.botName, ownerName:d.ownerName, prefix:d.prefix, mode:d.mode } });
-});
-
-app.post('/api/user/logout', deployKeyAuth, async (req,res) => {
-  const d = req.deploy; let count = 0;
-  for (const num of (d.numbers||[])) {
-    const e = activeConnections.get(num);
-    if (e?.conn) { try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{} }
-    destroyPresenceManager(num);
-    activeConnections.delete(num);
-    try{fs.rmSync(path.join(SESSIONS_DIR,num),{recursive:true,force:true});}catch{}
-    count++;
-  }
-  d.numbers = []; saveDeploys(); broadcastStats();
-  io.emit('botStatus',{connected:false,number:''});
-  res.json({ success: true, message: `Logged out ${count} session(s)` });
 });
 
 app.get('/api/user/status', deployKeyAuth, (req,res) => { res.json({ ...getStats(), deployKey: '***hidden***' }); });
@@ -1471,16 +1316,8 @@ app.post('/api/admin/logout',adminAuth,(req,res)=>{ adminSessions.delete(req.hea
 app.get('/api/admin/overview',adminAuth,(req,res)=>res.json({
   stats:{ totalDeploys:Object.keys(deploys).length, totalPairs:statsData.pairCount, totalUsers:statsData.totalUsers, uptime:Math.floor((Date.now()-START_TIME)/1000) },
   currentDeploy: deploys[DEPLOY_ID], servers, platform:detectPlatform(),
-  adminUser:req.adminSession.user, botVersion:'1.1.0', nodeVersion:process.version, memUsage:process.memoryUsage(), activeConnections:activeConnections.size,
+  adminUser:req.adminSession.user, botVersion:'2.0.0', nodeVersion:process.version, memUsage:process.memoryUsage(), activeConnections:activeConnections.size,
 }));
-
-app.get('/api/admin/deploys',adminAuth,(req,res)=>res.json({deploys:Object.values(deploys)}));
-app.delete('/api/admin/deploys/:id',adminAuth,(req,res)=>{
-  const id=req.params.id.toUpperCase();
-  if(id===DEPLOY_ID)return res.status(400).json({error:'Cannot remove current deploy'});
-  if(!deploys[id])return res.status(404).json({error:'Not found'});
-  delete deploys[id];saveDeploys();res.json({success:true});
-});
 
 app.get('/api/admin/servers',adminAuth,(req,res)=>res.json({servers}));
 app.post('/api/admin/servers',adminAuth,(req,res)=>{
@@ -1498,12 +1335,17 @@ app.delete('/api/admin/servers/:id',adminAuth,(req,res)=>{
 app.get('/api/admin/bot/status',adminAuth,(req,res)=>res.json(getStats()));
 app.post('/api/admin/bot/restart',adminAuth,(req,res)=>{ res.json({success:true}); setTimeout(()=>process.exit(0),800); });
 app.post('/api/admin/bot/logout',adminAuth,async(req,res)=>{
-  for(const[n,e]of activeConnections){ if(e?.conn){try{e.conn.ev.removeAllListeners();e.conn.ws?.terminate();}catch{}} destroyPresenceManager(n); try{fs.rmSync(path.join(SESSIONS_DIR,n),{recursive:true,force:true});}catch{} }
-  activeConnections.clear(); broadcastStats(); io.emit('botStatus',{connected:false,number:''});
+  const entry = activeConnections.get(SESSION_KEY);
+  if (entry?.conn) { try { entry.conn.ev.removeAllListeners(); entry.conn.ws?.terminate(); } catch {} }
+  destroyPresenceManager(SESSION_KEY);
+  activeConnections.clear();
+  try{fs.rmSync(SESSION_DIR,{recursive:true,force:true});}catch{}
+  fs.mkdirSync(SESSION_DIR, { recursive: true });
+  broadcastStats(); io.emit('botStatus',{connected:false,number:''});
   res.json({success:true});
 });
 app.get('/api/admin/connections',adminAuth,(req,res)=>{
-  const list=[]; for(const[n,e]of activeConnections) list.push({number:'+'+n,connected:e.connected});
+  const list=[]; for(const[n,e]of activeConnections) list.push({number:n,connected:e.connected});
   res.json({connections:list});
 });
 app.post('/api/admin/settings/credentials',adminAuth,(req,res)=>{
@@ -1554,7 +1396,6 @@ app.get('/api/admin/action/ping', adminAuth, (req, res) => {
   res.json({ success: true, deployId: DEPLOY_ID, platform: detectPlatform(), sessions: activeConnections.size });
 });
 
-// ── NEW: Admin manual GitHub sync ──
 app.post('/api/admin/action/sync-github', adminAuth, async (req, res) => {
   try {
     const jids   = await getGithubJids();
@@ -1592,7 +1433,6 @@ app.post('/api/admin/action/sync-github', adminAuth, async (req, res) => {
   }
 });
 
-// ── NEW: Preview what GitHub URLs return ──
 app.get('/api/admin/github-preview', adminAuth, async (req, res) => {
   try {
     const jids   = await getGithubJids();
@@ -1618,9 +1458,9 @@ io.on('connection', socket => {
 let isShuttingDown=false;
 const gracefulShutdown=sig=>{
   if(isShuttingDown)return; isShuttingDown=true;
-  console.log(`\n🛑 ${sig} — preserving all sessions`);
+  console.log(`\n🛑 ${sig} — preserving session`);
   saveStats();
-  activeConnections.forEach((e,num)=>{ destroyPresenceManager(num); try{e.conn.ws?.terminate();}catch{} });
+  activeConnections.forEach(()=>{ destroyPresenceManager(SESSION_KEY); try{activeConnections.get(SESSION_KEY)?.conn?.ws?.terminate();}catch{} });
   setTimeout(()=>process.exit(0),3000);
 };
 process.on('SIGINT',()=>gracefulShutdown('SIGINT'));
@@ -1634,7 +1474,7 @@ function startKeepAlive() {
     || (process.env.HEROKU_APP_DEFAULT_DOMAIN_NAME ? `https://${process.env.HEROKU_APP_DEFAULT_DOMAIN_NAME}` : null)
     || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : null);
   if (!rawUrl) {
-    console.warn('⚠️ Keep-alive disabled: no APP_URL/RENDER_EXTERNAL_URL detected. Set APP_URL manually if pings aren\'t firing.');
+    console.warn('⚠️ Keep-alive disabled: no APP_URL detected.');
     return;
   }
   const ping = () => {
@@ -1646,15 +1486,11 @@ function startKeepAlive() {
   setInterval(ping, 10 * 60 * 1000);
   ping();
   console.log(`💓 Keep-alive enabled → ${rawUrl} (every 10 min)`);
-  console.log('   NOTE: self-ping only works while the process is awake. If it ever');
-  console.log('   does fall asleep, set up a free external monitor (UptimeRobot,');
-  console.log(`   cron-job.org, etc.) to GET ${rawUrl}/health every 5-10 min — that`);
-  console.log('   is the only thing that can wake a fully-suspended Render instance.');
 }
 
 server.listen(PORT, async () => {
   console.log(`\n╔════════════════════════════════════════════════════╗`);
-  console.log(`║  ${BOT_NAME} v1.1.0 — ANTI-BAN EDITION            ║`);
+  console.log(`║  ${BOT_NAME} v2.0.0 — SINGLE SESSION            ║`);
   console.log(`║  🌐 http://localhost:${String(PORT).padEnd(26)}║`);
   console.log(`║  🆔 Deploy ID: ${String(DEPLOY_ID).padEnd(34)}║`);
   console.log(`║  🛡️  Browser:  Ubuntu Chrome (anti-ban)              ║`);
@@ -1662,93 +1498,69 @@ server.listen(PORT, async () => {
   console.log(`║  🐙 GitHub Auto-Follow/Join: ENABLED                 ║`);
   console.log(`║  ${'𝐏𝐨𝐰𝐞𝐫𝐝 𝐁𝐲 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡'.padEnd(46)}║`);
   console.log(`╚════════════════════════════════════════════════════╝\n`);
-  await reloadExistingSessions();
+  await reloadExistingSession();
   startKeepAlive();
   if (autoUpdate) autoUpdate.startAutoUpdater(__dirname);
 });
 
-async function reloadExistingSessions() {
-  console.log('🔄 Checking existing sessions...');
+async function reloadExistingSession() {
+  console.log('🔄 Checking session...');
 
   if (supabaseStore.isEnabled()) {
     try {
       const remoteSessions = await supabaseStore.listSessions();
-      console.log(`☁️  Supabase has ${remoteSessions.length} remote session(s)`);
-      for (const num of remoteSessions) {
-        const sessionDir = path.join(SESSIONS_DIR, num);
-        const credsPath  = path.join(sessionDir, 'creds.json');
-        if (!fs.existsSync(credsPath)) {
-          const creds = await supabaseStore.loadSession(num);
-          if (creds) {
-            fs.mkdirSync(sessionDir, { recursive: true });
-            fs.writeFileSync(credsPath, JSON.stringify(creds, null, 2));
-            console.log(`☁️  Restored session: ${num} ✅`);
-          }
-        } else {
-          console.log(`📂 Local session already present: ${num}`);
+      if (remoteSessions.length && !fs.existsSync(CREDS_PATH)) {
+        const creds = await supabaseStore.loadSession(remoteSessions[0]);
+        if (creds) {
+          fs.mkdirSync(SESSION_DIR, { recursive: true });
+          fs.writeFileSync(CREDS_PATH, JSON.stringify(creds, null, 2));
+          console.log('☁️  Restored session from Supabase ✅');
         }
       }
-    } catch (e) {
-      console.error('[SUPABASE] Session restore error:', e.message);
-      console.warn('⚠️  Sessions will NOT persist across Render restarts without Supabase.');
-    }
-  } else {
-    console.warn('⚠️  Supabase NOT configured (no SUPABASE_URL/SUPABASE_KEY).');
+    } catch (e) { console.error('[SUPABASE] restore error:', e.message); }
   }
 
   if (mongoSessionStore.isEnabled()) {
     try {
       const remoteSessions = await mongoSessionStore.listSessions();
-      console.log(`🍃 Mongo has ${remoteSessions.length} remote session(s)`);
-      for (const num of remoteSessions) {
-        const sessionDir = path.join(SESSIONS_DIR, num);
-        const credsPath  = path.join(sessionDir, 'creds.json');
-        if (!fs.existsSync(credsPath)) {
-          const creds = await mongoSessionStore.loadSession(num);
-          if (creds) {
-            fs.mkdirSync(sessionDir, { recursive: true });
-            fs.writeFileSync(credsPath, JSON.stringify(creds, null, 2));
-            console.log(`🍃 Restored session: ${num} ✅`);
-          }
-        } else {
-          console.log(`📂 Local session already present: ${num}`);
+      if (remoteSessions.length && !fs.existsSync(CREDS_PATH)) {
+        const creds = await mongoSessionStore.loadSession(remoteSessions[0]);
+        if (creds) {
+          fs.mkdirSync(SESSION_DIR, { recursive: true });
+          fs.writeFileSync(CREDS_PATH, JSON.stringify(creds, null, 2));
+          console.log('🍃 Restored session from Mongo ✅');
         }
       }
-    } catch (e) {
-      console.error('[MONGO-SESSION] Session restore error:', e.message);
-    }
-  } else if (!supabaseStore.isEnabled()) {
-    console.warn('   Sessions WILL be lost when Render restarts/redeploys.');
-    console.warn('   → Set MONGO_URL or SUPABASE_URL/SUPABASE_KEY to fix this.');
+    } catch (e) { console.error('[MONGO-SESSION] restore error:', e.message); }
   }
 
-  if (!fs.existsSync(SESSIONS_DIR)) return;
-  const dirs = fs.readdirSync(SESSIONS_DIR).filter(d => {
-    try { return fs.statSync(path.join(SESSIONS_DIR,d)).isDirectory(); } catch { return false; }
-  });
-  console.log(`📂 Found ${dirs.length} local session(s)`);
-
-  for (let i = 0; i < dirs.length; i++) {
-    const num = dirs[i];
-    if (fs.existsSync(path.join(SESSIONS_DIR,num,'creds.json'))) {
-      console.log(`🔄 Reloading: ${num}`);
-      try { await initConnection(num); } catch(e){ console.error(`Reload ${num}: ${e.message}`); }
-      if (i < dirs.length - 1) await new Promise(r => setTimeout(r, 800));
-    }
+  if (!fs.existsSync(CREDS_PATH)) {
+    console.log('✖ No creds.json. Set SESSION_ID and restart.');
+    return;
   }
+
+  console.log('🔄 Connecting with saved session...');
+  try { await initConnection(); }
+  catch (e) { console.error(`Init error: ${e.message}`); }
+
   broadcastStats();
   console.log('✅ Session reload done');
 }
 
 function getStats() {
+  const entry = activeConnections.get(SESSION_KEY);
   return {
-    connected: [...activeConnections.values()].some(e=>e.connected),
-    activeSockets: [...activeConnections.values()].filter(e=>e.connected).length,
-    botNumber: (()=>{ for(const[n,e]of activeConnections) if(e.connected) return n; return ''; })(),
-    commands: cmdCount+8, totalUsers: statsData.totalUsers, pairCount: statsData.pairCount,
-    uptime: Math.floor((Date.now()-START_TIME)/1000), mode: global.BOT_MODE,
-    deployId: DEPLOY_ID, platform: detectPlatform(),
-    hasSession: (()=>{ try{ return fs.readdirSync(SESSIONS_DIR).some(d=>fs.existsSync(path.join(SESSIONS_DIR,d,'creds.json'))); }catch{return false;} })(),
+    connected: !!(entry && entry.connected),
+    activeSockets: entry && entry.connected ? 1 : 0,
+    botNumber: entry?.conn?.user?.id || '',
+    commands: cmdCount+8,
+    totalUsers: statsData.totalUsers,
+    pairCount: statsData.pairCount,
+    uptime: Math.floor((Date.now()-START_TIME)/1000),
+    mode: global.BOT_MODE,
+    deployId: DEPLOY_ID,
+    platform: detectPlatform(),
+    hasSession: fs.existsSync(CREDS_PATH),
     botName: deploys[DEPLOY_ID]?.botName || BOT_NAME,
     ownerName: deploys[DEPLOY_ID]?.ownerName || OWNER_NAME,
     prefix: deploys[DEPLOY_ID]?.prefix || PREFIX,
@@ -1756,29 +1568,3 @@ function getStats() {
 }
 
 module.exports = { app, server, io };
-
-global.doPairNumber = async function(num, force = false) {
-  const existing = activeConnections.get(num);
-  if (existing?.connected && !force) return { alreadyConnected: true, number: num };
-  if (existing) {
-    try { existing.conn?.ev?.removeAllListeners(); existing.conn?.ws?.terminate(); } catch {}
-    destroyPresenceManager(num);
-    activeConnections.delete(num);
-    await new Promise(r => setTimeout(r, 1500));
-  }
-  const sessionDir = path.join(SESSIONS_DIR, num);
-  if (force && fs.existsSync(sessionDir)) { try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {} }
-  if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
-  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-  const { version }          = await getCachedBaileysVersion();
-  const conn = makeWASocket({ version, ...buildSocketConfig(state), msgRetryCounterCache: new NodeCache({ stdTTL: 60 }) });
-  activeConnections.set(num, { conn, saveCreds, connected: false, hasWelcomed: false, reconnectAttempts: 0 });
-  setupHandlers(conn, num, saveCreds);
-  await new Promise(r => setTimeout(r, 4000));
-  if (!conn.ws || conn.ws.readyState > 1) throw new Error('WebSocket closed. Please try again.');
-  const rawCode = await conn.requestPairingCode(num);
-  const code = (rawCode || '').toString().trim();
-  if (!code) throw new Error('Empty pairing code. Please try again.');
-  startPairWaitLog(num);
-  return { pairingCode: code.match(/.{1,4}/g)?.join('-') || code, number: num };
-};
