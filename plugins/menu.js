@@ -61,7 +61,7 @@ const STYLES = {
         catOpen: (c) => `\`『 ${c} 』\`\n` + `╭───────────────────⊷\n`,
         cmd: (c) => `*┋ ⬡ ${toSmallCaps(c)}*\n`,
         catClose: () => `╰───────────────────⊷\n`,
-        footer: `\n> *© Powered by TYREX_KSH TECH*`,
+        footer: `\n> *© 𝐏𝐎𝐖𝐄𝐑𝐄𝐃 𝐁𝐘 𝐓𝐘𝐑𝐄𝐗-𝐊𝐒𝐇-𝐓𝐄𝐂𝐇`,
     },
     2: {
         name: 'NEON CYBER',
@@ -78,7 +78,7 @@ const STYLES = {
         catOpen: (c) => `\`『 ${c} 』\`\n` + `╭───────────────────⊷\n`,
         cmd: (c) => `*┋ ⬡ ${toSmallCaps(c)}*\n`,
         catClose: () => `╰───────────────────⊷\n`,
-        footer: `\n*© TYREX_KSH TECH — NEON EDITION* `,
+        footer: `\n*© TYREX_KSH-TECH — NEON EDITION* `,
     },
     3: {
         name: 'MINIMAL CLEAN',
@@ -96,7 +96,7 @@ const STYLES = {
         catOpen: (c) => `*${c.toLowerCase()}*\n`,
         cmd: (c) => ` ${c}\n`,
         catClose: () => `\n`,
-        footer: `— tyrex_ksh tech`,
+        footer: `— tyrex_ksh-tech`,
     },
     4: {
         name: 'ROYAL ELEGANT',
@@ -116,7 +116,7 @@ const STYLES = {
         catOpen: (c) => `*${c}*\n`,
         cmd: (c) => ` ${c}\n`,
         catClose: () => `\n\n`,
-        footer: `*© TYREX_KSH TECH — ROYAL EDITION* `,
+        footer: `*© 𝐓𝐘𝐑𝐄𝐗-𝐊𝐒𝐇-𝐓𝐄𝐂𝐇 — ROYAL EDITION* `,
     },
     5: {
         name: 'MATRIX HACKER',
@@ -133,7 +133,7 @@ const STYLES = {
         catOpen: (c) => '```# ' + c + '```\n',
         cmd: (c) => `> ${c}\n`,
         catClose: () => `\n`,
-        footer: '```[© TYREX_KSH TECH] session secured — 0 errors```',
+        footer: '```[© TYREX-KSH-TECH] session secured — 0 errors```',
     },
     6: {
         name: 'FIRE BLAZE',
@@ -151,7 +151,7 @@ const STYLES = {
         catOpen: (c) => `*${c}*\n`,
         cmd: (c) => ` ${c}\n`,
         catClose: () => `\n\n`,
-        footer: `*© TYREX_KSH TECH — FIRE EDITION* `,
+        footer: `*© TYREX-KSH-TECH — FIRE EDITION* `,
     },
     7: {
         name: 'OCEAN WAVE',
@@ -169,7 +169,7 @@ const STYLES = {
         catOpen: (c) => `*${c}*\n\n`,
         cmd: (c) => ` ${c}\n`,
         catClose: () => `\n\n`,
-        footer: `*© TYREX_KSH TECH — OCEAN EDITION* `,
+        footer: `*© TYREX-KSH-TECH — OCEAN EDITION* `,
     },
     8: {
         name: 'GALAXY STAR',
@@ -187,7 +187,7 @@ const STYLES = {
         catOpen: (c) => `*${c}*\n`,
         cmd: (c) => ` ${c}\n`,
         catClose: () => `  \n\n`,
-        footer: `*© TYREX_KSH TECH — GALAXY EDITION* `,
+        footer: `*© TYREX-KSH-TECH — GALAXY EDITION* `,
     },
 };
 const STYLE_COUNT = Object.keys(STYLES).length;
