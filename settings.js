@@ -14,17 +14,17 @@ module.exports = {
   set prefixes(v)     { this._prefixesOverride = v; },
 
   _botNameOverride: null,
-  get botName()       { return this._botNameOverride || process.env.BOT_NAME || 'TYREX_KSH MD'; },
+  get botName()       { return this._botNameOverride || process.env.BOT_NAME || '𝐓𝐘𝐑𝐄𝐗-𝐊𝐒𝐇-𝐓𝐄𝐂𝐇'; },
   set botName(v)      { this._botNameOverride = v; },
 
-  get botOwner()      { return process.env.OWNER_NAME || 'TYREX_KSH TECH'; },
-  get ownerName()     { return process.env.OWNER_NAME || 'TYREX_KSH TECH'; },
+  get botOwner()      { return process.env.OWNER_NAME || '𝐓𝐘𝐑𝐄𝐗-𝐊𝐒𝐇-𝐓𝐄𝐂𝐇'; },
+  get ownerName()     { return process.env.OWNER_NAME || '𝐓𝐘𝐑𝐄𝐗-𝐊𝐒𝐇-𝐓𝐄𝐂𝐇'; },
 
   _ownerNumberOverride: null,
   get ownerNumber()   { return this._ownerNumberOverride || process.env.OWNER_NUMBER || '255610744352'; },
   set ownerNumber(v)  { this._ownerNumberOverride = v; },
 
-  get botDesc()       { return process.env.BOT_DESC    || 'Powered By TYREX_KSH TECH'; },
+  get botDesc()       { return process.env.BOT_DESC    || '𝐏𝐎𝐖𝐄𝐑𝐄𝐃 𝐁𝐘 𝐓𝐘𝐑𝐄𝐗-𝐊𝐒𝐇-𝐓𝐄𝐂𝐇'; },
   get version()       { return process.env.BOT_VERSION || 'v2.0'; },
 
   // ── BOT SETTINGS ──────────────────────────────────────────────
