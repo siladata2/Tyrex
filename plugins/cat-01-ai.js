@@ -10,12 +10,12 @@ const _bundle = [];
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 const axios = require('axios');
 
-// ══════════════════ SILA X MINI API POOL ══════════════════
+// ══════════════════ TYREX_KSH MD API POOL ══════════════════
 const DELINE_BASE = 'https://api.deline.web.id/ai';
 const SAQIB_BASE  = 'https://apisaqib.vercel.app/api/v1';
 
@@ -59,7 +59,7 @@ module.exports = {
     command: 'ai',
     aliases: ['gpt', 'llama', 'mistral', 'gemini', 'ask', 'chat'],
     category: 'AI',
-    description: '🤖 Ask SILA X MINI AI — supports all languages',
+    description: '🤖 Ask TYREX_KSH MD AI — supports all languages',
     usage: '.ai <question>\n.gpt <question>\n.gemini <question>\n.llama <question>',
 
     async handler(sock, message, args, context = {}) {
@@ -68,7 +68,7 @@ module.exports = {
         const query  = args.join(' ').trim();
 
         if (!query) return sock.sendMessage(chatId, {
-            text: `🤖 *SILA X MINI AI*\n\nUsage: \`.${cmd} <your question>\`\n\nExample:\n• \`.ai What is Islam?\`\n• \`.gpt Write a poem in Urdu\`\n• \`.gemini Explain quantum physics\``
+            text: `🤖 *TYREX_KSH MD AI*\n\nUsage: \`.${cmd} <your question>\`\n\nExample:\n• \`.ai What is Islam?\`\n• \`.gpt Write a poem in Urdu\`\n• \`.gemini Explain quantum physics\``
         }, { quoted: message });
 
         await sock.sendMessage(chatId, { react: { text: '🤖', key: message.key } });
@@ -95,7 +95,7 @@ module.exports = {
 
         await sock.sendMessage(chatId, { react: { text: '✅', key: message.key } });
         await sock.sendMessage(chatId, {
-            text: `🤖 *SILA X MINI AI*\n\n${answer}\n\n_Powered by SILA X MINI_`
+            text: `🤖 *TYREX_KSH MD AI*\n\n${answer}\n\n_Powered by TYREX_KSH MD_`
         }, { quoted: message });
     }
 };
@@ -161,7 +161,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -256,7 +256,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -321,7 +321,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -386,7 +386,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -464,7 +464,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *                         SILA X MINI v7.0 ULTRA                             *
+ *                         TYREX_KSH MD v7.0 ULTRA                             *
  *          AI STORY GENERATOR — Stories in All Languages with TTS           *
  *****************************************************************************/
 'use strict';
@@ -541,7 +541,7 @@ module.exports = {
         if (!story) return sock.sendMessage(chatId, { text: '❌ Story generation failed.' }, { quoted: message });
 
         await sock.sendMessage(chatId, {
-            text: `📖 *AI Story*\n\n${story}\n\n_— SILA X MINI_`
+            text: `📖 *AI Story*\n\n${story}\n\n_— TYREX_KSH MD_`
         }, { quoted: message });
 
         if (voice) {
@@ -582,7 +582,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -659,7 +659,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -736,7 +736,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -831,8 +831,8 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *                         SILA X MINI v7.0 ULTRA                             *
- *            SILA X MINI AI — Multi-Model Smart AI with Context Memory             *
+ *                         TYREX_KSH MD v7.0 ULTRA                             *
+ *            TYREX_KSH MD AI — Multi-Model Smart AI with Context Memory             *
  *****************************************************************************/
 'use strict';
 const axios = require('axios');
@@ -885,15 +885,15 @@ async function askAI(question) {
     return null;
 }
 
-const SYSTEM_PROMPT = `You are SILA X MINI, an advanced AI assistant created by Richard Besisila. 
+const SYSTEM_PROMPT = `You are TYREX_KSH MD, an advanced AI assistant created by TYREX_KSH TECH. 
 You are helpful, smart, and speak in the user's language. 
-You represent the brand SILA X MINI. Always be professional and helpful.`;
+You represent the brand TYREX_KSH MD. Always be professional and helpful.`;
 
 module.exports = {
     command: 'silaai',
     aliases: ['redxai', 'rxai', 'botai', 'smartai'],
     category: 'AI',
-    description: '🧠 SILA X MINI Smart AI with memory & context',
+    description: '🧠 TYREX_KSH MD Smart AI with memory & context',
     usage: '.silaai <question>\n.silaai clear — clear memory',
 
     async handler(sock, message, args, context = {}) {
@@ -910,7 +910,7 @@ module.exports = {
 
         const query = args.join(' ').trim();
         if (!query) return sock.sendMessage(chatId, {
-            text: `🧠 *SILA X MINI Smart AI*\n\nUsage: \`.silaai <question>\`\n\nFeatures:\n• Remembers context from last 5 messages\n• Speaks all languages\n• Smart, fast responses\n\n\`.silaai clear\` — reset memory`
+            text: `🧠 *TYREX_KSH MD Smart AI*\n\nUsage: \`.silaai <question>\`\n\nFeatures:\n• Remembers context from last 5 messages\n• Speaks all languages\n• Smart, fast responses\n\n\`.silaai clear\` — reset memory`
         }, { quoted: message });
 
         await sock.sendMessage(chatId, { react: { text: '🧠', key: message.key } });
@@ -938,7 +938,7 @@ module.exports = {
         saveMemory(mem);
 
         await sock.sendMessage(chatId, {
-            text: `🧠 *SILA X MINI AI*\n\n${answer}`
+            text: `🧠 *TYREX_KSH MD AI*\n\n${answer}`
         }, { quoted: message });
 
         await sock.sendMessage(chatId, { react: { text: '✅', key: message.key } });
@@ -958,7 +958,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 

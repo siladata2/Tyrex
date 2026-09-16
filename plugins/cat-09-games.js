@@ -9,7 +9,7 @@ const _bundle = [];
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 // ==================== Game Logic ====================
 const words = ['apple', 'banana', 'cherry', 'dog', 'elephant', 'flower', 'guitar', 'house', 'ice', 'jungle'];
@@ -179,7 +179,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -693,7 +693,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -949,7 +949,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 // ==================== Game Logic ====================
 class Sudoku {
@@ -1114,7 +1114,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -1392,7 +1392,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 // ==================== Game Logic ====================
 class GuessNumber {
@@ -1515,7 +1515,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 // plugins/wordle.js
 const games = new Map();
@@ -1671,7 +1671,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 // plugins/connect4.js
 const games = new Map();
@@ -1913,7 +1913,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 // ==================== Game Logic ====================
 class Minesweeper {
@@ -2237,7 +2237,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -2481,7 +2481,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -2732,7 +2732,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 class MemoryPuzzle {
     constructor(size = 4) {
@@ -2947,7 +2947,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 // ==================== Game Logic ====================
 class RPGAdventure {
@@ -3242,7 +3242,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 // ==================== Game Logic ====================
 class RPGUltra {
@@ -3696,7 +3696,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -3909,7 +3909,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 // ==================== Game Logic ====================
 const slotSymbols = ['🍒', '🍋', '🍊', '🍇', '💎', '7️⃣'];
@@ -4153,7 +4153,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -4352,7 +4352,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -4708,7 +4708,7 @@ module.exports = [
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { exec } = require('child_process');
@@ -4874,7 +4874,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -5095,7 +5095,7 @@ try {
 /**
  * deline-games.js
  * Game reply handler — checks global.games map for pending answers
- * Required by lib/messageHandler.js — SILA X MINI v7
+ * Required by lib/messageHandler.js — TYREX_KSH MD v7
  */
 
 /**
@@ -5117,8 +5117,8 @@ async function handleGameReply(sock, message, chatId, userMessage) {
                 forwardingScore: 1,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363402325089913@newsletter',
-                    newsletterName: 'SILA X MINI',
+                    newsletterJid: '120363429539292697@newsletter',
+                    newsletterName: 'TYREX_KSH MD',
                     serverMessageId: -1
                 }
             }
@@ -5166,7 +5166,7 @@ try {
 /**
  * deline-requests.js
  * Group join-request approve/reject helper
- * Required by approve.js — SILA X MINI v7
+ * Required by approve.js — TYREX_KSH MD v7
  */
 
 async function approveRequests(sock, chatId, message, args, context) {

@@ -1,6 +1,6 @@
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -26,8 +26,8 @@ const channelInfo = {
         forwardingScore: 1,
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363402325089913@newsletter',
-            newsletterName: 'SILA X MINI',
+            newsletterJid: '120363429539292697@newsletter',
+            newsletterName: 'TYREX_KSH MD',
             serverMessageId: -1
         }
     }
@@ -186,7 +186,7 @@ module.exports = {
 
             if (args.length === 0) {
                 return await sock.sendMessage(chatId, {
-                    text: `🔄 *Auto Status – SILA X MINI*\n\n` +
+                    text: `🔄 *Auto Status – TYREX_KSH MD*\n\n` +
                           `Auto View: ${config.enabled ? '✅' : '❌'}\n` +
                           `Reactions: ${config.reactOn ? '✅' : '❌'}\n` +
                           `Reaction Emoji: ${config.reactEmoji}\n` +

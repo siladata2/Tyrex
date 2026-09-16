@@ -1,5 +1,5 @@
 /*****************************************************************************
- *  SILA X MINI - SMART MENU (.smenu)
+ *  TYREX_KSH MD - SMART MENU (.smenu)
  *  Number-selection category menu — send category number to get command list
  *  NOTE: .menu is NOT touched. Only .smenu is changed.
  *****************************************************************************/
@@ -12,7 +12,7 @@ const { selectionHandler } = require('../lib/selectionHandler');
 
 const LOGO = `╔══════════════════════════╗
 ║   🤖  R E D X  B O T   ║
-║     by Abdul Rehman     ║
+║     by TYREX_KSH TECH     ║
 ╚══════════════════════════╝`;
 
 const CAT_EMOJI = {
@@ -94,7 +94,7 @@ module.exports = {
 
             let menuText = `${LOGO}\n\n`;
             menuText += `📱 *Bot:* ${dynamicBotName}\n`;
-            menuText += `👤 *Owner:* ${settings.botOwner || 'Abdul Rehman'}\n`;
+            menuText += `👤 *Owner:* ${settings.botOwner || 'TYREX_KSH TECH'}\n`;
             menuText += `🔖 *Prefix:* ${prefix}\n`;
             menuText += `⏰ *Time:* ${formatTime()}\n`;
             menuText += `📦 *Commands:* ${totalCmds}\n\n`;

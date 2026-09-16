@@ -27,11 +27,11 @@ module.exports = {
     const ram = (process.memoryUsage().rss / 1024 / 1024).toFixed(2);
     const cpu = os.loadavg()[0].toFixed(2);
 
-    const text = `🤖 *SILA X MINI is alive!*\n\n` +
+    const text = `🤖 *TYREX_KSH MD is alive!*\n\n` +
       `⏱️ *Uptime:* ${hours}h ${minutes}m ${seconds}s\n` +
       `💾 *RAM:* ${ram} MB\n` +
       `🖥️ *CPU Load:* ${cpu}\n\n` +
-      `✨ *Powered by Richard Besisila* ✨\n` +
+      `✨ *Powered by TYREX_KSH TECH* ✨\n` +
       `🔗 Join Channel: https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g`;
 
     await sock.sendMessage(chatId, { text }, { quoted: message });
@@ -53,7 +53,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -61,7 +61,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -109,7 +109,7 @@ module.exports = {
       } catch {}
 
       const text =
-        `🤖 *SILA X MINI STATUS*\n\n` +
+        `🤖 *TYREX_KSH MD STATUS*\n\n` +
         `⏱ Uptime: ${formatUptime(uptimeMs)}\n` +
         `🚀 Started: ${startedAt}\n` +
         `📦 Plugins: ${commandCount}\n` +
@@ -125,7 +125,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -133,7 +133,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -207,7 +207,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     'use strict';
 /*****************************************************************************
- *  sysmonitor.js — ULTRA SYSTEM MONITOR — SILA X MINI                        *
+ *  sysmonitor.js — ULTRA SYSTEM MONITOR — TYREX_KSH MD                        *
  *  🆕 NEW PLUGIN v1.0                                                        *
  *  ✅ Real-time CPU, RAM, Disk, Network, Processes                           *
  *  ✅ Temperature (if available)                                             *
@@ -222,7 +222,7 @@ const { promisify } = require('util');
 const execAsync = promisify(exec);
 const config = require('../config');
 
-const BOT_NAME = process.env.BOT_NAME || config.BOT_NAME || 'SILA X MINI';
+const BOT_NAME = process.env.BOT_NAME || config.BOT_NAME || 'TYREX_KSH MD';
 
 function formatBytes(b) {
   if (!b) return '0 B';
@@ -484,7 +484,7 @@ ${procs.join('\n')}
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 
 const CommandHandler = require('../lib/commandHandler');
@@ -525,7 +525,7 @@ module.exports = {
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
             newsletterJid: '120363319098372999@newsletter',
-            newsletterName: 'SILA X MINI PERFORMANCE',
+            newsletterName: 'TYREX_KSH MD PERFORMANCE',
             serverMessageId: -1
           }
         }
@@ -540,7 +540,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -548,7 +548,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -753,7 +753,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -832,7 +832,7 @@ module.exports = pingCommand;
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { exec } = require('child_process');
 const { promisify } = require('util');
@@ -892,7 +892,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -900,7 +900,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -974,7 +974,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -982,7 +982,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1002,7 +1002,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1010,7 +1010,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1076,7 +1076,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1084,7 +1084,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1102,7 +1102,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'guide',
@@ -1116,7 +1116,7 @@ module.exports = {
         const category = args[0] ? args[0].toLowerCase() : null;
 
         const fullGuide = `╭────────────────────────────╮
-│    📚 *SILA X MINI USER GUIDE*    │
+│    📚 *TYREX_KSH MD USER GUIDE*    │
 ╰────────────────────────────╯
 
 *🔹 Getting Started*
@@ -1133,10 +1133,10 @@ module.exports = {
 • \`.guide auto\`     – Auto‑forward setup
 
 *🔹 Need Help?*
-Contact: @255789661031
+Contact: @255610744352
 Channel: https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g
 
-_Powerd By Sila Tech_`;
+_Powerd By TYREX_KSH TECH_`;
 
         const aiGuide = `*🤖 AI Commands*
 \`.gpt <question>\`      – Ask GPT‑4
@@ -1234,7 +1234,7 @@ _Powerd By Sila Tech_`;
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const settings = require('../settings');
 const commandHandler = require('../lib/commandHandler');
@@ -1301,7 +1301,7 @@ module.exports = {
                 menuText += `╰───────────────┄┈╯\n\n`;
             }
 
-            menuText += `> *© Powered by SILA X MINI*`;
+            menuText += `> *© Powered by TYREX_KSH MD*`;
 
             // Fetch image with fallback
             let imageUrl = dynamicBotDp !== 'uploaded via image' ? dynamicBotDp : MENU_IMAGE_URL;
@@ -1379,7 +1379,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *  SILA X MINI - SMART MENU (.smenu)
+ *  TYREX_KSH MD - SMART MENU (.smenu)
  *  Number-selection category menu — send category number to get command list
  *  NOTE: .menu is NOT touched. Only .smenu is changed.
  *****************************************************************************/
@@ -1392,7 +1392,7 @@ const { selectionHandler } = require('../lib/selectionHandler');
 
 const LOGO = `╔══════════════════════════╗
 ║   🤖  R E D X  B O T   ║
-║     by Abdul Rehman     ║
+║     by TYREX_KSH TECH     ║
 ╚══════════════════════════╝`;
 
 const CAT_EMOJI = {
@@ -1467,8 +1467,8 @@ module.exports = {
             const prefix = settings.prefixes?.[0] || '.';
 
             let menuText = `${LOGO}\n\n`;
-            menuText += `📱 *Bot:* ${settings.botName || 'SILA X MINI'}\n`;
-            menuText += `👤 *Owner:* ${settings.botOwner || 'Abdul Rehman'}\n`;
+            menuText += `📱 *Bot:* ${settings.botName || 'TYREX_KSH MD'}\n`;
+            menuText += `👤 *Owner:* ${settings.botOwner || 'TYREX_KSH TECH'}\n`;
             menuText += `🔖 *Prefix:* ${prefix}\n`;
             menuText += `⏰ *Time:* ${formatTime()}\n`;
             menuText += `📦 *Commands:* ${totalCmds}\n\n`;
@@ -1533,7 +1533,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1541,7 +1541,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1778,7 +1778,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1786,7 +1786,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/

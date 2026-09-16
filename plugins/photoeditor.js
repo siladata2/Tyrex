@@ -1,4 +1,4 @@
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
@@ -201,7 +201,7 @@ module.exports = {
                 }
 
                 case 'watermark': {
-                    const text = args.slice(1).join(' ').trim() || 'SILA X MINI';
+                    const text = args.slice(1).join(' ').trim() || 'TYREX_KSH MD';
                     try {
                         const font = await J.loadFont(J.FONT_SANS_16_WHITE || J.FONT_SANS_32_WHITE);
                         const tw   = J.measureText(font, text);
@@ -262,7 +262,7 @@ module.exports = {
 
             await sock.sendMessage(chatId, {
                 image: { url: outputPath },
-                caption: `✅ *${command}* applied\n> SILA X MINI Photo Editor`,
+                caption: `✅ *${command}* applied\n> TYREX_KSH MD Photo Editor`,
                 ...channelInfo
             }, { quoted: message });
 

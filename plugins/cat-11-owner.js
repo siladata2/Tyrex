@@ -113,7 +113,7 @@ module.exports = {
 
     if (!newName) {
       return await sock.sendMessage(chatId, {
-        text: '❌ Please provide a new name.\nExample: .botname SILA X MINI'
+        text: '❌ Please provide a new name.\nExample: .botname TYREX_KSH MD'
       }, { quoted: message });
     }
 
@@ -153,12 +153,12 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const store = require('../lib/lightweight_store');
 
 // Default name from .env or fallback
-const DEFAULT_NAME = process.env.BOT_NAME || 'SILA X MINI';
+const DEFAULT_NAME = process.env.BOT_NAME || 'TYREX_KSH MD';
 
 module.exports = {
     command: 'botname',
@@ -239,7 +239,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     'use strict';
 /*****************************************************************************
- *  botdesc.js — AI-POWERED AUTO DESCRIPTION ULTRA v2.0 — SILA X MINI        *
+ *  botdesc.js — AI-POWERED AUTO DESCRIPTION ULTRA v2.0 — TYREX_KSH MD        *
  *  ✅ Auto-update WhatsApp About (description) with AI                       *
  *  ✅ Custom interval scheduling                                             *
  *  ✅ Multiple modes: AI / Quote / Custom                                    *
@@ -250,17 +250,17 @@ const store  = require('../lib/lightweight_store');
 const axios  = require('axios');
 const config = require('../config');
 
-const BOT_NAME   = process.env.BOT_NAME   || config.BOT_NAME   || 'SILA X MINI';
-const OWNER_NAME = process.env.OWNER_NAME || config.OWNER_NAME || 'Richard Besisila';
+const BOT_NAME   = process.env.BOT_NAME   || config.BOT_NAME   || 'TYREX_KSH MD';
+const OWNER_NAME = process.env.OWNER_NAME || config.OWNER_NAME || 'TYREX_KSH TECH';
 
 const DELINE = 'https://api.deline.web.id/ai';
 const SAQIB  = 'https://apisaqib.vercel.app/api/v1';
 
 const FALLBACK_DESCS = [
   `🤖 Advanced WhatsApp Bot by ${OWNER_NAME}`,
-  '🚀 Powered by SILA X MINI v7 ULTRA',
+  '🚀 Powered by TYREX_KSH MD v7 ULTRA',
   '✨ Your intelligent WhatsApp companion',
-  '💎 Smart. Fast. Reliable. SILA X MINI.',
+  '💎 Smart. Fast. Reliable. TYREX_KSH MD.',
   '🌟 Next-gen WhatsApp automation bot',
   '🔥 Built for speed, built for you.',
 ];
@@ -536,7 +536,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     'use strict';
 /*****************************************************************************
- *  botdp.js — AUTO DP ULTRA v2.0 — SILA X MINI                              *
+ *  botdp.js — AUTO DP ULTRA v2.0 — TYREX_KSH MD                              *
  *  ✅ Auto-DP with scheduled interval                                        *
  *  ✅ URL rotation (multiple DPs in a playlist)                              *
  *  ✅ Heavy stylish emoji formatting                                         *
@@ -546,8 +546,8 @@ const axios  = require('axios');
 const store  = require('../lib/lightweight_store');
 const config = require('../config');
 
-const BOT_NAME   = process.env.BOT_NAME   || config.BOT_NAME   || 'SILA X MINI';
-const OWNER_NAME = process.env.OWNER_NAME || config.OWNER_NAME || 'Richard Besisila';
+const BOT_NAME   = process.env.BOT_NAME   || config.BOT_NAME   || 'TYREX_KSH MD';
+const OWNER_NAME = process.env.OWNER_NAME || config.OWNER_NAME || 'TYREX_KSH TECH';
 
 let dpCronJob    = null;
 let dpIndexCache = 0;
@@ -933,7 +933,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -1197,7 +1197,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 
 const CommandHandler = require('../lib/commandHandler');
@@ -1280,7 +1280,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1288,7 +1288,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1308,7 +1308,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *  SILA X MINI — plugins/mode.js  (FIXED — SILA X MINI mode-fix patch)
+ *  TYREX_KSH MD — plugins/mode.js  (FIXED — TYREX_KSH MD mode-fix patch)
  *  Applies central modeCheck.js, syncs global.MODE and config.MODE
  *
  *  Commands:
@@ -1650,7 +1650,7 @@ async function updateViaZip(sock, chatId, message, zipOverride) {
   // "No ZIP URL configured" for anyone who hadn't manually set
   // UPDATE_ZIP_URL. Default to the bot's own repo — this value is only
   // ever used internally to download+extract, never echoed back to chat.
-  const DEFAULT_ZIP_URL = 'https://github.com/Sila-Md/redxminibot_beckend/archive/refs/heads/main.zip';
+  const DEFAULT_ZIP_URL = 'https://github.com/Sila-Md/tyrexkshmd_beckend/archive/refs/heads/main.zip';
   const zipUrl = (zipOverride || settings.updateZipUrl || process.env.UPDATE_ZIP_URL || DEFAULT_ZIP_URL).trim();
   if (!zipUrl) {
     throw new Error('No update source configured. Contact the bot owner.');
@@ -1953,7 +1953,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const store = require('../lib/lightweight_store');
 
@@ -2011,7 +2011,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *  SILA X MINI — .panel command  (ULTRA V4)
+ *  TYREX_KSH MD — .panel command  (ULTRA V4)
  *  ZERO password visibility in chat – default redx2008 (never shown)
  *  - Auto-delete all password messages
  *  - Enterprise session management, broadcast, backup
@@ -2224,7 +2224,7 @@ module.exports = {
                 return reply(panelMenu());
             }
             // Absolutely no mention of any default password
-            return reply(`🔐 *SILA X MINI PANEL*\n\nSend \`.panel <password>\` to access.\n_${MAX_FAILS} wrong attempts = lockout_`);
+            return reply(`🔐 *TYREX_KSH MD PANEL*\n\nSend \`.panel <password>\` to access.\n_${MAX_FAILS} wrong attempts = lockout_`);
         }
 
         const sub = args[0].toLowerCase();
@@ -2554,16 +2554,16 @@ module.exports = {
   command: 'repo',
   aliases: ['repository', 'github'],
   category: 'main',
-  description: 'Show SILA X MINI repository information',
+  description: 'Show TYREX_KSH MD repository information',
   usage: '.repo',
 
   async handler(sock, message, args, context) {
     const { chatId, channelInfo } = context;
 
     // Build repository information text
-    let repoText = `*SILA X MINI REPOSITORY*\n\n`;
-    repoText += `Repository Name: SILA X MINI\n`;
-    repoText += `Owner: Richard Besisila\n`;
+    let repoText = `*TYREX_KSH MD REPOSITORY*\n\n`;
+    repoText += `Repository Name: TYREX_KSH MD\n`;
+    repoText += `Owner: TYREX_KSH TECH\n`;
     repoText += `Stars: 100+\n`;
     repoText += `Forks: 50+\n`;
     repoText += `Description: Advanced WhatsApp Bot with 100+ features – group management, downloads, AI, stickers, and more.\n\n`;
@@ -2571,7 +2571,7 @@ module.exports = {
     repoText += `https://github.com/Sila-Md\n\n`;
     repoText += `Join Channel:\n`;
     repoText += `https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g\n\n`;
-    repoText += `Powerd By Sila Tech`;
+    repoText += `Powerd By TYREX_KSH TECH`;
 
     // Fetch image buffer
     let imageBuffer;
@@ -2611,7 +2611,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -2619,7 +2619,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -2664,7 +2664,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -2672,7 +2672,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -2883,7 +2883,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -2891,7 +2891,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -2950,7 +2950,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -2958,7 +2958,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -3071,7 +3071,7 @@ try {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 // ==================== Game Logic ====================
 const symbols = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼']; // 8 pairs

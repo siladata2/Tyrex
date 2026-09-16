@@ -1,4 +1,4 @@
-// plugins/antiflood.js — SILA X MINI Ultra Anti-Flood v2
+// plugins/antiflood.js — TYREX_KSH MD Ultra Anti-Flood v2
 'use strict';
 // ✅ FIX: was require('../lib/store') — that store has NO getSetting/saveSetting,
 // so every config read/save threw and .antiflood could never be enabled.

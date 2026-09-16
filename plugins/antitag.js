@@ -1,4 +1,4 @@
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const store = require('../lib/lightweight_store');
 

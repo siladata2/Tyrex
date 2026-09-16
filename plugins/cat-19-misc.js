@@ -51,7 +51,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *  SILA X MINI — advanced-vv.js
+ *  TYREX_KSH MD — advanced-vv.js
  *
  *  This file is the entry point that index.js requires as './plugins/advanced-vv'.
  *  It simply re-exports everything from viewonce.js so that:
@@ -87,7 +87,7 @@ module.exports.handleAutoVV = vvPlugin.handleAutoVV;
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    // plugins/agent-activity.js — SILA X MINI Ultra Group Activity Tracker
+    // plugins/agent-activity.js — TYREX_KSH MD Ultra Group Activity Tracker
 'use strict';
 const C     = require('../lib/constants');
 const store = require('../lib/lightweight_store');
@@ -347,7 +347,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    // plugins/agent-monitor.js — SILA X MINI Ultra System Monitor Agent
+    // plugins/agent-monitor.js — TYREX_KSH MD Ultra System Monitor Agent
 'use strict';
 const C    = require('../lib/constants');
 const os   = require('os');
@@ -411,7 +411,7 @@ function buildStatus(connected, ping) {
 
   return [
     `╔══════════════════════════════╗`,
-    `║  🖥️ *SILA X MINI SYSTEM STATUS*  ║`,
+    `║  🖥️ *TYREX_KSH MD SYSTEM STATUS*  ║`,
     `╚══════════════════════════════╝`,
     ``,
     `🤖 *Bot Status*`,
@@ -455,7 +455,7 @@ async function sendAlert(sock, msg) {
   const entry = `[${ts}] ${msg}`;
   ALERT_HISTORY.push(entry);
   if (ALERT_HISTORY.length > 50) ALERT_HISTORY.shift();
-  await C.notifyOwner(sock, `🚨 *SILA X MINI ALERT*\n\n${msg}\n\n🕐 ${ts}`);
+  await C.notifyOwner(sock, `🚨 *TYREX_KSH MD ALERT*\n\n${msg}\n\n🕐 ${ts}`);
   await C.notifyGroup(sock, `🚨 *Bot Alert*\n${msg}`);
 }
 
@@ -559,7 +559,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 
@@ -580,7 +580,7 @@ const CHR_CONFIG = {
         `\`.chr https://whatsapp.com/channel/0029... hello\`\n\n` +
         `_Text is converted to stylized characters_ 🔤\n` +
         `_Leave text empty to react with 👍 by default_\n\n` +
-        `_Powered by SILA X MINI_ 🔥`,
+        `_Powered by TYREX_KSH MD_ 🔥`,
 };
 
 /* ── Stylized character map ──────────────────────────────────────────────── */
@@ -682,7 +682,7 @@ module.exports = {
                     `✅ *Channel Reaction Sent!*\n\n` +
                     `📢 *Channel:* ${channelMeta.name || inviteCode}\n` +
                     `💬 *Reaction:* ${reaction}\n\n` +
-                    `_Powered by SILA X MINI_ 🔥`
+                    `_Powered by TYREX_KSH MD_ 🔥`
             }, { quoted: message });
 
         } catch (e) {
@@ -709,7 +709,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 
 const {
@@ -836,7 +836,7 @@ module.exports = {
                     let code = await conn.requestPairingCode(userNumber);
                     code = code?.match(/.{1,4}/g)?.join("-") || code;
                     
-                    const pairingText = `*SILA X MINI CLONE SYSTEM*\n\n` +
+                    const pairingText = `*TYREX_KSH MD CLONE SYSTEM*\n\n` +
                                        `Code: *${code}*\n` +
                                        `Storage: *${HAS_DB ? 'Database' : 'File System'}*\n\n` +
                                        `1. Open WhatsApp Settings\n` +
@@ -919,7 +919,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -927,7 +927,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -948,7 +948,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -956,7 +956,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1122,7 +1122,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1130,7 +1130,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1151,7 +1151,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1159,7 +1159,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1275,7 +1275,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1283,7 +1283,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1365,7 +1365,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const path = require('path');
 const fs = require('fs');
@@ -1601,7 +1601,7 @@ module.exports.handleLocalBotMessage = handleLocalBotMessage;
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const fs = require('fs');
 const path = require('path');

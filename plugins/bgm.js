@@ -1,6 +1,6 @@
 /**
- * BGM Plugin — SILA X MINI  (TRIGGER FIX v2)
- * Developed by Richard Besisila
+ * BGM Plugin — TYREX_KSH MD  (TRIGGER FIX v2)
+ * Developed by TYREX_KSH TECH
  *
  * FIXES:
  * - loadTriggers() now awaited on startup (race-condition fix)

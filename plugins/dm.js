@@ -1,6 +1,6 @@
 /*****************************************************************************
- *  plugins/dm.js — SILA X MINI
- *  Powerd By Sila Tech
+ *  plugins/dm.js — TYREX_KSH MD
+ *  Powerd By TYREX_KSH TECH
  *
  *  .dm — Send a direct message to any number from the bot
  *  .dms — Broadcast DM to multiple numbers

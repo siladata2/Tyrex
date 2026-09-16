@@ -711,7 +711,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 
@@ -785,7 +785,7 @@ async function buildAnimeCarousel(sock, chatId, animes, query) {
                           `🎭 ${genres}\n\n` +
                           trimSynopsis(anime.synopsis)
                 },
-                footer: { text: '🌸 SILA X MINI Anime Search' },
+                footer: { text: '🌸 TYREX_KSH MD Anime Search' },
                 nativeFlowMessage: {
                     buttons: [
                         {
@@ -908,7 +908,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 
@@ -978,7 +978,7 @@ async function buildCarousel(sock, chatId, photos, query) {
                     text: `📸 By: ${photo.photographer || 'Unknown'}\n` +
                           `📐 ${photo.width}×${photo.height}`
                 },
-                footer: { text: '🖼 SILA X MINI Image Search' },
+                footer: { text: '🖼 TYREX_KSH MD Image Search' },
                 nativeFlowMessage: {
                     buttons: [
                         {
@@ -1002,7 +1002,7 @@ async function buildCarousel(sock, chatId, photos, query) {
             message: {
                 interactiveMessage: {
                     body:            { text: `🔍 *Image Search:* ${query}\n📦 ${cards.length} results` },
-                    footer:          { text: 'Swipe ◀️▶️ • SILA X MINI' },
+                    footer:          { text: 'Swipe ◀️▶️ • TYREX_KSH MD' },
                     carouselMessage: { cards }
                 }
             }
@@ -1215,7 +1215,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 
@@ -1342,7 +1342,7 @@ async function buildBookCarousel(sock, chatId, books, query) {
                     imageMessage:       imgContent.imageMessage
                 },
                 body:   { text: bodyText },
-                footer: { text: '📚 SILA X MINI Book Search' },
+                footer: { text: '📚 TYREX_KSH MD Book Search' },
                 nativeFlowMessage: { buttons: btns }
             });
         } catch { continue; }
@@ -1524,7 +1524,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -1636,7 +1636,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -1964,7 +1964,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -2011,7 +2011,7 @@ module.exports = {
 📊 Type: *${mediaType === 'video' ? 'Video' : 'Image'}*
 📝 Title: *${title.substring(0, 100)}*
 
-> Downloaded by SILA X MINI`;
+> Downloaded by TYREX_KSH MD`;
 
       // Download the media to buffer
       const mediaResponse = await axios.get(mediaUrl, {

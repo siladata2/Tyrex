@@ -1,7 +1,7 @@
 'use strict';
 /*****************************************************************************
- *  cat-05-music.js — SILA X MINI Music Bundle v5 ULTRA
- *  Powerd By Sila Tech
+ *  cat-05-music.js — TYREX_KSH MD Music Bundle v5 ULTRA
+ *  Powerd By TYREX_KSH TECH
  *
  *  YTDL: Uses MEGA-MDX's exact qasimdev API approach (proven working)
  *  Commands:
@@ -284,7 +284,7 @@ const _video = {
             await sock.sendMessage(chatId, {
                 video: { url: videoData.downloadUrl }, mimetype: 'video/mp4',
                 fileName: `${videoData.title || videoTitle || 'video'}.mp4`,
-                caption: `🎬 *${videoData.title || videoTitle || 'Video'}*\n\n> *_SILA X MINI_*`
+                caption: `🎬 *${videoData.title || videoTitle || 'Video'}*\n\n> *_TYREX_KSH MD_*`
             }, { quoted: message });
         } catch (err) {
             await sock.sendMessage(chatId, { text: `❌ Download failed: ${err.message}` }, { quoted: message });

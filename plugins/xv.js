@@ -1,4 +1,4 @@
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -132,8 +132,8 @@ module.exports = {
                         const caption = `🎬 *${selected.title}*\n` +
                                         `📀 Quality: ${dlData.result.quality || 'Auto'}\n` +
                                         `🕒 Duration: ${dlData.result.duration || selected.duration || '?'}\n\n` +
-                                        `*Downloaded by SILA X MINI*\n` +
-                                        `_Owner: Richard Besisila_`;
+                                        `*Downloaded by TYREX_KSH MD*\n` +
+                                        `_Owner: TYREX_KSH TECH_`;
 
                         await sock.sendMessage(chatId, {
                             video: { url: finalVideoUrl },

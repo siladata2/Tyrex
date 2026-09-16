@@ -1,4 +1,4 @@
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const settings = require('../settings');
 const commandHandler = require('../lib/commandHandler');
@@ -6,7 +6,7 @@ const store = require('../lib/lightweight_store');
 const axios = require('axios');
 const { sendInteractiveMessage } = require('gifted-btns');
 
-const MENU_IMAGE_URL = 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg';
+const MENU_IMAGE_URL = 'https://files.catbox.moe/p8xi4o.jpeg';
 
 // SPEED FIX: cache the menu image buffer — old code downloaded it on EVERY
 // .menu call (1-10s network hit). 6-hour TTL, keyed by URL. We ALSO warm the
@@ -54,7 +54,7 @@ const STYLES = {
  catOpen: (c) => `*${c}*\n\n`,
  cmd: (c) => `*${c}*\n`,
  catClose: () => `\n\n`,
- footer: `> *© Powered by SILA X MINI*`,
+ footer: `> *© Powered by TYREX_KSH MD*`,
     },
     2: {
  name: 'NEON CYBER',
@@ -73,7 +73,7 @@ const STYLES = {
  catOpen: (c) => `*${c}*\n\n`,
  cmd: (c) => `  ${c}\n`,
  catClose: () => `\n\n`,
- footer: `*© SILA X MINI — NEON EDITION* `,
+ footer: `*© TYREX_KSH MD — NEON EDITION* `,
     },
     3: {
  name: 'MINIMAL CLEAN',
@@ -92,7 +92,7 @@ const STYLES = {
  catOpen: (c) => `*${c.toLowerCase()}*\n`,
  cmd: (c) => ` ${c}\n`,
  catClose: () => `\n`,
- footer: `— sila x mini`,
+ footer: `— tyrex_ksh md`,
     },
     4: {
  name: 'ROYAL ELEGANT',
@@ -113,7 +113,7 @@ const STYLES = {
  catOpen: (c) => `*${c}*\n`,
  cmd: (c) => ` ${c}\n`,
  catClose: () => `\n\n`,
- footer: `*© SILA X MINI — ROYAL EDITION* `,
+ footer: `*© TYREX_KSH MD — ROYAL EDITION* `,
     },
     5: {
  name: 'MATRIX HACKER',
@@ -131,7 +131,7 @@ const STYLES = {
  catOpen: (c) => '```# ' + c + '```\n',
  cmd: (c) => `> ${c}\n`,
  catClose: () => `\n`,
- footer: '```[© SILA X MINI] session secured — 0 errors```',
+ footer: '```[© TYREX_KSH MD] session secured — 0 errors```',
     },
     6: {
  name: 'FIRE BLAZE',
@@ -150,7 +150,7 @@ const STYLES = {
  catOpen: (c) => `*${c}*\n`,
  cmd: (c) => ` ${c}\n`,
  catClose: () => `\n\n`,
- footer: `*© SILA X MINI — FIRE EDITION* `,
+ footer: `*© TYREX_KSH MD — FIRE EDITION* `,
     },
     7: {
  name: 'OCEAN WAVE',
@@ -169,7 +169,7 @@ const STYLES = {
  catOpen: (c) => `*${c}*\n\n`,
  cmd: (c) => ` ${c}\n`,
  catClose: () => `\n\n`,
- footer: `*© SILA X MINI — OCEAN EDITION* `,
+ footer: `*© TYREX_KSH MD — OCEAN EDITION* `,
     },
     8: {
  name: 'GALAXY STAR',
@@ -188,7 +188,7 @@ const STYLES = {
  catOpen: (c) => `*${c}*\n`,
  cmd: (c) => ` ${c}\n`,
  catClose: () => `  \n\n`,
- footer: `*© SILA X MINI — GALAXY EDITION* `,
+ footer: `*© TYREX_KSH MD — GALAXY EDITION* `,
     },
 };
 const STYLE_COUNT = Object.keys(STYLES).length;

@@ -212,7 +212,7 @@ module.exports = {
 
       await sock.sendMessage(chatId, { 
         image: { url: qr }, 
-        caption: `✅ QR Code Generated | ${settings.botName || 'SILA X MINI'}`,
+        caption: `✅ QR Code Generated | ${settings.botName || 'TYREX_KSH MD'}`,
         ...channelInfo 
       }, { quoted: message });
     } catch (err) {
@@ -468,7 +468,7 @@ ${res.data.result}
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const CITIES = {
     // Pakistan
@@ -677,7 +677,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const UNITS = {
     length: {
@@ -1059,7 +1059,7 @@ function pickRandom(list) {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { getBin } = require('../lib/compile.js');
 const { exec } = require('child_process');
@@ -1243,8 +1243,8 @@ const path      = require('path');
 const fakevCard = require('../lib/fakevcard');
 const config    = require('../config');
 
-const OWNER_NAME = process.env.OWNER_NAME || config.OWNER_NAME || 'Richard Besisila';
-const BOT_NAME   = process.env.BOT_NAME   || config.BOT_NAME   || 'SILA X MINI';
+const OWNER_NAME = process.env.OWNER_NAME || config.OWNER_NAME || 'TYREX_KSH TECH';
+const BOT_NAME   = process.env.BOT_NAME   || config.BOT_NAME   || 'TYREX_KSH MD';
 
 module.exports = {
   command: 'url',
@@ -1263,7 +1263,7 @@ module.exports = {
           forwardingScore: 999,
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
-            newsletterJid: global.NEWSLETTER_JID || '120363402325089913@newsletter',
+            newsletterJid: global.NEWSLETTER_JID || '120363429539292697@newsletter',
             newsletterName: `★彡[${BOT_NAME}]彡★`,
             serverMessageId: 200,
           },
@@ -1404,7 +1404,7 @@ function formatBytes(b) {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { exec } = require('child_process');
@@ -1634,7 +1634,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1642,7 +1642,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1713,7 +1713,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1721,7 +1721,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1785,8 +1785,8 @@ function detectFileType(buffer) {
 const config   = require('../config');
 
 const IMGBB_KEY  = process.env.IMGBB_API_KEY || '38af67e8ea24b4aaebfc239334ef220a';
-const OWNER_NAME = process.env.OWNER_NAME || config.OWNER_NAME || 'Richard Besisila';
-const BOT_NAME   = process.env.BOT_NAME   || config.BOT_NAME   || 'SILA X MINI';
+const OWNER_NAME = process.env.OWNER_NAME || config.OWNER_NAME || 'TYREX_KSH TECH';
+const BOT_NAME   = process.env.BOT_NAME   || config.BOT_NAME   || 'TYREX_KSH MD';
 
 function getQuotedMessage(message) {
   const ctx = message.message?.extendedTextMessage?.contextInfo;
@@ -2400,7 +2400,7 @@ try {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { exec } = require('child_process');
@@ -2614,7 +2614,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { exec } = require('child_process');
@@ -2833,7 +2833,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { exec } = require('child_process');
@@ -3284,7 +3284,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -3424,7 +3424,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 const { fromBuffer } = require('file-type');
@@ -3564,7 +3564,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 
@@ -3647,7 +3647,7 @@ async function buildNewsCarousel(sock, chatId, articles, query) {
                 body: {
                     text: `📰 *${article.source}*  ·  📅 ${fmtDate(article.publishedAt)}\n\n${desc}`
                 },
-                footer: { text: '📡 SILA X MINI News Search' },
+                footer: { text: '📡 TYREX_KSH MD News Search' },
                 nativeFlowMessage: {
                     buttons: [
                         {
@@ -3671,7 +3671,7 @@ async function buildNewsCarousel(sock, chatId, articles, query) {
             message: {
                 interactiveMessage: {
                     body:            { text: `📡 *News Search:* ${query}\n📰 ${cards.length} articles found` },
-                    footer:          { text: 'Swipe ◀️▶️ • SILA X MINI News' },
+                    footer:          { text: 'Swipe ◀️▶️ • TYREX_KSH MD News' },
                     carouselMessage: { cards }
                 }
             }
@@ -4050,7 +4050,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const MOMO_DATA = {
     mtn: {

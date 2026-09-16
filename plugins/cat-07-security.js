@@ -10,7 +10,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /**
- * plugins/antibadword.js — SILA X MINI v3 ULTRA
+ * plugins/antibadword.js — TYREX_KSH MD v3 ULTRA
  * ✅ 100+ bad words (50 default + 50 extra, 10 languages)
  * ✅ Leet-speak + repeat normalization
  * ✅ Warn → kick system with mute fallback
@@ -156,7 +156,7 @@ async function checkAntiBadword(sock, message) {
 
     if (action === 'delete') {
       await sock.sendMessage(chatId, {
-        text: `🚫 Message deleted — contains banned word.\n> SILA X MINI`,
+        text: `🚫 Message deleted — contains banned word.\n> TYREX_KSH MD`,
         mentions: [senderId],
       });
       return true;
@@ -165,7 +165,7 @@ async function checkAntiBadword(sock, message) {
     if (action === 'kick') {
       await sock.groupParticipantsUpdate(chatId, [senderId], 'remove').catch(() => {});
       await sock.sendMessage(chatId, {
-        text: `⛔ ${mention} was removed — banned word detected.\n> SILA X MINI`,
+        text: `⛔ ${mention} was removed — banned word detected.\n> TYREX_KSH MD`,
         mentions: [senderId],
       });
       return true;
@@ -174,7 +174,7 @@ async function checkAntiBadword(sock, message) {
     if (action === 'mute') {
       // Mute by demoting if admin, or just warn
       await sock.sendMessage(chatId, {
-        text: `🔇 ${mention} muted — banned word detected.\n> SILA X MINI`,
+        text: `🔇 ${mention} muted — banned word detected.\n> TYREX_KSH MD`,
         mentions: [senderId],
       });
       return true;
@@ -192,12 +192,12 @@ async function checkAntiBadword(sock, message) {
       await saveWarns(chatId, warns);
       await sock.groupParticipantsUpdate(chatId, [senderId], 'remove').catch(() => {});
       await sock.sendMessage(chatId, {
-        text: `⛔ ${mention} kicked — reached ${limit} warnings for banned words.\n> SILA X MINI`,
+        text: `⛔ ${mention} kicked — reached ${limit} warnings for banned words.\n> TYREX_KSH MD`,
         mentions: [senderId],
       });
     } else {
       await sock.sendMessage(chatId, {
-        text: `⚠️ Warning ${warnN}/${limit} — ${mention}, banned word detected: *"${hit}"*.\n> SILA X MINI`,
+        text: `⚠️ Warning ${warnN}/${limit} — ${mention}, banned word detected: *"${hit}"*.\n> TYREX_KSH MD`,
         mentions: [senderId],
       });
     }
@@ -360,7 +360,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *  SILA X MINI — .antibot
+ *  TYREX_KSH MD — .antibot
  *  Detects when OTHER bots are used in the group and warns/kicks them.
  *  Owner/sudo/admins are always exempt.
  *****************************************************************************/
@@ -568,7 +568,7 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *****************************************************************************/
 
@@ -1163,7 +1163,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 
@@ -1470,7 +1470,7 @@ async function handleMessageRevocation(sock, revocationMessage) {
 
         const report =
             `╔════════════════════════╗\n` +
-            `║  🗑️  SILA X MINI ANTIDELETE  ║\n` +
+            `║  🗑️  TYREX_KSH MD ANTIDELETE  ║\n` +
             `╚════════════════════════╝\n\n` +
             `*🗑 Deleted By:* @${deleterNum}\n` +
             `*👤 Sender:*    @${senderNum}\n` +
@@ -1479,7 +1479,7 @@ async function handleMessageRevocation(sock, revocationMessage) {
             (groupName ? `*👥 Group:*     ${groupName}\n` : '') +
             (original.content   ? `\n*💬 Message:*\n${original.content}\n` : '') +
             (original.mediaType ? `\n*📎 Media Type:* ${original.mediaType}` : '') +
-            `\n\n> SILA X MINI Anti-Delete v4.0`;
+            `\n\n> TYREX_KSH MD Anti-Delete v4.0`;
 
         await sock.sendMessage(targetJid, {
             text:     report,
@@ -1586,13 +1586,13 @@ async function handleMessageEdit(sock, update) {
 
         await sock.sendMessage(targetJid, {
             text: `╔════════════════════════╗\n` +
-                  `║  ✏️  SILA X MINI ANTI-EDIT   ║\n` +
+                  `║  ✏️  TYREX_KSH MD ANTI-EDIT   ║\n` +
                   `╚════════════════════════╝\n\n` +
                   `*✏️ Edited By:* @${editedBy?.split('@')[0]}\n` +
                   `*🕒 Originally:* ${_formatTime(original.timestamp)}\n\n` +
                   `*📝 Before:*\n${original.content || '(empty/media)'}\n\n` +
                   `*📝 After:*\n${newContent || '(unknown)'}\n\n` +
-                  `> SILA X MINI Anti-Edit v4.0`,
+                  `> TYREX_KSH MD Anti-Edit v4.0`,
             mentions: [editedBy, sender].filter(Boolean)
         });
 
@@ -1953,7 +1953,7 @@ module.exports.handleUpdate = handleUpdate;
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    // plugins/antiflood.js — SILA X MINI Ultra Anti-Flood v2
+    // plugins/antiflood.js — TYREX_KSH MD Ultra Anti-Flood v2
 'use strict';
 const store = require('../lib/store');
 
@@ -2123,8 +2123,8 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *  antilink.js — ULTRA v2  (SILA X MINI)
- *  Developed by Richard Besisila
+ *  antilink.js — ULTRA v2  (TYREX_KSH MD)
+ *  Developed by TYREX_KSH TECH
  *
  *  ULTRA features:
  *  - Detects WA groups, channels, Telegram, Discord, ALL URLs
@@ -2490,8 +2490,8 @@ try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
- *  antispam.js — ULTRA v2  (SILA X MINI)
- *  Developed by Richard Besisila
+ *  antispam.js — ULTRA v2  (TYREX_KSH MD)
+ *  Developed by TYREX_KSH TECH
  *
  *  ULTRA features:
  *  - Rate limiting (msg/sec window)
@@ -2851,7 +2851,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const store = require('../lib/lightweight_store');
 
@@ -3096,7 +3096,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 
@@ -3116,7 +3116,7 @@ const BLOCK_CONFIG = {
         `• \`.block @mention\`\n` +
         `• \`.block 923001234567\`\n\n` +
         `_Owner only command_ 👑\n` +
-        `_Powered by SILA X MINI_ 🔥`,
+        `_Powered by TYREX_KSH MD_ 🔥`,
 
     unblockUsage:
         `╔════════════════════════╗\n` +
@@ -3127,7 +3127,7 @@ const BLOCK_CONFIG = {
         `• \`.unblock @mention\`\n` +
         `• \`.unblock 923001234567\`\n\n` +
         `_Owner only command_ 👑\n` +
-        `_Powered by SILA X MINI_ 🔥`,
+        `_Powered by TYREX_KSH MD_ 🔥`,
 };
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
@@ -3200,7 +3200,7 @@ const blockCommand = {
                     `✅ *Blocked Successfully!*\n\n` +
                     `📵 *Number:* +${num}\n` +
                     `🚫 _They can no longer message this bot._\n\n` +
-                    `_Powered by SILA X MINI_ 🔥`
+                    `_Powered by TYREX_KSH MD_ 🔥`
             }, { quoted: message });
             await sock.sendMessage(chatId, { react: { text: BLOCK_CONFIG.successEmoji, key: message.key } });
 
@@ -3252,7 +3252,7 @@ const unblockCommand = {
                     `✅ *Unblocked Successfully!*\n\n` +
                     `🔓 *Number:* +${num}\n` +
                     `💬 _They can now message this bot again._\n\n` +
-                    `_Powered by SILA X MINI_ 🔥`
+                    `_Powered by TYREX_KSH MD_ 🔥`
             }, { quoted: message });
             await sock.sendMessage(chatId, { react: { text: BLOCK_CONFIG.successEmoji, key: message.key } });
 
@@ -3520,7 +3520,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    // plugins/groupguard.js — SILA X MINI Ultra Group Guardian
+    // plugins/groupguard.js — TYREX_KSH MD Ultra Group Guardian
 'use strict';
 const store = require('../lib/store');
 
@@ -3753,7 +3753,7 @@ try {
     /*****************************************************************************
  *  pmblocker.js — FIX v7.1                                                  *
  *  DEFAULT: disabled. Commands always work in DMs (public mode).            *
- *  Owner: Richard Besisila                                              *
+ *  Owner: TYREX_KSH TECH                                              *
  *****************************************************************************/
 'use strict';
 

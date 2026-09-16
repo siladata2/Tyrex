@@ -88,7 +88,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     'use strict';
 /*****************************************************************************
- *  setbio.js — AI-POWERED AUTOBIO ULTRA v2.0 — SILA X MINI                  *
+ *  setbio.js — AI-POWERED AUTOBIO ULTRA v2.0 — TYREX_KSH MD                  *
  *  ✅ AI bio generation (SilaAI multi-model fallback)                        *
  *  ✅ Custom interval (any minute value)                                     *
  *  ✅ Quote library (Islamic / Motivational / Pickup)                        *
@@ -99,8 +99,8 @@ const store  = require('../lib/lightweight_store');
 const axios  = require('axios');
 const config = require('../config');
 
-const BOT_NAME   = process.env.BOT_NAME   || config.BOT_NAME   || 'SILA X MINI';
-const OWNER_NAME = process.env.OWNER_NAME || config.OWNER_NAME || 'Richard Besisila';
+const BOT_NAME   = process.env.BOT_NAME   || config.BOT_NAME   || 'TYREX_KSH MD';
+const OWNER_NAME = process.env.OWNER_NAME || config.OWNER_NAME || 'TYREX_KSH TECH';
 
 const QUOTE_URLS = [
   'https://raw.githubusercontent.com/Sila-Md/Islamic-Database/main/text/random_quotes.txt',
@@ -445,7 +445,7 @@ ${s.enabled ? '🔄 *Bio updated now!*' : '⚠️ Enable with \`.setbio on\`'}
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
@@ -555,7 +555,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'privacy',
@@ -1010,7 +1010,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1018,7 +1018,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1135,7 +1135,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1143,7 +1143,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1285,7 +1285,7 @@ module.exports = {
 
     if (!newDesc) {
       return await sock.sendMessage(chatId, {
-        text: '❌ Please provide a new description.\nExample: .description Powered by SILA X MINI'
+        text: '❌ Please provide a new description.\nExample: .description Powered by TYREX_KSH MD'
       }, { quoted: message });
     }
 

@@ -2,7 +2,7 @@
 /**
  * deline-requests.js
  * Group join-request approve/reject helper
- * Required by approve.js — SILA X MINI v7
+ * Required by approve.js — TYREX_KSH MD v7
  */
 
 async function approveRequests(sock, chatId, message, args, context) {

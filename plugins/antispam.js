@@ -1,6 +1,6 @@
 /*****************************************************************************
- *  antispam.js — ULTRA v1  (SILA X MINI)
- *  Developed by Richard Besisila
+ *  antispam.js — ULTRA v1  (TYREX_KSH MD)
+ *  Developed by TYREX_KSH TECH
  *  Ported & enhanced from MEGA-MDX
  *
  *  Features:

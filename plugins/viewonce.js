@@ -1,6 +1,6 @@
 /*****************************************************************************
- *                     Powerd By Sila Tech                     *
- *  ADVANCED VIEW-ONCE RETRIEVER — SILA X MINI v7.2 ULTRA                    *
+ *                     Powerd By TYREX_KSH TECH                     *
+ *  ADVANCED VIEW-ONCE RETRIEVER — TYREX_KSH MD v7.2 ULTRA                    *
  *                                                                           *
  *  FIXED v7.2:                                                              *
  *   • @lid linked device permission check (fromMe flag + sock.user.id)     *
@@ -24,7 +24,7 @@ const VV_CONFIG = {
     dmEmoji        : '📥',
 
     dmSentMsg   : '📥 *View-once sent to your DM silently.*\n_No trace left in this chat._ 🤫',
-    retrievedMsg: '👁️ *View-Once Retrieved!*\n\n_Powered by SILA X MINI v7.2 ULTRA_ 🔥',
+    retrievedMsg: '👁️ *View-Once Retrieved!*\n\n_Powered by TYREX_KSH MD v7.2 ULTRA_ 🔥',
     autoCaption : '🤫 *Auto-intercepted view-once*\n\n_Someone sent this in a monitored chat_ 👁️',
 
     noMediaMsg    : '⚠️ *Please reply to a view-once image, video, audio, or voice note.*',
@@ -92,7 +92,7 @@ function getSender(message, context = {}) {
  * like "79268218458117@lid". You CANNOT send a DM to a @lid JID — it will fail.
  *
  * The correct inbox for the owner/linked device is always sock.user.id
- * (the real phone number the bot is running as, e.g. 255789661031@s.whatsapp.net).
+ * (the real phone number the bot is running as, e.g. 255610744352@s.whatsapp.net).
  *
  * So:
  *  - If sender is a @lid   → send to sock.user.id (the owner's real number)

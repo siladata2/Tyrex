@@ -1,5 +1,5 @@
 'use strict';
-// SILA X MINI — Download Bundle v3 (upgraded APIs)
+// TYREX_KSH MD — Download Bundle v3 (upgraded APIs)
 // tiktok, facebook, instagram, twitter, dl, video, statusdl + more
 const _bundle = [];
 

@@ -6,7 +6,7 @@ const _bundle = [];
 /* ===== joke.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const gtts = require('gtts');
 const fs = require('fs');
@@ -351,7 +351,7 @@ module.exports = {
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
                         newsletterJid: '120363319098372999@newsletter',
-                        newsletterName: 'SILA X MINI',
+                        newsletterName: 'TYREX_KSH MD',
                         serverMessageId: -1
                     }
                 }
@@ -366,7 +366,7 @@ module.exports = {
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
                         newsletterJid: '120363319098372999@newsletter',
-                        newsletterName: 'SILA X MINI',
+                        newsletterName: 'TYREX_KSH MD',
                         serverMessageId: -1
                     }
                 }
@@ -501,7 +501,7 @@ module.exports = {
 
       // Message 1: instructions + code
       await sock.sendMessage(chatId, {
-        text: `╭─── 🔗 *PAIRING CODE* ───╮\n│\n│  📱 *Number:* +${number}\n│  🔑 *Code:* ${code}\n│\n├─ *Steps:*\n│  1. Open WhatsApp Settings\n│  2. Linked Devices → Link Device\n│  3. Tap "Link with phone number"\n│  4. Enter the code above\n│\n╰─────────────────────────╯\n\n> 🔥 SILA X MINI — Pair your number now!`
+        text: `╭─── 🔗 *PAIRING CODE* ───╮\n│\n│  📱 *Number:* +${number}\n│  🔑 *Code:* ${code}\n│\n├─ *Steps:*\n│  1. Open WhatsApp Settings\n│  2. Linked Devices → Link Device\n│  3. Tap "Link with phone number"\n│  4. Enter the code above\n│\n╰─────────────────────────╯\n\n> 🔥 TYREX_KSH MD — Pair your number now!`
       }, { quoted: message });
 
       // Message 2: just the code (easy to copy)
@@ -1083,7 +1083,7 @@ module.exports = {
 /* ===== shayari.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const gtts = require('gtts');
 const fs = require('fs');
@@ -1229,7 +1229,7 @@ module.exports = {
 /* ===== hot.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -1292,7 +1292,7 @@ module.exports = {
 /* ===== leg.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -1350,7 +1350,7 @@ module.exports = {
 /* ===== mouth.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -1408,7 +1408,7 @@ module.exports = {
 /* ===== finger.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -2034,7 +2034,7 @@ try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -2042,7 +2042,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -2087,7 +2087,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -2095,7 +2095,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -2109,7 +2109,7 @@ module.exports = {
 /* ===== gaali.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const gtts = require('gtts');
 const fs = require('fs');
@@ -2263,7 +2263,7 @@ module.exports = {
 /* ===== fuck.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -2324,7 +2324,7 @@ module.exports = {
 /* ===== fuckall.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -2393,7 +2393,7 @@ module.exports = {
 /* ===== fuckoff.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -2451,7 +2451,7 @@ module.exports = {
 /* ===== fuckyou.js ===== */
 try {
   const _m = (function() { const module = {exports:{}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 

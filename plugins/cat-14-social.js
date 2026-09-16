@@ -599,17 +599,17 @@ module.exports = {
   command: 'script',
   aliases: ['repo', 'sc'],
   category: 'info',
-  description: 'Get information about the SILA X MINI GitHub repository',
+  description: 'Get information about the TYREX_KSH MD GitHub repository',
   usage: '.script',
   async handler(sock, message, args, context = {}) {
     const chatId = context.chatId || message.key.remoteJid;
 
     try {
-      const res = await fetch('https://api.github.com/repos/Sila-Md/SILA X MINI');
+      const res = await fetch('https://api.github.com/repos/Sila-Md/TYREX_KSH MD');
       if (!res.ok) throw new Error('Error fetching repository data');
       const json = await res.json();
 
-      let txt = `*乂  SILA X MINI  乂*\n\n`;
+      let txt = `*乂  TYREX_KSH MD  乂*\n\n`;
       txt += `✩  *Name* : ${json.name}\n`;
       txt += `✩  *Watchers* : ${json.watchers_count}\n`;
       txt += `✩  *Size* : ${(json.size / 1024).toFixed(2)} MB\n`;
@@ -617,7 +617,7 @@ module.exports = {
       txt += `✩  *URL* : ${json.html_url}\n`;
       txt += `✩  *Forks* : ${json.forks_count}\n`;
       txt += `✩  *Stars* : ${json.stargazers_count}\n\n`;
-      txt += `💥 *SILA X MINI*`;
+      txt += `💥 *TYREX_KSH MD*`;
 
       const imgPath = path.join(__dirname, '../assets/bot_image.jpg');
       const imgBuffer = fs.readFileSync(imgPath);
@@ -947,7 +947,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                     Personal Status – Visible to All Contacts
- *                     Powerd By Sila Tech
+ *                     Powerd By TYREX_KSH TECH
  *****************************************************************************/
 
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');

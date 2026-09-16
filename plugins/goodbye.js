@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 const settings = require('../settings');
 
 // Default values
-const DEFAULT_BOT_NAME = settings.botName || 'SILA X MINI';
+const DEFAULT_BOT_NAME = settings.botName || 'TYREX_KSH MD';
 
 // Fixed image settings (no customisation)
 const IMAGE_API = 'https://api.some-random-api.com/welcome/img/2/';

@@ -9,7 +9,7 @@ const _bundle = [];
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -101,7 +101,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -193,7 +193,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -426,7 +426,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 const fs = require('fs');
@@ -635,7 +635,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -852,7 +852,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const axios = require('axios');
 
@@ -1265,7 +1265,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 
@@ -1287,12 +1287,12 @@ const CPP_CONFIG = {
     maleCaption:
         `👨 *Male — Couple DP*\n\n` +
         `_Pair this with the female DP below_ 💑\n\n` +
-        `_Powered by SILA X MINI_ 🔥`,
+        `_Powered by TYREX_KSH MD_ 🔥`,
 
     femaleCaption:
         `👩 *Female — Couple DP*\n\n` +
         `_Set these as your profile pictures together_ 💕\n\n` +
-        `_Powered by SILA X MINI_ 🔥`,
+        `_Powered by TYREX_KSH MD_ 🔥`,
 };
 
 /* ── Exports (single object — matches original loader format) ────────────── */
@@ -1553,7 +1553,7 @@ module.exports = {
             menuText +=
 `━━━━━━━━━━━━━━━━━━━
 💡 *Tip:* Use short & clear text for best results
-🤖 Powered by *SILA X MINI*`;
+🤖 Powered by *TYREX_KSH MD*`;
 
             return await sock.sendMessage(
                 chatId,
@@ -1595,7 +1595,7 @@ module.exports = {
                 chatId,
                 {
                     image: { url: result.image },
-                    caption: `🔥 *GENERATED SUCCESSFULLY* 🔥\n✨ Powered by *SILA X MINI*`
+                    caption: `🔥 *GENERATED SUCCESSFULLY* 🔥\n✨ Powered by *TYREX_KSH MD*`
                 },
                 { quoted: message }
             );
@@ -1720,7 +1720,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1728,7 +1728,7 @@ try {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1781,7 +1781,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1789,7 +1789,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1893,7 +1893,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 
@@ -1938,14 +1938,14 @@ module.exports = {
                 if (item.video) {
                     await sock.sendMessage(chatId, {
                         video  : { url: item.video },
-                        caption: `🎬 *Alamy Video*\n\n_Downloaded by SILA X MINI_ 🔥`,
+                        caption: `🎬 *Alamy Video*\n\n_Downloaded by TYREX_KSH MD_ 🔥`,
                     }, { quoted: message });
                     sent++;
                 }
                 if (item.image) {
                     await sock.sendMessage(chatId, {
                         image  : { url: item.image },
-                        caption: `🖼️ *Alamy Image*\n\n_Downloaded by SILA X MINI_ 🔥`,
+                        caption: `🖼️ *Alamy Image*\n\n_Downloaded by TYREX_KSH MD_ 🔥`,
                     }, { quoted: message });
                     sent++;
                 }

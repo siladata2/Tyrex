@@ -933,7 +933,7 @@ try {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 
 module.exports = {
@@ -1061,7 +1061,7 @@ module.exports = {
 
 /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                                *
+ *                     Powerd By TYREX_KSH TECH                                *
  *                                                                           *
  *  🌐  GitHub   : https://github.com/Sila-Md                         *
  *  ▶️  YouTube  : https://youtube.com/@Sila-Md                       *
@@ -1069,7 +1069,7 @@ module.exports = {
  *                                                                           *
  *    © 2026 Sila-Md. All rights reserved.                            *
  *                                                                           *
- *    Description: This file is part of the SILA X MINI Project.                 *
+ *    Description: This file is part of the TYREX_KSH MD Project.                 *
  *                 Unauthorized copying or distribution is prohibited.       *
  *                                                                           *
  *****************************************************************************/
@@ -1089,7 +1089,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'gcset',
@@ -1498,7 +1498,7 @@ try {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'joinrequests',
@@ -1652,7 +1652,7 @@ module.exports = [
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'invitelink',
@@ -1758,7 +1758,7 @@ try {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'joingroup',
@@ -1833,7 +1833,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'gcmtdata',
@@ -1975,7 +1975,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                     Group Status – Mentions all members
- *                     Powerd By Sila Tech
+ *                     Powerd By TYREX_KSH TECH
  *****************************************************************************/
 
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
@@ -2127,7 +2127,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'pinchat',
@@ -2240,7 +2240,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const isAdmin = require('../lib/isAdmin.js');
 
@@ -2880,8 +2880,8 @@ const channelInfo = {
     forwardingScore: 999,
     isForwarded: true,
     forwardedNewsletterMessageInfo: {
-      newsletterJid: '120363402325089913@newsletter',
-      newsletterName: 'SILA X MINI',
+      newsletterJid: '120363429539292697@newsletter',
+      newsletterName: 'TYREX_KSH MD',
       serverMessageId: -1
     }
   }

@@ -1,4 +1,4 @@
-// plugins/groupguard.js — SILA X MINI Ultra Group Guardian
+// plugins/groupguard.js — TYREX_KSH MD Ultra Group Guardian
 'use strict';
 const store = require('../lib/store');
 

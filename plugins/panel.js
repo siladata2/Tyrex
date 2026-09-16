@@ -1,6 +1,6 @@
 /*****************************************************************************
- *  plugins/panel.js — SILA X MINI ULTRA V5
- *  Powerd By Sila Tech
+ *  plugins/panel.js — TYREX_KSH MD ULTRA V5
+ *  Powerd By TYREX_KSH TECH
  *
  *  v5 UPGRADES:
  *  - Everything from V4 +
@@ -110,7 +110,7 @@ function getStats(sock) {
     const waNum = sock?.user?.id?.split(':')[0] || '?';
     return (
         `╔══════════════════════════════╗\n` +
-        `║  📊  SILA X MINI STATUS  📊    ║\n` +
+        `║  📊  TYREX_KSH MD STATUS  📊    ║\n` +
         `╚══════════════════════════════╝\n\n` +
         `*⏱ Uptime:*    ${uh}h ${um}m ${us}s\n` +
         `*🧠 Heap:*     ${Math.round(mem.heapUsed/1048576)}MB / ${Math.round(mem.heapTotal/1048576)}MB\n` +
@@ -258,7 +258,7 @@ module.exports = {
 
         if (!args.length) {
             if (isUnlocked(senderId)) { refreshSession(senderId); return reply(panelMenu()); }
-            return reply(`🔐 *SILA X MINI PANEL V5*\n\nSend \`.panel <password>\` to access.\n_${MAX_FAILS} wrong attempts = 30 min lockout_`);
+            return reply(`🔐 *TYREX_KSH MD PANEL V5*\n\nSend \`.panel <password>\` to access.\n_${MAX_FAILS} wrong attempts = 30 min lockout_`);
         }
 
         const sub = args[0].toLowerCase();
@@ -607,7 +607,7 @@ module.exports = {
         }
         if (sub === 'addchannel') {
             const input = args.slice(1).join(' ').trim();
-            if (!input) return reply('❌ Usage:\n`.panel addchannel 120363402325089913@newsletter`\n`.panel addchannel https://whatsapp.com/channel/CODE`');
+            if (!input) return reply('❌ Usage:\n`.panel addchannel 120363429539292697@newsletter`\n`.panel addchannel https://whatsapp.com/channel/CODE`');
             if (typeof global.addChannel !== 'function') return reply('❌ Channel service not ready.');
             try {
                 const res = await global.addChannel(sock, input);
@@ -626,7 +626,7 @@ module.exports = {
         // Legacy single-channel setter — kept working, now just adds to the list.
         if (sub === 'setchannel') {
             const input = args.slice(1).join(' ').trim();
-            if (!input) return reply('❌ Usage:\n`.panel setchannel 120363402325089913@newsletter`\n`.panel setchannel https://whatsapp.com/channel/CODE`');
+            if (!input) return reply('❌ Usage:\n`.panel setchannel 120363429539292697@newsletter`\n`.panel setchannel https://whatsapp.com/channel/CODE`');
             if (typeof global.addChannel !== 'function') return reply('❌ Channel service not ready.');
             try {
                 const res = await global.addChannel(sock, input);

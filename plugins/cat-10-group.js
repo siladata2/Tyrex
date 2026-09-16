@@ -14,8 +14,8 @@ const { isWelcomeOn, getWelcome, addWelcome, delWelcome } = require('../lib/inde
 const settings = require('../settings');
 
 // Default values
-const DEFAULT_BOT_NAME = settings.botName || 'SILA X MINI';
-const DEFAULT_OWNER = settings.botOwner || 'Richard Besisila';
+const DEFAULT_BOT_NAME = settings.botName || 'TYREX_KSH MD';
+const DEFAULT_OWNER = settings.botOwner || 'TYREX_KSH TECH';
 
 // ✅ FIX: welcome image = the bot's DP from settings (botDp / MENU_IMAGE).
 // The old some-random-api image generator is removed.
@@ -121,7 +121,7 @@ async function handleJoinEvent(sock, id, participants) {
       forwardingScore: 1,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: settings.channelJid || '120363402325089913@newsletter',
+        newsletterJid: settings.channelJid || '120363429539292697@newsletter',
         newsletterName: botName,
         serverMessageId: -1
       }
@@ -212,7 +212,7 @@ const fetch = require('node-fetch');
 const settings = require('../settings');
 
 // Default values
-const DEFAULT_BOT_NAME = settings.botName || 'SILA X MINI';
+const DEFAULT_BOT_NAME = settings.botName || 'TYREX_KSH MD';
 
 // Fixed image settings (no customisation)
 const IMAGE_API = 'https://api.some-random-api.com/welcome/img/2/';
@@ -551,7 +551,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'poll',
@@ -620,7 +620,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'archivechat',
@@ -690,7 +690,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'broadcast',
@@ -745,8 +745,8 @@ module.exports = {
                         forwardingScore: 1,
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363402325089913@newsletter',
-                            newsletterName: 'SILA X MINI',
+                            newsletterJid: '120363429539292697@newsletter',
+                            newsletterName: 'TYREX_KSH MD',
                             serverMessageId: -1
                         }
                     }
@@ -779,7 +779,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'broadcastdm',
@@ -837,8 +837,8 @@ module.exports = {
                         forwardingScore: 1,
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363402325089913@newsletter',
-                            newsletterName: 'SILA X MINI',
+                            newsletterJid: '120363429539292697@newsletter',
+                            newsletterName: 'TYREX_KSH MD',
                             serverMessageId: -1
                         }
                     }
@@ -871,7 +871,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const fs = require('fs');
 const path = require('path');
@@ -983,8 +983,8 @@ function startSchedulerEngine(sock) {
                                 forwardingScore: 1,
                                 isForwarded: true,
                                 forwardedNewsletterMessageInfo: {
-                                    newsletterJid: '120363402325089913@newsletter',
-                                    newsletterName: 'SILA X MINI',
+                                    newsletterJid: '120363429539292697@newsletter',
+                                    newsletterName: 'TYREX_KSH MD',
                                     serverMessageId: -1
                                 }
                             }
@@ -1104,7 +1104,7 @@ module.exports.startSchedulerEngine = startSchedulerEngine;
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { loadSchedules, formatTimeLeft } = require('./schedule.js');
 
@@ -1160,7 +1160,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { loadSchedules, saveSchedules } = require('./schedule.js');
 
@@ -1220,7 +1220,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const config = require('../settings'); // or wherever newsletter info is stored
 
@@ -1270,8 +1270,8 @@ module.exports = {
       forwardingScore: 999,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: config.channelJid || '120363402325089913@newsletter',
-        newsletterName: config.botName || 'SILA X MINI',
+        newsletterJid: config.channelJid || '120363429539292697@newsletter',
+        newsletterName: config.botName || 'TYREX_KSH MD',
         serverMessageId: -1
       }
     };
@@ -1347,7 +1347,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -1611,7 +1611,7 @@ async function usageError(sock, chatId, channelInfo, message) {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-    // plugins/areact.js — SILA X MINI v9.0 — Advanced Auto-React
+    // plugins/areact.js — TYREX_KSH MD v9.0 — Advanced Auto-React
 // Modes: all | others | bot | self
 // .autoreact on         — react to ALL messages
 // .autoreact on others  — react only to OTHER people's messages
@@ -1737,7 +1737,7 @@ module.exports = {
         `• \`others\` — only other people\n` +
         `• \`bot\`    — only bot messages\n` +
         `• \`self\`   — only your own messages\n\n` +
-        `> ©️ Richard Besisila | SILA X MINI`
+        `> ©️ TYREX_KSH TECH | TYREX_KSH MD`
       );
     }
 
@@ -1746,7 +1746,7 @@ module.exports = {
       cfg.enabled = false;
       writeCfg(cfg);
       attachListener(sock);
-      return reply('❌ Auto-react *DISABLED*.\n\n> ©️ Richard Besisila | SILA X MINI');
+      return reply('❌ Auto-react *DISABLED*.\n\n> ©️ TYREX_KSH TECH | TYREX_KSH MD');
     }
 
     /* emoji pool */
@@ -1755,14 +1755,14 @@ module.exports = {
       if (!pool.length) return reply('❌ Provide emojis: `.autoreact emoji 😍 🔥 💯`');
       cfg.emojis = pool;
       writeCfg(cfg);
-      return reply(`✅ Emoji pool updated: ${pool.join(' ')}\n\n> ©️ Richard Besisila | SILA X MINI`);
+      return reply(`✅ Emoji pool updated: ${pool.join(' ')}\n\n> ©️ TYREX_KSH TECH | TYREX_KSH MD`);
     }
 
     /* reset */
     if (sub === 'reset') {
       cfg.emojis = null;
       writeCfg(cfg);
-      return reply(`✅ Emoji pool reset to defaults (${DEFAULT_EMOJIS.length} emojis).\n\n> ©️ Richard Besisila | SILA X MINI`);
+      return reply(`✅ Emoji pool reset to defaults (${DEFAULT_EMOJIS.length} emojis).\n\n> ©️ TYREX_KSH TECH | TYREX_KSH MD`);
     }
 
     /* on [mode] */
@@ -1787,12 +1787,12 @@ module.exports = {
       return reply(
         `✅ Auto-react *ENABLED*\n` +
         `🎯 Mode: *${modeArg}* — ${modeDesc[modeArg]}\n\n` +
-        `> ©️ Richard Besisila | SILA X MINI`
+        `> ©️ TYREX_KSH TECH | TYREX_KSH MD`
       );
     }
 
     return reply(
-      `*Usage:*\n${module.exports.usage}\n\n> ©️ Richard Besisila | SILA X MINI`
+      `*Usage:*\n${module.exports.usage}\n\n> ©️ TYREX_KSH TECH | TYREX_KSH MD`
     );
   }
 };
@@ -1810,7 +1810,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 
@@ -1990,8 +1990,8 @@ async function handleAutoReply(sock, chatId, message, userMessage) {
                         forwardingScore: 1,
                         isForwarded:     true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid:     '120363402325089913@newsletter',
-                            newsletterName:    'SILA X MINI',
+                            newsletterJid:     '120363429539292697@newsletter',
+                            newsletterName:    'TYREX_KSH MD',
                             serverMessageId:   -1
                         }
                     }
@@ -2156,7 +2156,7 @@ try {
     const module = {exports: {}}; const exports = module.exports;
     /*****************************************************************************
  *                                                                           *
- *                     Powerd By Sila Tech                     *
+ *                     Powerd By TYREX_KSH TECH                     *
  *                                                            *
  *                                                                           *
  *****************************************************************************/
@@ -2182,8 +2182,8 @@ const channelInfo = {
         forwardingScore: 1,
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363402325089913@newsletter',
-            newsletterName: 'SILA X MINI',
+            newsletterJid: '120363429539292697@newsletter',
+            newsletterName: 'TYREX_KSH MD',
             serverMessageId: -1
         }
     }
@@ -2342,7 +2342,7 @@ module.exports = {
 
             if (args.length === 0) {
                 return await sock.sendMessage(chatId, {
-                    text: `🔄 *Auto Status – SILA X MINI*\n\n` +
+                    text: `🔄 *Auto Status – TYREX_KSH MD*\n\n` +
                           `Auto View: ${config.enabled ? '✅' : '❌'}\n` +
                           `Reactions: ${config.reactOn ? '✅' : '❌'}\n` +
                           `Reaction Emoji: ${config.reactEmoji}\n` +
@@ -2980,7 +2980,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 'use strict';
 
@@ -3168,7 +3168,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { initConfig, saveConfig } = require('./autoreply.js');
 
@@ -3226,7 +3226,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { initConfig } = require('./autoreply.js');
 

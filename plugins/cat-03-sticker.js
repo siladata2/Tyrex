@@ -55,8 +55,8 @@ module.exports = {
 
       // Create sticker with stickers-formatter
       const sticker = new Sticker(buffer, {
-        pack: 'SILA X MINI Stickers',
-        author: 'Richard Besisila',
+        pack: 'TYREX_KSH MD Stickers',
+        author: 'TYREX_KSH TECH',
         type: stickerType,
         quality: 80,
         categories: ['🤖', '✨']
@@ -200,7 +200,7 @@ module.exports = {
 
       const json = {
         'sticker-pack-id': crypto.randomBytes(32).toString('hex'),
-        'sticker-pack-name': settings.packname || 'SILA X MINI',
+        'sticker-pack-name': settings.packname || 'TYREX_KSH MD',
         'emojis': ['🤖']
       };
 
@@ -226,7 +226,7 @@ module.exports = {
             await img2.load(smallWebp);
             const json2 = {
               'sticker-pack-id': crypto.randomBytes(32).toString('hex'),
-              'sticker-pack-name': settings.packname || 'SILA X MINI',
+              'sticker-pack-name': settings.packname || 'TYREX_KSH MD',
               'emojis': ['🤖']
             };
             const exifAttr2 = Buffer.from([0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00]);
@@ -594,7 +594,7 @@ module.exports = {
 
     if (!newName) {
       return await sock.sendMessage(chatId, {
-        text: '❌ Please provide a new sticker pack name.\nExample: .stickername SILA X MINI Pack'
+        text: '❌ Please provide a new sticker pack name.\nExample: .stickername TYREX_KSH MD Pack'
       }, { quoted: message });
     }
 
@@ -626,7 +626,7 @@ module.exports = {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 const fs = require('fs');
@@ -947,7 +947,7 @@ module.exports = {
         return;
       }
       
-      const packname = args.join(' ') || 'SILA X MINI';
+      const packname = args.join(' ') || 'TYREX_KSH MD';
 
       try {
         const stickerBuffer = await downloadMediaMessage(
@@ -1954,7 +1954,7 @@ module.exports = {
         chatId,
         {
           image: { url: grayFile },
-          caption: `🖤 *Grayscale Image*\n\nProcessed by: SILA X MINI`
+          caption: `🖤 *Grayscale Image*\n\nProcessed by: TYREX_KSH MD`
         },
         { quoted: message }
       );
@@ -2043,7 +2043,7 @@ module.exports = {
         chatId,
         {
           image: { url: grayFile },
-          caption: `🧡 *Sepia Image*\n\nProcessed by: SILA X MINI`
+          caption: `🧡 *Sepia Image*\n\nProcessed by: TYREX_KSH MD`
         },
         { quoted: message }
       );
@@ -2132,7 +2132,7 @@ module.exports = {
         chatId,
         {
           image: { url: grayFile },
-          caption: `🤍 *Inverted Image*\n\nProcessed by: SILA X MINI`
+          caption: `🤍 *Inverted Image*\n\nProcessed by: TYREX_KSH MD`
         },
         { quoted: message }
       );
@@ -2295,7 +2295,7 @@ module.exports = {
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
             newsletterJid: '120363319098372999@newsletter',
-            newsletterName: 'SILA X MINI',
+            newsletterName: 'TYREX_KSH MD',
             serverMessageId: -1
           }
         }
@@ -2963,7 +2963,7 @@ try {
 try {
   const _m = (function() {
     const module = {exports: {}}; const exports = module.exports;
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 module.exports = {
     command: 'excard',

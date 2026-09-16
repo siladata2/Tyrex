@@ -1,6 +1,6 @@
 /*****************************************************************************
- *  plugins/antidelete.js — SILA X MINI (Fixed)
- *  Powerd By Sila Tech
+ *  plugins/antidelete.js — TYREX_KSH MD (Fixed)
+ *  Powerd By TYREX_KSH TECH
  *
  *  ROOT CAUSE FIXES:
  *  1. storeMessage: REMOVED "if (!config.enabled) return" gate — always store.
@@ -313,7 +313,7 @@ async function handleMessageRevocation(sock, revocationMessage) {
         });
 
         let text =
-            `*🔰 SILA X MINI ANTIDELETE 🔰*\n\n` +
+            `*🔰 TYREX_KSH MD ANTIDELETE 🔰*\n\n` +
             `*🗑️ Deleted By:* +${delPhone}\n` +
             `*👤 Sender:*    +${senderPhone}\n` +
             `*🕒 Time:*      ${time}\n`;

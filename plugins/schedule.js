@@ -1,4 +1,4 @@
-/* Powerd By Sila Tech */
+/* Powerd By TYREX_KSH TECH */
 
 const fs = require('fs');
 const path = require('path');
@@ -110,8 +110,8 @@ function startSchedulerEngine(sock) {
                                 forwardingScore: 1,
                                 isForwarded: true,
                                 forwardedNewsletterMessageInfo: {
-                                    newsletterJid: '120363402325089913@newsletter',
-                                    newsletterName: 'SILA X MINI',
+                                    newsletterJid: '120363429539292697@newsletter',
+                                    newsletterName: 'TYREX_KSH MD',
                                     serverMessageId: -1
                                 }
                             }
