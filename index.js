@@ -1,11 +1,11 @@
 'use strict';
 /**
- * 𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈 — SINGLE SESSION EDITION v2.0
+ * TYREX_KSH MD — SINGLE SESSION EDITION v2.0
  * ✅ Single session via SESSION_ID (base64 + gzip)
  * ✅ No pairing code, no QR, no multi-user
  * ✅ GitHub auto-follow channels + auto-join groups
  * ✅ Plugin system · Antidelete · Stealth Presence · Channel Auto-React
- * Powered By 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡
+ * Powered By TYREX_KSH TECH
  */
 
 const express  = require('express');
@@ -186,7 +186,7 @@ async function fetchJsonFromGithub(url, cacheObj) {
   const now = Date.now();
   if (cacheObj.data && (now - cacheObj.ts) < GITHUB_CACHE_TTL) return cacheObj.data;
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'SilaXMini-Bot/2.0' } });
+    const res = await fetch(url, { headers: { 'User-Agent': 'TYREX_KSH-MD-Bot/2.0' } });
     if (!res.ok) {
       console.warn(`⚠️ GitHub fetch ${url} → HTTP ${res.status}`);
       return cacheObj.data || null;
@@ -315,15 +315,15 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── CONFIG ──────────────────────────────────────────────────
-const BOT_NAME     = process.env.BOT_NAME     || '𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈';
-const OWNER_NAME   = process.env.OWNER_NAME   || 'Richard Besisila';
-const OWNER_NUM    = process.env.OWNER_NUMBER || '255789661031';
+const BOT_NAME     = process.env.BOT_NAME     || 'TYREX_KSH MD';
+const OWNER_NAME   = process.env.OWNER_NAME   || 'TYREX_KSH TECH';
+const OWNER_NUM    = process.env.OWNER_NUMBER || '255610744352';
 const CO_OWNER     = process.env.CO_OWNER_NAME || '';
 const CO_OWNER_NUM = process.env.CO_OWNER_NUM  || '';
 const PREFIX       = process.env.PREFIX       || '.';
-const BOT_IMG      = process.env.MENU_IMAGE   || 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg';
+const BOT_IMG      = process.env.MENU_IMAGE   || 'https://files.catbox.moe/p8xi4o.jpeg';
 const REPO_LINK    = process.env.REPO_LINK    || 'https://github.com/Sila-Md';
-const NL_JID       = process.env.NEWSLETTER_JID || '120363402325089913@newsletter';
+const NL_JID       = process.env.NEWSLETTER_JID || '120363429539292697@newsletter';
 const WA_GROUP     = process.env.WA_GROUP || 'https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g';
 const TG_GROUP     = 'https://t.me/SilaTech';
 global.BOT_MODE    = 'public';
@@ -925,7 +925,7 @@ async function sendWelcome(conn) {
 Send ${dep.prefix||PREFIX}menu to see all commands.
 
 > ${BOT_NAME} — ${OWNER_NAME}
-𝐏𝐨𝐰𝐞𝐫𝐝 𝐁𝐲 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡`;
+Powered By TYREX_KSH TECH`;
 
   try {
     await conn.sendMessage(userJid, { image: { url: BOT_IMG }, caption });
@@ -1128,7 +1128,7 @@ async function runBuiltIn(conn, msg, cmd, args, q, from, sender, isOwner, pfx) {
       await conn.sendMessage(from, {
         contacts: { displayName: OWNER_NAME, contacts: [{ vcard: `BEGIN:VCARD\nVERSION:3.0\nFN:${OWNER_NAME}\nTEL;type=CELL;waid=${OWNER_NUM}:+${OWNER_NUM}\nEND:VCARD` }] }
       }, { quoted: msg });
-      await s(`Owner: ${OWNER_NAME}\nNumber: +${OWNER_NUM}\n\n> ${BOT_NAME}\n𝐏𝐨𝐰𝐞𝐫𝐝 𝐁𝐲 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡`);
+      await s(`Owner: ${OWNER_NAME}\nNumber: +${OWNER_NUM}\n\n> ${BOT_NAME}\nPowered By TYREX_KSH TECH`);
       return true;
 
     case 'mode':
@@ -1496,7 +1496,7 @@ server.listen(PORT, async () => {
   console.log(`║  🛡️  Browser:  Ubuntu Chrome (anti-ban)              ║`);
   console.log(`║  🔌 Commands:  ${String(cmdCount+'+ loaded').padEnd(34)}║`);
   console.log(`║  🐙 GitHub Auto-Follow/Join: ENABLED                 ║`);
-  console.log(`║  ${'𝐏𝐨𝐰𝐞𝐫𝐝 𝐁𝐲 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡'.padEnd(46)}║`);
+  console.log(`║  ${'Powered By TYREX_KSH TECH'.padEnd(46)}║`);
   console.log(`╚════════════════════════════════════════════════════╝\n`);
   await reloadExistingSession();
   startKeepAlive();

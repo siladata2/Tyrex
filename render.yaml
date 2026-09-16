@@ -8,11 +8,11 @@ services:
       - key: NODE_ENV
         value: production
       - key: BOT_NAME
-        value: "SILA X MINI"
+        value: "TYREX_KSH MD"
       - key: OWNER_NUMBER
-        value: "255789661031"
+        value: "255610744352"
       - key: OWNER_NAME
-        value: "Richard Besisila"
+        value: "TYREX_KSH TECH"
       - key: CO_OWNER
         value: ""
       - key: CO_OWNER_NUM

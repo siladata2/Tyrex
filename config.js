@@ -1,7 +1,7 @@
 /*****************************************************************************
- *                     Developed By Sila Tech                                *
+ *                     Developed By TYREX_KSH TECH                                *
  *  🌐  GitHub   : https://github.com/Sila-Md                               *
- *    © 2026 Sila Tech. All rights reserved.                               *
+ *    © 2026 TYREX_KSH TECH. All rights reserved.                               *
  *****************************************************************************/
 
 require('dotenv').config();
@@ -13,14 +13,14 @@ global.SESSION_ID     = process.env.SESSION_ID || '';
 global.SESSION_DIR    = process.env.SESSION_DIR || './sessions';
 
 // Owner / bot metadata
-global.OWNER_NUMBER   = process.env.OWNER_NUMBER || '255789661031';
-global.OWNER_NAME     = process.env.OWNER_NAME   || 'Richard Besisila';
-global.BOT_NAME       = process.env.BOT_NAME     || '𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈';
+global.OWNER_NUMBER   = process.env.OWNER_NUMBER || '255610744352';
+global.OWNER_NAME     = process.env.OWNER_NAME   || 'TYREX_KSH TECH';
+global.BOT_NAME       = process.env.BOT_NAME     || 'TYREX_KSH MD';
 global.PREFIX         = process.env.PREFIX       || '.';
 global.BOT_MODE       = process.env.BOT_MODE     || 'public';
 
 // Newsletter JID (auto-follow on connect)
-global.NEWSLETTER_JID = process.env.NEWSLETTER_JID || '120363402325089913@newsletter';
+global.NEWSLETTER_JID = process.env.NEWSLETTER_JID || '120363429539292697@newsletter';
 
 // ─────────────────────────────────────────────────────────────
 // External APIs used by plugins

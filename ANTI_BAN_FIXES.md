@@ -1,4 +1,4 @@
-# 🛡️ SILA X MINI v9.0 — Anti-Ban Fix Documentation
+# 🛡️ TYREX_KSH MD v9.0 — Anti-Ban Fix Documentation
 
 ## ❌ What Was Causing WhatsApp Bans
 

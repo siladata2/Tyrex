@@ -1,8 +1,8 @@
 'use strict';
 /*****************************************************************************
- *                     Developed By Sila Tech                                *
+ *                     Developed By TYREX_KSH TECH                                *
  *  🌐  GitHub   : https://github.com/Sila-Md                               *
- *    © 2026 Sila Tech. All rights reserved.                               *
+ *    © 2026 TYREX_KSH TECH. All rights reserved.                               *
  *****************************************************************************/
 
 require('dotenv').config();
@@ -14,17 +14,17 @@ module.exports = {
   set prefixes(v)     { this._prefixesOverride = v; },
 
   _botNameOverride: null,
-  get botName()       { return this._botNameOverride || process.env.BOT_NAME || '𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈'; },
+  get botName()       { return this._botNameOverride || process.env.BOT_NAME || 'TYREX_KSH MD'; },
   set botName(v)      { this._botNameOverride = v; },
 
-  get botOwner()      { return process.env.OWNER_NAME || 'Richard Besisila'; },
-  get ownerName()     { return process.env.OWNER_NAME || 'Richard Besisila'; },
+  get botOwner()      { return process.env.OWNER_NAME || 'TYREX_KSH TECH'; },
+  get ownerName()     { return process.env.OWNER_NAME || 'TYREX_KSH TECH'; },
 
   _ownerNumberOverride: null,
-  get ownerNumber()   { return this._ownerNumberOverride || process.env.OWNER_NUMBER || '255789661031'; },
+  get ownerNumber()   { return this._ownerNumberOverride || process.env.OWNER_NUMBER || '255610744352'; },
   set ownerNumber(v)  { this._ownerNumberOverride = v; },
 
-  get botDesc()       { return process.env.BOT_DESC    || '𝐏𝐨𝐰𝐞𝐫𝐝 𝐁𝐲 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡'; },
+  get botDesc()       { return process.env.BOT_DESC    || 'Powered By TYREX_KSH TECH'; },
   get version()       { return process.env.BOT_VERSION || 'v2.0'; },
 
   // ── BOT SETTINGS ──────────────────────────────────────────────
@@ -41,15 +41,15 @@ module.exports = {
 
   // ── MEDIA ─────────────────────────────────────────────────────
   _botDpOverride: null,
-  get botDp()         { return this._botDpOverride || process.env.MENU_IMAGE || 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg'; },
+  get botDp()         { return this._botDpOverride || process.env.MENU_IMAGE || 'https://files.catbox.moe/p8xi4o.jpeg'; },
   set botDp(v)        { this._botDpOverride = v; },
-  get menuImage()     { return process.env.MENU_IMAGE || 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg'; },
+  get menuImage()     { return process.env.MENU_IMAGE || 'https://files.catbox.moe/p8xi4o.jpeg'; },
 
   // ── LINKS ─────────────────────────────────────────────────────
   get whatsappGroup() { return process.env.WA_GROUP       || 'https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g'; },
   get telegramGroup() { return process.env.TG_GROUP       || 'https://t.me/SilaTech'; },
   get repoLink()      { return process.env.REPO_LINK      || 'https://github.com/Sila-Md'; },
-  get newsletterJid() { return process.env.NEWSLETTER_JID || '120363402325089913@newsletter'; },
+  get newsletterJid() { return process.env.NEWSLETTER_JID || '120363429539292697@newsletter'; },
 
   // ── SESSION (single, SESSION_ID based) ───────────────────────
   get sessionId()     { return process.env.SESSION_ID || ''; },

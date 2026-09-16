@@ -1,7 +1,7 @@
 {
-  "name": "SILA X MINI",
-  "description": "𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈 — WhatsApp Bot (Single Session). Add your SESSION_ID and deploy. Powered By 𝐒𝐢𝐥𝐚 𝐓𝐞𝐜𝐡",
-  "logo": "https://i.ibb.co/Gf4fr5BS/silaxmini.jpg",
+  "name": "TYREX_KSH MD",
+  "description": "TYREX_KSH MD — WhatsApp Bot (Single Session). Add your SESSION_ID and deploy. Powered By TYREX_KSH TECH",
+  "logo": "https://files.catbox.moe/p8xi4o.jpeg",
   "keywords": [
     "whatsapp",
     "bot",
@@ -18,17 +18,17 @@
     },
     "BOT_NAME": {
       "description": "Bot display name",
-      "value": "𝐒𝐈𝐋𝐀 𝐗 𝐌𝐈𝐍𝐈",
+      "value": "TYREX_KSH MD",
       "required": false
     },
     "OWNER_NUMBER": {
       "description": "Owner WhatsApp number (no + or spaces)",
-      "value": "255789661031",
+      "value": "255610744352",
       "required": true
     },
     "OWNER_NAME": {
       "description": "Owner display name",
-      "value": "Richard Besisila",
+      "value": "TYREX_KSH TECH",
       "required": false
     },
     "PREFIX": {
@@ -57,12 +57,12 @@
     },
     "MENU_IMAGE": {
       "description": "Menu thumbnail image URL",
-      "value": "https://i.ibb.co/Gf4fr5BS/silaxmini.jpg",
+      "value": "https://files.catbox.moe/p8xi4o.jpeg",
       "required": false
     },
     "NEWSLETTER_JID": {
       "description": "WhatsApp Channel JID to auto-follow",
-      "value": "120363402325089913@newsletter",
+      "value": "120363429539292697@newsletter",
       "required": false
     },
     "WA_GROUP": {

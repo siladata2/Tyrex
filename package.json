@@ -1,17 +1,17 @@
 {
-  "name": "redxbot302-ultra",
+  "name": "tyrex_ksh-md-ultra",
   "version": "7.0.0",
-  "description": "\ud83d\udd25 REDXBOT302 ULTRA \u2013 Advanced WhatsApp Bot (Pair-Only). 400+ commands. By Abdul Rehman Rajpoot",
+  "description": "TYREX_KSH MD ULTRA - Advanced WhatsApp Bot (Pair-Only). 400+ commands. By TYREX_KSH TECH",
   "main": "index.js",
   "type": "commonjs",
-  "author": "Abdul Rehman Rajpoot",
+  "author": "TYREX_KSH TECH",
   "license": "MIT",
   "scripts": {
     "start": "node --expose-gc index.js",
     "dev": "node index.js",
     "cleanup": "node cleanup.js",
     "postinstall": "node -e \"try{require('ffmpeg-static')}catch(e){}\"",
-    "heroku-postbuild": "echo '\u2705 REDXBOT302 ULTRA build complete'",
+    "heroku-postbuild": "echo 'TYREX_KSH MD ULTRA build complete'",
     "test": "echo 'No test' && exit 0"
   },
   "engines": {
@@ -21,9 +21,9 @@
   "keywords": [
     "whatsapp-bot",
     "baileys",
-    "redxbot302",
+    "tyrex_ksh-md",
     "wa-bot",
-    "redxminibot"
+    "tyrexkshminibot"
   ],
   "dependencies": {
     "ws": "^8.18.0",

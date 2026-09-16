@@ -1,4 +1,4 @@
-# 🔧 SILA X MINI — Bug Fixes & Permission System Overhaul
+# 🔧 TYREX_KSH MD — Bug Fixes & Permission System Overhaul
 
 ## Summary of Changes
 

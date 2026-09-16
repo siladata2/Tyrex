@@ -1,6 +1,6 @@
 # ╔══════════════════════════════════════╗
-# ║   🔥 SILA X MINI MINI — Dockerfile   ║
-# ║   Owner: Richard Besisila        ║
+# ║   🔥 TYREX_KSH MD MINI — Dockerfile   ║
+# ║   Owner: TYREX_KSH TECH        ║
 # ╚══════════════════════════════════════╝
 
 FROM node:20-slim
