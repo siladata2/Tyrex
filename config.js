@@ -14,8 +14,8 @@ global.SESSION_DIR    = process.env.SESSION_DIR || './sessions';
 
 // Owner / bot metadata
 global.OWNER_NUMBER   = process.env.OWNER_NUMBER || '255610744352';
-global.OWNER_NAME     = process.env.OWNER_NAME   || 'TYREX_KSH TECH';
-global.BOT_NAME       = process.env.BOT_NAME     || 'TYREX_KSH MD';
+global.OWNER_NAME     = process.env.OWNER_NAME   || '𝐓𝐘𝐑𝐄𝐗-𝐊𝐒𝐇-𝐓𝐄𝐂𝐇';
+global.BOT_NAME       = process.env.BOT_NAME     || '𝐓𝐘𝐑𝐄𝐗-𝐊𝐒𝐇-𝐓𝐄𝐂𝐇';
 global.PREFIX         = process.env.PREFIX       || '.';
 global.BOT_MODE       = process.env.BOT_MODE     || 'public';
 
