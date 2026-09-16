@@ -1,5 +1,5 @@
 -- Run this in your Supabase SQL Editor (Dashboard → SQL Editor → New Query)
--- This creates the tables needed for SILA X MINI session persistence
+-- This creates the tables needed for TYREX_KSH MD session persistence
 
 -- Sessions table: stores WhatsApp auth credentials per paired number
 CREATE TABLE IF NOT EXISTS bot_sessions (

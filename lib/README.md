@@ -1,13 +1,13 @@
 <div align="center">
 
-# SILA X MINI ULTRA v7.0
+# TYREX_KSH MD ULTRA v7.0
 
 **Advanced WhatsApp Bot — 400+ Commands · Pair-Only (No Session ID)**
 
 [![GitHub](https://img.shields.io/badge/GitHub-Sila--Md-blue?logo=github)](https://github.com/Sila-Md)
 [![WhatsApp](https://img.shields.io/badge/WhatsApp-Channel-25D366?logo=whatsapp)](https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g)
 
-Powerd By Sila Tech
+Powerd By TYREX_KSH TECH
 
 </div>
 
@@ -134,4 +134,4 @@ sila-x-mini/
 
 ---
 
-> © 2026 Richard Besisila. All rights reserved.
+> © 2026 TYREX_KSH TECH. All rights reserved.

@@ -1,17 +1,17 @@
 {
   "name": "sila-x-mini",
   "version": "7.0.0",
-  "description": "SILA X MINI ULTRA \u2013 Advanced WhatsApp Bot (Pair-Only). 400+ commands. By Richard Besisila",
+  "description": "TYREX_KSH MD ULTRA \u2013 Advanced WhatsApp Bot (Pair-Only). 400+ commands. By TYREX_KSH TECH",
   "main": "index.js",
   "type": "commonjs",
-  "author": "Richard Besisila",
+  "author": "TYREX_KSH TECH",
   "license": "MIT",
   "scripts": {
     "start": "node --expose-gc index.js",
     "dev": "node index.js",
     "cleanup": "node cleanup.js",
     "postinstall": "node -e \"try{require('ffmpeg-static')}catch(e){}\"",
-    "heroku-postbuild": "echo 'SILA X MINI ULTRA build complete'",
+    "heroku-postbuild": "echo 'TYREX_KSH MD ULTRA build complete'",
     "test": "echo 'No test' && exit 0"
   },
   "engines": {

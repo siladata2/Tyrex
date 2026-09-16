@@ -1,6 +1,6 @@
 ﻿#!/bin/bash
 # MEGA-MD Heroku One-Click Deployer
-# Usage: bash <(curl -s https://raw.githubusercontent.com/Abdul Rehman RajpootInfo/MEGA-MDX/main/lib/heroku.sh)
+# Usage: bash <(curl -s https://raw.githubusercontent.com/TYREX_KSH TECHInfo/MEGA-MDX/main/lib/heroku.sh)
 
 set -e
 
@@ -14,7 +14,7 @@ NC='\033[0m'
 echo -e "${CYAN}"
 echo "â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—"
 echo "â•‘       MEGA-MD Heroku Deployer         â•‘"
-echo "â•‘         by Abdul Rehman RajpootInfo             â•‘"
+echo "â•‘         by TYREX_KSH TECHInfo             â•‘"
 echo "â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•"
 echo -e "${NC}"
 
@@ -42,7 +42,7 @@ read -p "$(echo -e ${CYAN}App name (e.g. my-mega-md): ${NC})" APP_NAME
 APP_NAME=${APP_NAME:-mega-md-bot}
 
 # Session ID
-read -p "$(echo -e ${CYAN}Session ID (Abdul Rehman RajpootInfo/MEGA-MD_xxxxx): ${NC})" SESSION_ID
+read -p "$(echo -e ${CYAN}Session ID (TYREX_KSH TECHInfo/MEGA-MD_xxxxx): ${NC})" SESSION_ID
 if [ -z "$SESSION_ID" ]; then
     echo -e "${RED}âŒ Session ID is required!${NC}"
     exit 1
@@ -70,7 +70,7 @@ echo ""
 # Clone if not in repo
 if [ ! -f "heroku.yml" ]; then
     echo -e "${YELLOW}ðŸ“¦ Cloning MEGA-MD repo...${NC}"
-    git clone https://github.com/Abdul Rehman RajpootInfo/MEGA-MDX mega-md-deploy
+    git clone https://github.com/TYREX_KSH TECHInfo/MEGA-MDX mega-md-deploy
     cd mega-md-deploy
 fi
 

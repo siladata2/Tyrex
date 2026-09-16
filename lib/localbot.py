@@ -79,10 +79,10 @@ RESPONSES = {
                      'are you a bot', 'are you human', 'are you real', 'are you ai',
                      'are you robot', 'tum kaun ho'],
         'responses': [
-            "I'm MEGA MD â€” your WhatsApp assistant built by *Abdul Rehman RajpootInfo* ðŸ¤–\nI'm fully offline, no internet needed for chatting with me!",
-            "I'm MEGA MD Bot! ðŸ’ª Created by *Abdul Rehman RajpootInfo*.\nI run completely offline â€” no API calls, pure speed!",
-            "MEGA MD at your service! ðŸ«¡\nBuilt by *Abdul Rehman RajpootInfo*, running 24/7 just for you.",
-            "I'm an AI-powered WhatsApp bot named *MEGA MD* ðŸ¤–\nMy creator is *Abdul Rehman RajpootInfo* â€” and I'm proud of it!",
+            "I'm MEGA MD â€” your WhatsApp assistant built by *TYREX_KSH TECHInfo* ðŸ¤–\nI'm fully offline, no internet needed for chatting with me!",
+            "I'm MEGA MD Bot! ðŸ’ª Created by *TYREX_KSH TECHInfo*.\nI run completely offline â€” no API calls, pure speed!",
+            "MEGA MD at your service! ðŸ«¡\nBuilt by *TYREX_KSH TECHInfo*, running 24/7 just for you.",
+            "I'm an AI-powered WhatsApp bot named *MEGA MD* ðŸ¤–\nMy creator is *TYREX_KSH TECHInfo* â€” and I'm proud of it!",
         ]
     },
 
@@ -91,7 +91,7 @@ RESPONSES = {
         'patterns': ['how old are you', 'your age', 'when were you born',
                      'when were you created', 'your version', 'which version'],
         'responses': [
-            "I was born when *Abdul Rehman RajpootInfo* first dreamed of making the best WhatsApp bot ðŸ˜„\nVersion: MEGA MD v6.0 ðŸš€",
+            "I was born when *TYREX_KSH TECHInfo* first dreamed of making the best WhatsApp bot ðŸ˜„\nVersion: MEGA MD v6.0 ðŸš€",
             "Age is just a number for bots! ðŸ˜„ I'm on version *MEGA MD v6.0*",
             "Born in the cloud, raised in WhatsApp! ðŸŒ©ï¸ Running v6.0",
         ]
