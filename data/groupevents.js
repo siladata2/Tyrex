@@ -1,6 +1,6 @@
 /**
- * SILA X MINI — Group Events (Welcome / Goodbye)
- * Owner: Richard Besisila
+ * TYREX_KSH MD — Group Events (Welcome / Goodbye)
+ * Owner: TYREX_KSH TECH
  */
 
 'use strict';
@@ -8,10 +8,10 @@
 module.exports = async function GroupEvents(conn, update, config = {}) {
   try {
     const {
-      botName     = 'SILA X MINI',
-      ownerName   = 'Richard Besisila',
-      menuImage   = 'https://i.ibb.co/Gf4fr5BS/silaxmini.jpg',
-      newsletterJid = '120363402325089913@newsletter',
+      botName     = 'TYREX_KSH MD',
+      ownerName   = 'TYREX_KSH TECH',
+      menuImage   = 'https://files.catbox.moe/p8xi4o.jpeg',
+      newsletterJid = '120363429539292697@newsletter',
     } = config;
 
     const { id, participants, action } = update;
