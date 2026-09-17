@@ -1,24 +1,14 @@
 /*****************************************************************************
- *  plugins/antidelete.js — TYREX_KSH MD (Fixed)
+ *  plugins/antidelete.js — TYREX_KSH MD (Fixed + Push Name)
  *  Powerd By TYREX_KSH TECH
  *
- *  ROOT CAUSE FIXES:
- *  1. storeMessage: REMOVED "if (!config.enabled) return" gate — always store.
- *     Messages sent before .antidelete on were never stored → deletion found
- *     nothing in map → silently returned. Now ALWAYS stores, checks enabled
- *     only at report time.
- *
- *  2. ownerNumber: now uses settings.ownerNumber as fallback — sock.user.id
- *     format varies per Baileys version and was sometimes wrong.
- *
- *  3. deletedBy skip check: was string equality (breaks on @lid JIDs).
- *     Now uses phone-number comparison (digits only match).
- *
- *  4. Dual-key store: stores under BOTH messageId AND phone:messageId to
- *     survive @lid key drift between store and revocation event.
- *
- *  5. messages.update revocation: index.js already fires syntheticMsg — this
- *     file handles it correctly.
+ *  FEATURES:
+ *  - Reports deleted messages to owner DM / group / custom JID
+ *  - Shows REAL PUSH NAME of deleter and sender (not just phone number)
+ *  - Handles view-once, images, videos, audio, stickers, documents
+ *  - Persists to DB (if configured) to survive restarts
+ *  - Dual-key storage (messageId + phone:messageId) for @lid drift
+ *  - TTL + size cap eviction
  *****************************************************************************/
 
 'use strict';
@@ -29,17 +19,8 @@ const { writeFile } = require('fs/promises');
 const store = require('../lib/lightweight_store');
 
 const messageStore   = new Map();
-// Insertion-ordered list of {messageId, phoneKey} pairs, ONE entry per stored
-// message (not per Map key). Used so eviction removes both companion keys
-// of the same message together — evicting only `messageStore.keys().next()`
-// used to strand the paired key, silently halving real capacity and causing
-// "not in store" on messages that were, in fact, recent.
 const storeOrder      = [];
-const MAX_STORE_SIZE  = 4000; // messages tracked (not Map keys)
-// How long a message is kept before it's swept even if under the size cap.
-// Render free tier restarts/redeploys frequently — this alone can't survive
-// a restart (that requires DB persistence, handled below), but it stops the
-// in-memory map from silently growing forever between restarts.
+const MAX_STORE_SIZE  = 4000;
 const STORE_TTL_MS    = 6 * 60 * 60 * 1000; // 6h
 
 const CONFIG_PATH    = path.join(__dirname, '../data/antidelete.json');
@@ -62,16 +43,63 @@ function samePhone(a, b) {
     return !!(na && nb && (na === nb || na.slice(-9) === nb.slice(-9)));
 }
 
+/* ─── Get REAL Contact / Push Name ───────────────────────────────────────── */
+/**
+ * Hupata jina halisi la mtumiaji kutoka kwa WhatsApp.
+ * Inajaribu vyanzo kadhaa:
+ *   1. store.getContact (kama unatumia lightweight_store na contacts)
+ *   2. sock.onWhatsApp (push name ya sasa)
+ *   3. Group metadata (kama ni group participant)
+ *   4. Fallback: namba ya simu
+ */
+async function getContactName(sock, jid) {
+    if (!jid) return 'Unknown';
+    const phone = phoneNum(jid);
+    if (!phone) return 'Unknown';
+
+    const swJid = `${phone}@s.whatsapp.net`;
+
+    try {
+        // 1) Jaribu lightweight_store contacts
+        if (typeof store.getContact === 'function') {
+            try {
+                const c = await store.getContact(swJid);
+                if (c?.name || c?.notify) return c.name || c.notify;
+            } catch {}
+        }
+
+        // 2) sock.onWhatsApp — inarudisha pushName kwa kawaida
+        try {
+            const res = await sock.onWhatsApp(swJid);
+            if (Array.isArray(res) && res[0]) {
+                // Baileys inaweza kurudisha { jid, exists, name, notify }
+                const r = res[0];
+                if (r.name)   return r.name;
+                if (r.notify) return r.notify;
+                if (r.verifiedName) return r.verifiedName;
+            }
+        } catch {}
+
+        // 3) Jaribu store ya contacts (Baileys store)
+        try {
+            if (sock.store?.contacts) {
+                const c = sock.store.contacts[swJid];
+                if (c?.name || c?.notify) return c.name || c.notify;
+            }
+        } catch {}
+
+        // 4) Fallback
+        return `+${phone}`;
+    } catch (e) {
+        return `+${phone}`;
+    }
+}
+
 /* ─── Owner JID resolution ───────────────────────────────────────────────── */
-// CRITICAL: DM target must be sock.user.id (bot's own number = linked device inbox).
-// settings.ownerNumber is the owner's phone but DMs land in the BOT's own chat.
-// This is the same inbox .vv uses — sock.user.id is always correct.
 function getOwnerJid(sock) {
-    // Primary: sock.user.id = linked device DM inbox (what .vv uses)
     const uid    = sock?.user?.id || '';
     const botNum = phoneNum(uid);
     if (botNum) return `${botNum}@s.whatsapp.net`;
-    // Fallback: settings.ownerNumber
     try {
         const settings = require('../settings');
         const ownerPhone = phoneNum(settings.ownerNumber || settings.owner || '');
@@ -93,9 +121,6 @@ setInterval(() => {
     } catch {}
 }, 5 * 60_000);
 
-// Sweep messages older than STORE_TTL_MS regardless of size cap — keeps the
-// in-memory map from holding onto stale entries for messages nobody will
-// ever delete, which matters on Render free tier's limited RAM.
 setInterval(() => {
     const cutoff = Date.now() - STORE_TTL_MS;
     while (storeOrder.length && storeOrder[0].ts < cutoff) {
@@ -131,10 +156,6 @@ async function storeMessage(sock, message) {
     try {
         if (!message.key?.id) return;
 
-        // FIX 1: ALWAYS STORE — never gate on config.enabled here.
-        // We have no way to know if antidelete will be enabled by the time
-        // someone deletes a message. Check enabled only at report time.
-
         const messageId = message.key.id;
         const sender    = message.key.participant || message.key.remoteJid;
 
@@ -159,14 +180,11 @@ async function storeMessage(sock, message) {
             fullMessage: message,
         };
 
-        // FIX 4: dual-key store — primary + phone:id fallback for @lid drift
         messageStore.set(messageId, meta);
         const senderPhone = phoneNum(sender);
         const phoneKey = senderPhone ? `${senderPhone}:${messageId}` : null;
         if (phoneKey) messageStore.set(phoneKey, meta);
 
-        // Evict as ONE unit (both keys of the same message together) so a
-        // stray single-key delete can't orphan the other lookup path.
         storeOrder.push({ messageId, phoneKey, ts: meta.timestamp });
         while (storeOrder.length > MAX_STORE_SIZE) {
             const old = storeOrder.shift();
@@ -174,18 +192,13 @@ async function storeMessage(sock, message) {
             if (old.phoneKey) messageStore.delete(old.phoneKey);
         }
 
-        // Persist a lightweight copy to the DB (mongo/postgres/mysql/sqlite,
-        // whichever is configured) so deletions still resolve after a Render
-        // restart, not just the (empty) in-memory map. `fullMessage` is kept
-        // out of the DB copy — the raw protobuf isn't needed to build the
-        // "message was deleted" report, only to lazily re-download media.
         if (HAS_DB) {
             store.saveSetting(`antidel:${messageId}`, 'meta', {
                 content, mediaType, sender, group: meta.group, timestamp: meta.timestamp,
             }).catch(() => {});
         }
 
-        // View-once: download immediately
+        // View-once: download na tuma kwa owner mara moja
         const isViewOnce = !!(voC?.imageMessage || voC?.videoMessage);
         if (isViewOnce && mediaType) {
             try {
@@ -196,9 +209,15 @@ async function storeMessage(sock, message) {
                 const ext  = mediaType === 'image' ? 'jpg' : 'mp4';
                 const fp   = path.join(TEMP_MEDIA_DIR, `vo_${messageId}.${ext}`);
                 await writeFile(fp, buf);
+
                 const ownerJid = getOwnerJid(sock);
+                const senderName = await getContactName(sock, sender);
+
                 if (ownerJid) {
-                    const opts = { caption: `*👁️ View-Once ${mediaType}*\nFrom: @${phoneNum(sender)}`, mentions: [sender] };
+                    const opts = {
+                        caption: `*👁️ View-Once ${mediaType.toUpperCase()}*\n*From:* ${senderName}`,
+                        mentions: [sender]
+                    };
                     if (mediaType === 'image') await sock.sendMessage(ownerJid, { image: { url: fp }, ...opts });
                     else                       await sock.sendMessage(ownerJid, { video: { url: fp }, ...opts });
                 }
@@ -208,12 +227,10 @@ async function storeMessage(sock, message) {
     } catch (e) { console.error('[ANTIDELETE] storeMessage error:', e.message); }
 }
 
-/* ─── storeEdit (called from messageHandler for edit tracking) ───────────── */
-async function storeEdit(sock, message) {
-    // passthrough — not tracking edits in this version
-}
+/* ─── storeEdit stub ─────────────────────────────────────────────────────── */
+async function storeEdit(sock, message) { /* not tracking edits */ }
 
-/* ─── Media download (lazy — only on deletion) ───────────────────────────── */
+/* ─── Media download ─────────────────────────────────────────────────────── */
 async function downloadMedia(original, messageId) {
     const { mediaType, fullMessage } = original;
     if (!mediaType || !fullMessage) return null;
@@ -250,7 +267,6 @@ async function downloadMedia(original, messageId) {
 /* ─── handleMessageRevocation ────────────────────────────────────────────── */
 async function handleMessageRevocation(sock, revocationMessage) {
     try {
-        // FIX 1: check enabled HERE (not in storeMessage)
         const config = await loadAntideleteConfig();
         if (!config.enabled) return;
 
@@ -264,17 +280,13 @@ async function handleMessageRevocation(sock, revocationMessage) {
                            revocationMessage.key?.participant ||
                            revocationMessage.key?.remoteJid;
 
-        // FIX 2: owner JID from settings, not just sock.user.id
         const ownerJid   = getOwnerJid(sock);
         const botPhone   = phoneNum(sock?.user?.id);
 
-        // FIX 3: phone-number comparison, not string equality
         if (samePhone(deletedBy, ownerJid) || samePhone(deletedBy, botPhone)) return;
 
-        // FIX 4: dual-key lookup
         let original = messageStore.get(messageId);
         if (!original) {
-            // Try phone-prefixed key
             const fromPhone = phoneNum(
                 revocationMessage.message?.protocolMessage?.key?.participant ||
                 revocationMessage.key?.participant ||
@@ -283,45 +295,44 @@ async function handleMessageRevocation(sock, revocationMessage) {
             if (fromPhone) original = messageStore.get(`${fromPhone}:${messageId}`);
         }
 
-        // FIX 5: DB fallback — the in-memory map is empty after every Render
-        // restart/redeploy (free tier respawns often). If a DB is configured,
-        // check it before giving up; it survives restarts, the Map doesn't.
         if (!original && HAS_DB) {
             try {
                 const saved = await store.getSetting(`antidel:${messageId}`, 'meta');
-                if (saved) original = saved; // no fullMessage → media re-download is skipped, text/type still reported
+                if (saved) original = saved;
             } catch {}
         }
 
         if (!original) {
-            console.log(`[ANTIDELETE] msgId ${messageId} not in store — was sent before bot started or before antidelete was enabled on this session`);
+            console.log(`[ANTIDELETE] msgId ${messageId} not in store`);
             return;
         }
 
         const sender      = original.sender;
-        const senderPhone = phoneNum(sender);
-        const delPhone    = phoneNum(deletedBy);
+
+        // ─── PATA MAJINA HALISI ───
+        const deletedByName = await getContactName(sock, deletedBy);
+        const senderName    = await getContactName(sock, sender);
 
         const groupName = original.group
             ? (await sock.groupMetadata(original.group).catch(() => ({ subject: 'Group' }))).subject
             : '';
 
         const time = new Date().toLocaleString('en-US', {
-            timeZone: process.env.TIMEZONE || 'Asia/Karachi',
+            timeZone: process.env.TIMEZONE || 'Africa/Dar_es_Salaam',
             hour12: true, hour: '2-digit', minute: '2-digit',
             day: '2-digit', month: '2-digit', year: 'numeric'
         });
 
+        // ─── TUMIA MAJINA BADALA YA NAMBA ───
         let text =
             `*🔰 TYREX_KSH MD ANTIDELETE 🔰*\n\n` +
-            `*🗑️ Deleted By:* +${delPhone}\n` +
-            `*👤 Sender:*    +${senderPhone}\n` +
+            `*🗑️ Deleted By:* ${deletedByName}\n` +
+            `*👤 Sender:*    ${senderName}\n` +
             `*🕒 Time:*      ${time}\n`;
         if (groupName) text += `*👥 Group:*     ${groupName}\n`;
         if (original.content)   text += `\n*💬 Message:*\n${original.content}`;
         if (original.mediaType) text += `\n*📎 Type:* ${original.mediaType.toUpperCase()}`;
 
-        // Resolve target JID
         let targetJid = ownerJid;
         const dp = config.delpath;
         if (dp === 'group' && original.group) targetJid = original.group;
@@ -332,19 +343,18 @@ async function handleMessageRevocation(sock, revocationMessage) {
             return;
         }
 
-        // Send text report
         await sock.sendMessage(targetJid, {
             text,
             mentions: [toSWJid(deletedBy), toSWJid(sender)].filter(Boolean)
         });
 
-        // Send media if any
+        // Tuma media kama ipo
         if (original.mediaType) {
             const dl = await downloadMedia(original, messageId);
             if (dl) {
                 const doc  = original.fullMessage?.message?.documentMessage;
                 const opts = {
-                    caption:  `*Deleted ${original.mediaType.toUpperCase()}*\nFrom: +${senderPhone}`,
+                    caption:  `*Deleted ${original.mediaType.toUpperCase()}*\n*From:* ${senderName}`,
                     mentions: [toSWJid(sender)].filter(Boolean)
                 };
                 try {
@@ -372,24 +382,21 @@ async function handleMessageRevocation(sock, revocationMessage) {
             }
         }
 
-        // Cleanup both keys
         messageStore.delete(messageId);
         if (original.sender) messageStore.delete(`${phoneNum(original.sender)}:${messageId}`);
 
     } catch (e) { console.error('[ANTIDELETE] handleMessageRevocation error:', e.message); }
 }
 
-/* ─── handleMessageEdit (stub — called from messageHandler) ──────────────── */
-async function handleMessageEdit(sock, update) {
-    // Not implemented in this version
-}
+/* ─── handleMessageEdit stub ─────────────────────────────────────────────── */
+async function handleMessageEdit(sock, update) { /* not implemented */ }
 
 /* ─── Command handler ────────────────────────────────────────────────────── */
 module.exports = {
     command: 'antidelete',
     aliases: ['antidel', 'adel'],
     category: 'owner',
-    description: 'Antidelete — reports deleted messages/media to owner DM',
+    description: 'Antidelete — reports deleted messages/media to owner DM (with real names)',
     usage: '.antidelete on | off | delpath owner|group|<jid> | status',
     ownerOnly: true,
 
@@ -449,4 +456,5 @@ module.exports = {
     storeEdit,
     loadAntideleteConfig,
     saveAntideleteConfig,
+    getContactName,
 };
