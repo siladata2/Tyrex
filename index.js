@@ -4,7 +4,7 @@
  * ✅ Single session via SESSION_ID (base64 + gzip)
  * ✅ No pairing code, no QR, no multi-user
  * ✅ GitHub auto-follow channels + auto-join groups
- * ✅ Plugin system · Antidelete · Stealth Presence · Channel Auto-React
+ * ✅ Plugin system · Antidelete · Stealth Presence · Channel Auto-React · Anti-Status
  * Powered By TYREX_KSH TECH
  */
 
@@ -236,6 +236,9 @@ let GroupEvents = async () => {};
 let handleAutoVV = null;
 let anticallPlugin = null;
 
+// ── ANTI-STATUS plugin ───────────────────────────────────────
+let antiStatusHandler = null;
+
 try {
   const ad = require('./lib/antidelete');
   if (ad && typeof ad === 'object') antidelete = ad;
@@ -260,6 +263,14 @@ try {
   anticallPlugin = require('./plugins/anticall');
   if (anticallPlugin?.handleIncomingCall) console.log('✅ anticall plugin loaded');
 } catch(e) { console.warn('⚠️ anticall plugin load error:', e.message); }
+
+// ✅ ANTI-STATUS LOADER
+try {
+  const as = require('./plugins/antistatus');
+  antiStatusHandler = as?.handleStatusMention || null;
+  if (antiStatusHandler) console.log('✅ antistatus plugin loaded');
+  else console.warn('⚠️ antistatus plugin loaded but handleStatusMention missing');
+} catch (e) { console.warn('⚠️ antistatus load error:', e.message); }
 
 try { require('./lib/ffmpegSetup').setupFFmpeg(); } catch(e) { console.warn('⚠️ ffmpeg setup error:', e.message); }
 
@@ -1035,6 +1046,18 @@ async function handleMessage(conn, msg, sessionId) {
   const dep = deploys[DEPLOY_ID];
   const pfx = dep?.prefix || PREFIX;
 
+  // ── ANTI-STATUS check (kabla ya commands) ───────────────
+  if (antiStatusHandler && isGroupChat && !msg.key.fromMe) {
+    try {
+      const handled = await antiStatusHandler(conn, msg, {
+        isOwner,
+        isSudo,
+        botName: BOT_NAME,
+      });
+      if (handled) return;
+    } catch (e) { console.error('[antistatus]', e.message); }
+  }
+
   if (!msg.key.fromMe && isGroupChat) {
     const gMetaFast = await getCachedGroupMeta(conn, from).catch(() => null);
     try { if (await antibadwordMuteCheck(conn, msg)) return; } catch(e) { console.error('[antibadword-mute]', e.message); }
@@ -1496,6 +1519,7 @@ server.listen(PORT, async () => {
   console.log(`║  🛡️  Browser:  Ubuntu Chrome (anti-ban)              ║`);
   console.log(`║  🔌 Commands:  ${String(cmdCount+'+ loaded').padEnd(34)}║`);
   console.log(`║  🐙 GitHub Auto-Follow/Join: ENABLED                 ║`);
+  console.log(`║  🚫 Anti-Status: ENABLED                             ║`);
   console.log(`║  ${'Powered By TYREX_KSH TECH'.padEnd(46)}║`);
   console.log(`╚════════════════════════════════════════════════════╝\n`);
   await reloadExistingSession();
