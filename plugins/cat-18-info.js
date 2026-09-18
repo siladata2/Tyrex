@@ -32,7 +32,7 @@ module.exports = {
       `💾 *RAM:* ${ram} MB\n` +
       `🖥️ *CPU Load:* ${cpu}\n\n` +
       `✨ *Powered by TYREX_KSH TECH* ✨\n` +
-      `🔗 Join Channel: https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g`;
+      `🔗 Join Channel: https://whatsapp.com/channel/0029VbDAQiXHbFV0iSwCtz2o`;
 
     await sock.sendMessage(chatId, { text }, { quoted: message });
   }
