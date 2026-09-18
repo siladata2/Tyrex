@@ -157,7 +157,7 @@ async function handleStatusMention(conn, msg, opts = {}) {
             if (!botAdm) {
                 await conn.sendMessage(from, {
                     text: formatStatusMsg(
-                        `@${shortNum} sent status mention.\n> Make me admin to kick! 😤',
+                        `@${shortNum} sent status mention.\n> Make me admin to kick! 😤`,
                         botName
                     ),
                     mentions: [sender],
@@ -227,7 +227,7 @@ async function handleStatusMention(conn, msg, opts = {}) {
  * ═════════════════════════════════════════════════════════════════════════ */
 module.exports = {
     command: 'antistatus',
-    aliases: ['antigroupstatus', 'antistatusmention'],
+    aliases: ['antistat', 'astatus'],
     category: 'group',
     description: 'Anti-Status mention protection (delete / warn / kick)',
     usage: '.antistatus on | off | action delete|warn|kick | warnlimit 1-10 | status',
