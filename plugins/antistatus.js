@@ -227,7 +227,7 @@ async function handleStatusMention(conn, msg, opts = {}) {
  * ═════════════════════════════════════════════════════════════════════════ */
 module.exports = {
     command: 'antistatus',
-    aliases: ['antistat', 'astatus'],
+    aliases: ['antigroupstatus', 'antistatusmention'],
     category: 'group',
     description: 'Anti-Status mention protection (delete / warn / kick)',
     usage: '.antistatus on | off | action delete|warn|kick | warnlimit 1-10 | status',
