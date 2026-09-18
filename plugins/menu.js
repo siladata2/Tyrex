@@ -4,7 +4,6 @@ const settings = require('../settings');
 const commandHandler = require('../lib/commandHandler');
 const store = require('../lib/lightweight_store');
 const axios = require('axios');
-const { sendInteractiveMessage } = require('gifted-btns');
 
 const MENU_IMAGE_URL = 'https://files.catbox.moe/p8xi4o.jpeg';
 
@@ -258,19 +257,17 @@ const menuCommand = {
             const imageBuffer = await getMenuImage(imgUrl);
 
             if (imageBuffer) {
-                await sock.sendMessage(chatId, { image: imageBuffer, caption: menuText, ...channelInfo }, { quoted: message });
+                await sock.sendMessage(chatId, {
+                    image: imageBuffer,
+                    caption: menuText,
+                    ...channelInfo
+                }, { quoted: message });
             } else {
-                await sock.sendMessage(chatId, { text: menuText, ...channelInfo }, { quoted: message });
+                await sock.sendMessage(chatId, {
+                    text: menuText,
+                    ...channelInfo
+                }, { quoted: message });
             }
-
-            // Quick-link buttons (best-effort, non-blocking so it never slows the menu)
-            sendInteractiveMessage(sock, chatId, {
-                text: '*JOIN OUR COMMUNITY*\n\nTap the button below to join our WhatsApp group.',
-                footer: `Style ${styleNo}/${STYLE_COUNT} — ${style.name}  change with .menustyle`,
-                interactiveButtons: [
-                    { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: 'WhatsApp Group', url: settings.whatsappGroup || 'https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g' }) },
-                ],
-            }, { quoted: message }).catch(() => {});
         } catch (error) {
             console.error('Error in menu command:', error);
             await sock.sendMessage(chatId, { text: ' An error occurred while displaying the menu.', ...channelInfo }, { quoted: message });
