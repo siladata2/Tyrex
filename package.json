@@ -35,7 +35,7 @@
     "@mrnima/facebook-downloader": "^1.0.0",
     "@mrnima/tiktok-downloader": "^1.0.0",
     "@vitalets/google-translate-api": "^9.2.1",
-    "@whiskeysockets/baileys": "7.0.0-rc14",
+    "@whiskeysockets/baileys": "github:Jeliostarr/DEV-Baileys",
     "acrcloud": "^1.4.0",
     "adm-zip": "^0.5.16",
     "api-dylux": "1.8.5",
