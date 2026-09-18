@@ -46,7 +46,7 @@ module.exports = {
   get menuImage()     { return process.env.MENU_IMAGE || 'https://files.catbox.moe/p8xi4o.jpeg'; },
 
   // ── LINKS ─────────────────────────────────────────────────────
-  get whatsappGroup() { return process.env.WA_GROUP       || 'https://chat.whatsapp.com/IS276Wg9zcuCnJRiMDI64g'; },
+  get whatsappGroup() { return process.env.WA_GROUP       || 'https://chat.whatsapp.com/FllVYl3gLmD7MW1pwWH2aI'; },
   get telegramGroup() { return process.env.TG_GROUP       || 'https://t.me/SilaTech'; },
   get repoLink()      { return process.env.REPO_LINK      || 'https://github.com/Sila-Md'; },
   get newsletterJid() { return process.env.NEWSLETTER_JID || '120363429539292697@newsletter'; },
