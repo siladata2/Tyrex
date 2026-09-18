@@ -106,7 +106,7 @@ async function handleLeaveEvent(sock, id, participants) {
       forwardingScore: 1,
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
-        newsletterJid: settings.channelJid || '120363319098372999@newsletter',
+        newsletterJid: settings.channelJid || '120363429539292697@newsletter',
         newsletterName: botName,
         serverMessageId: -1
       }
