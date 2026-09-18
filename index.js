@@ -378,7 +378,7 @@ if (!fs.existsSync(CREDS_PATH)) {
 
   try {
     let sessdata = SESSION_ID.trim();
-    const prefixes = ['SILA-MD~', 'sila~', 'CIPHER-MD~', 'TYREX-KSH-TECH~'];
+    const prefixes = ['SILA-MD~', 'sila~', 'CIPHER-MD~', 'TYREX-KSH-MD~'];
     for (const prefix of prefixes) {
       if (sessdata.startsWith(prefix)) {
         sessdata = sessdata.substring(prefix.length).trim();
